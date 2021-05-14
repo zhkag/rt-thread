@@ -134,8 +134,14 @@ vector_swi:
     push {lr}
     mrs lr, spsr
     push {r4, r5, lr}
+
     cpsie i
+
     push {r0 - r3, r12}
+
+    bl rt_thread_self
+    bl lwp_user_setting_save
+
     and r0, r7, #0xff
     cmp r0, #0xfe
     beq lwp_signal_quit
@@ -146,6 +152,7 @@ vector_swi:
     bl lwp_get_sys_api
     cmp r0, #0           /* r0 = api */
     mov lr, r0
+
     pop {r0 - r3, r12}
     beq svc_exit
     blx lr

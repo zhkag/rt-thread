@@ -321,7 +321,7 @@ u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout)
  */
 int sys_sem_valid(sys_sem_t *sem)
 {
-    return (int)(*sem);
+    return (int)(size_t)(*sem);
 }
 #endif
 
@@ -397,7 +397,7 @@ void sys_mutex_free(sys_mutex_t *mutex)
  */
 int sys_mutex_valid(sys_mutex_t *mutex)
 {
-    return (int)(*mutex);
+    return (int)(size_t)(*mutex);
 }
 #endif
 
@@ -555,7 +555,7 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
  */
 int sys_mbox_valid(sys_mbox_t *mbox)
 {
-    return (int)(*mbox);
+    return (int)(size_t)(*mbox);
 }
 #endif
 

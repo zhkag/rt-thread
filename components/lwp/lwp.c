@@ -64,21 +64,21 @@ uint32_t *lwp_get_kernel_sp(void)
 #ifdef RT_USING_USERSPACE
 struct process_aux *lwp_argscopy(struct rt_lwp *lwp, int argc, char **argv, char **envp)
 {
-    int size = sizeof(int) * 5; /* store argc, argv, envp, aux, NULL */
+    int size = sizeof(size_t) * 5; /* store argc, argv, envp, aux, NULL */
     int *args;
     char *str;
     char *str_k;
     char **new_argve;
     int i;
     int len;
-    int *args_k;
+    size_t *args_k;
     struct process_aux *aux;
 
     for (i = 0; i < argc; i++)
     {
         size += (rt_strlen(argv[i]) + 1);
     }
-    size += (sizeof(int) * argc);
+    size += (sizeof(size_t) * argc);
 
     i = 0;
     if (envp)
@@ -86,7 +86,7 @@ struct process_aux *lwp_argscopy(struct rt_lwp *lwp, int argc, char **argv, char
         while (envp[i] != 0)
         {
             size += (rt_strlen(envp[i]) + 1);
-            size += sizeof(int);
+            size += sizeof(size_t);
             i++;
         }
     }
@@ -100,18 +100,18 @@ struct process_aux *lwp_argscopy(struct rt_lwp *lwp, int argc, char **argv, char
     }
 
     /* args = (int *)lwp_map_user(lwp, 0, size); */
-    args = (int *)lwp_map_user(lwp, (void *)(KERNEL_VADDR_START - ARCH_PAGE_SIZE), size, 0);
+    args = (int *)lwp_map_user(lwp, (void *)(USER_VADDR_TOP - ARCH_PAGE_SIZE), size, 0);
     if (args == RT_NULL)
     {
         return RT_NULL;
     }
 
-    args_k = (int *)rt_hw_mmu_v2p(&lwp->mmu_info, args);
-    args_k = (int *)((size_t)args_k - PV_OFFSET);
+    args_k = (size_t *)rt_hw_mmu_v2p(&lwp->mmu_info, args);
+    args_k = (size_t *)((size_t)args_k - PV_OFFSET);
 
     /* argc, argv[], 0, envp[], 0 , aux[] */
-    str = (char *)((size_t)args + (argc + 2 + i + 1 + AUX_ARRAY_ITEMS_NR * 2 + 1) * sizeof(int));
-    str_k = (char *)((size_t)args_k + (argc + 2 + i + 1 + AUX_ARRAY_ITEMS_NR * 2 + 1) * sizeof(int));
+    str = (char *)((size_t)args + (argc + 2 + i + 1 + AUX_ARRAY_ITEMS_NR * 2 + 1) * sizeof(size_t));
+    str_k = (char *)((size_t)args_k + (argc + 2 + i + 1 + AUX_ARRAY_ITEMS_NR * 2 + 1) * sizeof(size_t));
 
     new_argve = (char **)&args_k[1];
     args_k[0] = argc;
@@ -148,7 +148,7 @@ struct process_aux *lwp_argscopy(struct rt_lwp *lwp, int argc, char **argv, char
     /* aux */
     aux = (struct process_aux *)(new_argve + i);
     aux->item[0].key = AT_EXECFN;
-    aux->item[0].value = (uint32_t)(size_t)new_argve[0];
+    aux->item[0].value = (size_t)(size_t)new_argve[0];
     i += AUX_ARRAY_ITEMS_NR * 2;
     new_argve[i] = 0;
 
@@ -281,22 +281,6 @@ static size_t load_fread(void *ptr, size_t size, size_t nmemb, int fd)
 
     return read_block;
 }
-
-#ifdef ARCH_CPU_64BIT
-#define Elf_Word Elf64_Word
-#define Elf_Addr Elf64_Addr
-#define Elf_Half Elf64_Half
-#define Elf_Ehdr Elf64_Ehdr
-#define Elf_Phdr Elf64_Phdr
-#define Elf_Shdr Elf64_Shdr
-#else
-#define Elf_Word Elf32_Word
-#define Elf_Addr Elf32_Addr
-#define Elf_Half Elf32_Half
-#define Elf_Ehdr Elf32_Ehdr
-#define Elf_Phdr Elf32_Phdr
-#define Elf_Shdr Elf32_Shdr
-#endif
 
 typedef struct
 {
@@ -526,7 +510,7 @@ static int load_elf(int fd, int len, struct rt_lwp *lwp, uint8_t *load_addr, str
         {
             return -RT_ERROR;
         }
-        va = (uint8_t *)lwp_map_user(lwp, (void *)(KERNEL_VADDR_START - ARCH_PAGE_SIZE * 2), process_header_size, 0);
+        va = (uint8_t *)lwp_map_user(lwp, (void *)(USER_VADDR_TOP - ARCH_PAGE_SIZE * 2), process_header_size, 0);
         if (!va)
         {
             return -RT_ERROR;
@@ -561,7 +545,7 @@ static int load_elf(int fd, int len, struct rt_lwp *lwp, uint8_t *load_addr, str
 #ifdef RT_USING_USERSPACE
             uint8_t *krandom;
 
-            random = (uint8_t *)(KERNEL_VADDR_START - ARCH_PAGE_SIZE - sizeof(char[16]));
+            random = (uint8_t *)(USER_VADDR_TOP - ARCH_PAGE_SIZE - sizeof(char[16]));
 
             krandom = (uint8_t *)rt_hw_mmu_v2p(m_info, random);
             krandom = (uint8_t *)krandom - PV_OFFSET;
@@ -570,13 +554,13 @@ static int load_elf(int fd, int len, struct rt_lwp *lwp, uint8_t *load_addr, str
             random = (uint8_t *)(process_header + process_header_size);
             rt_memcpy(random, &random_value, sizeof random_value);
 #endif
-            aux->item[2].value = (uint32_t)(size_t)random;
+            aux->item[2].value = (size_t)random;
         }
         aux->item[3].key = AT_PHDR;
 #ifdef RT_USING_USERSPACE
-        aux->item[3].value = (uint32_t)(size_t)va;
+        aux->item[3].value = (size_t)va;
 #else
-        aux->item[3].value = (uint32_t)(size_t)process_header;
+        aux->item[3].value = (size_t)process_header;
 #endif
         aux->item[4].key = AT_PHNUM;
         aux->item[4].value = eheader.e_phnum;
@@ -1090,7 +1074,7 @@ pid_t lwp_execve(char *filename, int argc, char **argv, char **envp)
     if (result == 1)
     {
         /* dynmaic */
-        lwp_unmap_user(lwp, (void *)(KERNEL_VADDR_START - ARCH_PAGE_SIZE));
+        lwp_unmap_user(lwp, (void *)(USER_VADDR_TOP - ARCH_PAGE_SIZE));
         result = load_ldso(lwp, filename, argv, envp);
     }
     if (result == RT_EOK)
@@ -1160,3 +1144,43 @@ pid_t exec(char *filename, int argc, char **argv)
     return lwp_execve(filename, argc, argv, 0);
 }
 #endif
+
+void lwp_user_setting_save(rt_thread_t thread)
+{
+    if (thread)
+    {
+        thread->thread_idr = rt_cpu_get_thread_idr();
+    }
+}
+
+void lwp_user_setting_restore(rt_thread_t thread)
+{
+    if (!thread)
+    {
+        return;
+    }
+    rt_cpu_set_thread_idr(thread->thread_idr);
+
+#ifdef RT_USING_GDBSERVER
+    {
+        struct rt_lwp *l = (struct rt_lwp *)thread->lwp;
+
+        set_process_id((uint32_t)(size_t)l);
+        if (l && l->debug)
+        {
+            uint32_t step_type = 0;
+
+            step_type = gdb_get_step_type();
+
+            if ((step_type == 2) || (thread->step_exec && (step_type == 1)))
+            {
+                arch_activate_step();
+            }
+            else
+            {
+                arch_deactivate_step();
+            }
+        }
+    }
+#endif
+}

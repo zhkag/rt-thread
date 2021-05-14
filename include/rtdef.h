@@ -610,7 +610,13 @@ struct rt_wakeup
 };
 
 #define _LWP_NSIG       64
+
+#ifdef ARCH_CPU_64BIT
+#define _LWP_NSIG_BPW   64
+#else
 #define _LWP_NSIG_BPW   32
+#endif
+
 #define _LWP_NSIG_WORDS (_LWP_NSIG / _LWP_NSIG_BPW)
 
 typedef void (*lwp_sighandler_t)(int);

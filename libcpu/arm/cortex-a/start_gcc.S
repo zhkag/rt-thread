@@ -361,6 +361,11 @@ vector_irq:
     cps     #Mode_SVC
     mov     sp, r8
 
+#ifdef RT_USING_LWP
+    bl      rt_thread_self
+    bl      lwp_user_setting_save
+#endif
+
     bl      rt_interrupt_enter
     bl      rt_hw_trap_irq
     bl      rt_interrupt_leave
@@ -372,6 +377,11 @@ vector_irq:
 
 #else
     stmfd   sp!, {r0-r12,lr}
+
+#ifdef RT_USING_LWP
+    bl      rt_thread_self
+    bl      lwp_user_setting_save
+#endif
 
     bl      rt_interrupt_enter
     bl      rt_hw_trap_irq
@@ -462,11 +472,13 @@ rt_hw_context_switch_interrupt_do:
     ldr     r6,  [r6]
     ldr     sp,  [r6]       /* get new task's stack pointer */
 
+    bl      rt_thread_self
 #ifdef RT_USING_USERSPACE
-    ldr     r1, =rt_current_thread
-    ldr     r0, [r1]
+    mov     r4, r0
     bl      lwp_mmu_switch
+    mov     r0, r4
 #endif
+    bl      lwp_user_setting_restore
 
 #ifdef RT_USING_FPU
     /* fpu context */

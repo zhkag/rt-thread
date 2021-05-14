@@ -32,6 +32,7 @@
 
 #include "mmu.h"
 #include "page.h"
+#include "lwp_arch.h"
 #endif
 
 #ifdef __cplusplus
@@ -129,6 +130,8 @@ size_t lwp_user_strlen(const char *s, int *err);
 #ifdef RT_USING_USERSPACE
 void lwp_mmu_switch(struct rt_thread *thread);
 #endif
+void lwp_user_setting_save(rt_thread_t thread);
+void lwp_user_setting_restore(rt_thread_t thread);
 
 #ifdef RT_USING_USERSPACE
 struct __pthread {
@@ -222,8 +225,8 @@ struct __pthread {
 
 struct process_aux_item
 {
-    uint32_t key;
-    uint32_t value;
+    size_t key;
+    size_t value;
 };
 
 struct process_aux

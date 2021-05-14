@@ -47,6 +47,10 @@ struct rt_thread *rt_current_thread;
 rt_uint8_t rt_current_priority;
 #endif /*RT_USING_SMP*/
 
+#ifdef RT_USING_LWP
+void lwp_user_setting_save(rt_thread_t thread);
+#endif
+
 #ifdef RT_USING_HOOK
 static void (*rt_scheduler_hook)(struct rt_thread *from, struct rt_thread *to);
 
@@ -373,6 +377,9 @@ void rt_schedule(void)
                 _rt_scheduler_stack_check(to_thread);
 #endif
 
+#ifdef RT_USING_LWP
+                lwp_user_setting_save(current_thread);
+#endif
                 rt_hw_context_switch((rt_ubase_t)&current_thread->sp,
                         (rt_ubase_t)&to_thread->sp, to_thread);
             }
@@ -482,6 +489,9 @@ void rt_schedule(void)
                 {
                     extern void rt_thread_handle_sig(rt_bool_t clean_state);
 
+#ifdef RT_USING_LWP
+                    lwp_user_setting_save(from_thread);
+#endif
                     rt_hw_context_switch((rt_ubase_t)&from_thread->sp,
                             (rt_ubase_t)&to_thread->sp);
 

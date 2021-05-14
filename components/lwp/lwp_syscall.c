@@ -2126,7 +2126,7 @@ int sys_execve(const char *path, char *const argv[], char *const envp[])
     if (ret == 1)
     {
         /* dynamic */
-        lwp_unmap_user(new_lwp, (void *)(KERNEL_VADDR_START - ARCH_PAGE_SIZE));
+        lwp_unmap_user(new_lwp, (void *)(USER_VADDR_TOP - ARCH_PAGE_SIZE));
         ret = load_ldso(new_lwp, (char *)path, args_info.argv, args_info.envp);
     }
     if (ret == RT_EOK)

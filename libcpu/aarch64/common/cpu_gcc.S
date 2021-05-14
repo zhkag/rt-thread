@@ -55,7 +55,6 @@ rt_hw_set_current_vbar:
 0:
 	RET
 
-    
 .globl rt_hw_set_elx_env
 rt_hw_set_elx_env:
 	MRS		X1, CurrentEL
@@ -80,3 +79,22 @@ rt_hw_set_elx_env:
 	B		0f
 0:
 	RET
+
+.global rt_cpu_vector_set_base
+rt_cpu_vector_set_base:
+	MSR		VBAR_EL1,X0
+    RET
+
+
+.global ffz
+ffz:
+    mvn x1, x0
+    clz x0, x1
+    mov x1, #0x3f
+    sub x0, x1, x0
+    ret
+
+.global rt_clz
+rt_clz:
+    clz x0, x0
+    ret

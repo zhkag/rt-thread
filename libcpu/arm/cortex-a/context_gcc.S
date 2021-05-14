@@ -45,13 +45,18 @@ rt_hw_context_switch_to:
 #ifdef RT_USING_SMP
     mov     r0, r1
     bl      rt_cpus_lock_status_restore
+    bl      rt_thread_self
+    bl      lwp_user_setting_restore
 #else
+    bl      rt_thread_self
 #ifdef RT_USING_USERSPACE
-    ldr     r1, =rt_current_thread
-    ldr     r0, [r1]
+    mov     r4, r0
     bl      lwp_mmu_switch
+    mov     r0, r4
 #endif
+    bl      lwp_user_setting_restore
 #endif /*RT_USING_SMP*/
+
     b       rt_hw_context_switch_exit
 
 .section .bss.share.isr
@@ -101,13 +106,18 @@ rt_hw_context_switch:
 #ifdef RT_USING_SMP
     mov     r0, r2
     bl      rt_cpus_lock_status_restore
+    bl      rt_thread_self
+    bl      lwp_user_setting_restore
 #else
+    bl      rt_thread_self
 #ifdef RT_USING_USERSPACE
-    ldr     r1, =rt_current_thread
-    ldr     r0, [r1]
+    mov     r4, r0
     bl      lwp_mmu_switch
+    mov     r0, r4
 #endif
+    bl      lwp_user_setting_restore
 #endif /*RT_USING_SMP*/
+
     b       rt_hw_context_switch_exit
 
 /*

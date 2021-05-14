@@ -27,28 +27,28 @@ int dfs_net_getsocket(int fd)
     if (_dfs_fd == NULL) return -1;
 
     if (_dfs_fd->fnode->type != FT_SOCKET) socket = -1;
-    else socket = (int)_dfs_fd->fnode->data;
+    else socket = (int)(size_t)_dfs_fd->fnode->data;
 
     return socket;
 }
 
 static int dfs_net_ioctl(struct dfs_fd* file, int cmd, void* args)
 {
-    int socket = (int) file->fnode->data;
+    int socket = (int)(size_t)file->fnode->data;
 
     return sal_ioctlsocket(socket, cmd, args);
 }
 
 static int dfs_net_read(struct dfs_fd* file, void *buf, size_t count)
 {
-    int socket = (int) file->fnode->data;
+    int socket = (int)(size_t)file->fnode->data;
 
     return sal_recvfrom(socket, buf, count, 0, NULL, NULL);
 }
 
 static int dfs_net_write(struct dfs_fd *file, const void *buf, size_t count)
 {
-    int socket = (int) file->fnode->data;
+    int socket = (int)(size_t)file->fnode->data;
 
     return sal_sendto(socket, buf, count, 0, NULL, 0);
 }
@@ -60,7 +60,7 @@ static int dfs_net_close(struct dfs_fd* file)
 
     if (file->fnode->ref_count == 1)
     {
-        socket = (int) file->fnode->data;
+        socket = (int)(size_t)file->fnode->data;
         ret = sal_closesocket(socket);
     }
     return ret;

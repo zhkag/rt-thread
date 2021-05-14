@@ -35,7 +35,7 @@ int arch_user_space_init(struct rt_lwp *lwp)
     memcpy(mmu_table + (KERNEL_VADDR_START >> ARCH_SECTION_SHIFT), MMUTable + (KERNEL_VADDR_START >> ARCH_SECTION_SHIFT), ARCH_PAGE_SIZE);
     memset(mmu_table, 0, 3 * ARCH_PAGE_SIZE);
     rt_hw_cpu_dcache_ops(RT_HW_CACHE_FLUSH, mmu_table, 4 * ARCH_PAGE_SIZE);
-    rt_hw_mmu_map_init(&lwp->mmu_info, (void*)USER_VADDR_START, KERNEL_VADDR_START - USER_VADDR_START, mmu_table, PV_OFFSET);
+    rt_hw_mmu_map_init(&lwp->mmu_info, (void*)USER_VADDR_START, USER_VADDR_TOP - USER_VADDR_START, mmu_table, PV_OFFSET);
 
     return 0;
 }
