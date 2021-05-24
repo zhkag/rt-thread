@@ -355,6 +355,8 @@ rt_base_t lwp_brk(void *addr)
     return ret;
 }
 
+#define MAP_ANONYMOUS  0x20
+
 void* lwp_mmap2(void *addr, size_t length, int prot,
         int flags, int fd, off_t pgoffset)
 {
@@ -362,17 +364,24 @@ void* lwp_mmap2(void *addr, size_t length, int prot,
     void *ret = (void *)-1;
     struct rt_lwp *lwp = RT_NULL;
 
-    level = rt_hw_interrupt_disable();
     if (fd == -1)
     {
         lwp = rt_thread_self()->lwp;
+        level = rt_hw_interrupt_disable();
         ret = lwp_map_user(lwp, addr, length, 0);
-        if (!ret)
+        rt_hw_interrupt_enable(level);
+        if (ret)
+        {
+            if ((flags & MAP_ANONYMOUS) != 0)
+            {
+                rt_memset(ret, 0, length);
+            }
+        }
+        else
         {
             ret = (void *)-1;
         }
     }
-    rt_hw_interrupt_enable(level);
     return ret;
 }
 
