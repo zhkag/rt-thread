@@ -462,11 +462,13 @@ rt_hw_context_switch_interrupt_do:
     ldr     r6,  [r6]
     ldr     sp,  [r6]       /* get new task's stack pointer */
 
+    bl      rt_thread_self
 #ifdef RT_USING_USERSPACE
-    ldr     r1, =rt_current_thread
-    ldr     r0, [r1]
+    mov     r4, r0
     bl      lwp_mmu_switch
+    mov     r0, r4
 #endif
+    bl      lwp_user_setting_restore
 
 #ifdef RT_USING_FPU
     /* fpu context */

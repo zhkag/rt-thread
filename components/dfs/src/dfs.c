@@ -814,17 +814,17 @@ static int lsofp(int pid)
             else if (fd->fnode->type == FT_DEVICE)  rt_kprintf("%-7.7s ", "device");
             else rt_kprintf("%-8.8s ", "unknown");
             rt_kprintf("%6d ", fd->fnode->ref_count);
-            rt_kprintf("%04x  0x%.8x ", fd->magic, (int)fd->fnode);
+            rt_kprintf("%04x  0x%.8x ", fd->magic, (int)(size_t)fd->fnode);
 
             if(fd->fnode == RT_NULL)
             {
-                rt_kprintf("0x%.8x 0x%.8x ", (int)0x00000000, (int)fd);
+                rt_kprintf("0x%.8x 0x%.8x ", (int)0x00000000, (int)(size_t)fd);
             }
             else
             {
-                rt_kprintf("0x%.8x 0x%.8x ", (int)(fd->fnode->data), (int)fd);
+                rt_kprintf("0x%.8x 0x%.8x ", (int)(size_t)(fd->fnode->data), (int)(size_t)fd);
             }
-            
+
             if (fd->fnode->path)
             {
                 rt_kprintf("%s \n", fd->fnode->path);

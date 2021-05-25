@@ -43,22 +43,6 @@ void lwp_mmu_switch(struct rt_thread *thread)
     {
         l = (struct rt_lwp *)thread->lwp;
         new_mmu_table = (void *)((char *)l->mmu_info.vtable + l->mmu_info.pv_off);
-#ifdef LWP_DEBUG
-        {
-            int i = 0;
-            size_t *p = l->mmu_info.vtable;
-
-            rt_kprintf("vtable = 0x%p\n", l->mmu_info.vtable);
-            for (i = 0; i < 0x1000; i++)
-            {
-                rt_kprintf("0x%08x ", *p++);
-                if ((i & 0xf) == 0xf)
-                {
-                    rt_kprintf("\n");
-                }
-            }
-        }
-#endif
     }
     else
     {
@@ -68,29 +52,8 @@ void lwp_mmu_switch(struct rt_thread *thread)
     pre_mmu_table = mmu_table_get();
     if (pre_mmu_table != new_mmu_table)
     {
-#ifdef RT_USING_GDBSERVER
-        set_process_id((uint32_t)(size_t)l);
-#endif
         switch_mmu(new_mmu_table);
     }
-    rt_cpu_set_thread_idr(thread->thread_idr);
-#ifdef RT_USING_GDBSERVER
-    if (l && l->debug)
-    {
-        uint32_t step_type = 0;
-
-        step_type = gdb_get_step_type();
-
-        if ((step_type == 2) || (thread->step_exec && (step_type == 1)))
-        {
-            arch_activate_step();
-        }
-        else
-        {
-            arch_deactivate_step();
-        }
-    }
-#endif
 }
 
 static void unmap_range(struct rt_lwp *lwp, void *addr, size_t size, int pa_need_free)
@@ -392,6 +355,8 @@ rt_base_t lwp_brk(void *addr)
     return ret;
 }
 
+#define MAP_ANONYMOUS  0x20
+
 void* lwp_mmap2(void *addr, size_t length, int prot,
         int flags, int fd, off_t pgoffset)
 {
@@ -399,17 +364,24 @@ void* lwp_mmap2(void *addr, size_t length, int prot,
     void *ret = (void *)-1;
     struct rt_lwp *lwp = RT_NULL;
 
-    level = rt_hw_interrupt_disable();
     if (fd == -1)
     {
         lwp = rt_thread_self()->lwp;
+        level = rt_hw_interrupt_disable();
         ret = lwp_map_user(lwp, addr, length, 0);
-        if (!ret)
+        rt_hw_interrupt_enable(level);
+        if (ret)
+        {
+            if ((flags & MAP_ANONYMOUS) != 0)
+            {
+                rt_memset(ret, 0, length);
+            }
+        }
+        else
         {
             ret = (void *)-1;
         }
     }
-    rt_hw_interrupt_enable(level);
     return ret;
 }
 
@@ -438,11 +410,11 @@ size_t lwp_get_from_user(void *dst, void *src, size_t size)
         return 0;
     }
 #else
-    if (src >= (void *)KERNEL_VADDR_START)
+    if (src >= (void *)USER_VADDR_TOP)
     {
         return 0;
     }
-    if ((void *)((char *)src + size) > (void *)KERNEL_VADDR_START)
+    if ((void *)((char *)src + size) > (void *)USER_VADDR_TOP)
     {
         return 0;
     }
@@ -464,11 +436,11 @@ size_t lwp_put_to_user(void *dst, void *src, size_t size)
     rt_mmu_info *m_info = RT_NULL;
 
     /* check dst */
-    if (dst >= (void *)KERNEL_VADDR_START)
+    if (dst >= (void *)USER_VADDR_TOP)
     {
         return 0;
     }
-    if ((void *)((char *)dst + size) > (void *)KERNEL_VADDR_START)
+    if ((void *)((char *)dst + size) > (void *)USER_VADDR_TOP)
     {
         return 0;
     }
@@ -506,11 +478,11 @@ int lwp_user_accessable(void *addr, size_t size)
         return 0;
     }
 #else
-    if (addr_start >= (void *)KERNEL_VADDR_START)
+    if (addr_start >= (void *)USER_VADDR_TOP)
     {
         return 0;
     }
-    if (addr_end > (void *)KERNEL_VADDR_START)
+    if (addr_end > (void *)USER_VADDR_TOP)
     {
         return 0;
     }

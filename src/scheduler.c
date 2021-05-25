@@ -514,7 +514,7 @@ void rt_schedule(void)
                     RT_DEBUG_LOG(RT_DEBUG_SCHEDULER, ("switch in interrupt\n"));
 
                     rt_hw_context_switch_interrupt((rt_ubase_t)&from_thread->sp,
-                            (rt_ubase_t)&to_thread->sp);
+                            (rt_ubase_t)&to_thread->sp, from_thread, to_thread);
                 }
             }
             else

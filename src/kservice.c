@@ -819,7 +819,7 @@ rt_int32_t rt_vsnprintf(char       *buf,
 #ifdef RT_PRINTF_LONGLONG
     unsigned long long num;
 #else
-    rt_uint32_t num;
+    long num;
 #endif
     int i, len;
     char *str, *end, c;
@@ -1041,7 +1041,7 @@ rt_int32_t rt_vsnprintf(char       *buf,
         if (qualifier == 'l')
 #endif
         {
-            num = va_arg(args, rt_uint32_t);
+            num = va_arg(args, long);
             if (flags & SIGN) num = (rt_int32_t)num;
         }
         else if (qualifier == 'h')
@@ -1051,7 +1051,7 @@ rt_int32_t rt_vsnprintf(char       *buf,
         }
         else
         {
-            num = va_arg(args, rt_uint32_t);
+            num = va_arg(args, long);
             if (flags & SIGN) num = (rt_int32_t)num;
         }
 #ifdef RT_PRINTF_PRECISION

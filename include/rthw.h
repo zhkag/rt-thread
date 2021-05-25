@@ -132,7 +132,7 @@ void rt_hw_context_switch_interrupt(void *context, rt_ubase_t from, rt_ubase_t t
 #else
 void rt_hw_context_switch(rt_ubase_t from, rt_ubase_t to);
 void rt_hw_context_switch_to(rt_ubase_t to);
-void rt_hw_context_switch_interrupt(rt_ubase_t from, rt_ubase_t to);
+void rt_hw_context_switch_interrupt(rt_ubase_t from, rt_ubase_t to, rt_thread_t from_thread, rt_thread_t to_thread);
 #endif /*RT_USING_SMP*/
 
 void rt_hw_console_output(const char *str);

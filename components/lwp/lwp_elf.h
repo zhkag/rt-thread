@@ -11,17 +11,37 @@
 #define  LWP_ELF_H__
 
 #include <stdint.h>
+#include <rtthread.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#ifdef ARCH_CPU_64BIT
+#define elfhdr      elf64_hdr
+#define elf_phdr    elf64_phdr
+#define elf_shdr    elf64_shdr
+#define elf_note    elf64_note
+#define elf_addr_t  Elf64_Off
+#define Elf_Word Elf64_Word
+#define Elf_Addr Elf64_Addr
+#define Elf_Half Elf64_Half
+#define Elf_Ehdr Elf64_Ehdr
+#define Elf_Phdr Elf64_Phdr
+#define Elf_Shdr Elf64_Shdr
+#else
 #define elfhdr      elf32_hdr
 #define elf_phdr    elf32_phdr
 #define elf_shdr    elf32_shdr
 #define elf_note    elf32_note
 #define elf_addr_t  Elf32_Off
-#define Elf_Half    Elf32_Half
+#define Elf_Word Elf32_Word
+#define Elf_Addr Elf32_Addr
+#define Elf_Half Elf32_Half
+#define Elf_Ehdr Elf32_Ehdr
+#define Elf_Phdr Elf32_Phdr
+#define Elf_Shdr Elf32_Shdr
+#endif
 
 /* Type for a 16-bit quantity.  */
 typedef uint16_t Elf32_Half;

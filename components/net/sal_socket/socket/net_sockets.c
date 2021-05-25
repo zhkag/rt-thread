@@ -62,7 +62,7 @@ int accept(int s, struct sockaddr *addr, socklen_t *addrlen)
             d->pos = 0;
 
             /* set socket to the data of dfs_fd */
-            d->fnode->data = (void *) new_socket;
+            d->fnode->data = (void *)(size_t)new_socket;
 
             return fd;
         }
@@ -243,7 +243,7 @@ int socket(int domain, int type, int protocol)
         d->pos = 0;
 
         /* set socket to the data of dfs_fd */
-        d->fnode->data = (void *) socket;
+        d->fnode->data = (void *)(size_t)socket;
     }
     else
     {

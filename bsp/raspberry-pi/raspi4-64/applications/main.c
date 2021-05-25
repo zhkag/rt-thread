@@ -4,16 +4,14 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Change Logs:
- * Date           Author         Notes
- * 2020-04-16     bigmagic       first version
+ * Date           Author       Notes
+ * 2017-5-30     bernard       the first version
  */
-
 #include <rtthread.h>
-#include <rtdevice.h>
-#include <board.h>
 
 int main(int argc, char** argv)
 {
-    rt_kprintf("Hi, this is RT-Thread!!\n");
+    rt_kprintf("hello rt-thread!\n");
+
     return 0;
 }
