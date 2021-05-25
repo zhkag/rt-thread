@@ -55,4 +55,23 @@ void arch_user_space_vtable_free(struct rt_lwp *lwp)
         rt_pages_free(lwp->mmu_info.vtable, 0);
     }
 }
+
+int arch_expand_user_stack(void *addr)
+{
+    int ret = 0;
+    size_t stack_addr = (size_t)addr;
+
+    stack_addr &= ~ARCH_PAGE_MASK;
+    if ((stack_addr >= (size_t)USER_STACK_VSTART) && (stack_addr < (size_t)USER_STACK_VEND))
+    {
+        void *map = lwp_map_user(lwp_self(), (void*)stack_addr, ARCH_PAGE_SIZE, 0);
+
+        if (map || lwp_user_accessable(addr, 1))
+        {
+            ret = 1;
+        }
+    }
+    return ret;
+}
+
 #endif
