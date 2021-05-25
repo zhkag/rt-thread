@@ -8,6 +8,8 @@
  * 2021-05-18     Jesven       the first version
  */
 
+#include "rtconfig.h"
+
 #include "asm-fpu.h"
 
   /*
@@ -245,24 +247,28 @@ rt_hw_context_switch:
     RESTORE_CONTEXT
 
 /*
- * void rt_hw_context_switch_interrupt(rt_ubase_t from, rt_ubase_t to);
+ * void rt_hw_context_switch_interrupt(rt_ubase_t from, rt_ubase_t to, rt_thread_t from_thread, rt_thread_t to_thread);
  */
 .globl rt_thread_switch_interrupt_flag
 .globl rt_interrupt_from_thread
 .globl rt_interrupt_to_thread
 .globl rt_hw_context_switch_interrupt
 rt_hw_context_switch_interrupt:
-    ADR     X2, rt_thread_switch_interrupt_flag
-    LDR     X3, [X2]
-    CMP     X3, #1
+    ADR     X6, rt_thread_switch_interrupt_flag
+    LDR     X7, [X6]
+    CMP     X7, #1
     B.EQ     _reswitch
     ADR     X4, rt_interrupt_from_thread   // set rt_interrupt_from_thread
-    MOV     X3, #1              // set rt_thread_switch_interrupt_flag to 1
     STR     X0, [X4]
-    STR     X3, [X2]
+    MOV     X7, #1              // set rt_thread_switch_interrupt_flag to 1
+    STR     X7, [X6]
+    STP     X1, X30, [SP, #-0x10]!
+    MOV     X0, X2
+    BL      lwp_user_setting_save
+    LDP     X1, X30, [SP], #0x10
 _reswitch:
-    ADR     X2, rt_interrupt_to_thread     // set rt_interrupt_to_thread
-    STR     X1, [X2]
+    ADR     X6, rt_interrupt_to_thread     // set rt_interrupt_to_thread
+    STR     X1, [X6]
     RET
 
 .text
@@ -292,9 +298,6 @@ vector_fiq:
 vector_irq:
     SAVE_CONTEXT
     STP     X0, X1, [SP, #-0x10]!   /* X0 is thread sp */
-
-    BL      rt_thread_self
-    BL      lwp_user_setting_save
 
     BL      rt_interrupt_enter
     BL      rt_hw_trap_irq
