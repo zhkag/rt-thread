@@ -299,9 +299,10 @@ lwp_signal_quit:
     /* x0 is user_ctx : ori sp, pc, cpsr */
     ldr x1, [x0]
     ldr x2, [x0, #8]
-    ldr x3, [x0, #10]
+    ldr x3, [x0, #16]
     msr spsr_el1, x3
     msr elr_el1, x2
+    add x1, x1, #16
     msr sp_el0, x1
 
     msr spsel, #0
@@ -363,8 +364,8 @@ user_do_signal:
     ic ialluis
     dsb sy
 
-    mov x9, sp
-    add x0, sp, #0x10 /* lwp_sigreturn */
+    mov x9, sp /* lwp_sigreturn */
+    mov x0, sp
 
     msr spsel, #1
 
