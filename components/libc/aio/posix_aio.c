@@ -457,7 +457,7 @@ int lio_listio(int mode, struct aiocb * const list[], int nent,
 
 int aio_system_init(void)
 {
-    aio_queue = rt_workqueue_create("aio", 8192, RT_THREAD_PRIORITY_MAX/2);
+    aio_queue = rt_workqueue_create("aio", RT_POSIX_AIO_THREAD_STACK_SIZE, RT_THREAD_PRIORITY_MAX / 2);
     RT_ASSERT(aio_queue != NULL);
 
     return 0;

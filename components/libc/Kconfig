@@ -53,6 +53,11 @@ if RT_USING_LIBC && RT_USING_DFS
         bool "Enable AIO"
         default n
 
+    config RT_POSIX_AIO_THREAD_STACK_SIZE
+        int "Set posix aio thread stack size"
+        default 2048
+        depends on RT_USING_POSIX_AIO
+
     config RT_USING_POSIX_CLOCKTIME
         bool "Enable POSIX clock_time APIs"
         default n
