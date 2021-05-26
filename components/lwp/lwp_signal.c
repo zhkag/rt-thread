@@ -303,6 +303,11 @@ lwp_sighandler_t lwp_sighandler_get(int sig)
     }
 out:
     rt_hw_interrupt_enable(level);
+
+    if (func == (lwp_sighandler_t)SIG_IGN)
+    {
+        func = RT_NULL;
+    }
     return func;
 }
 

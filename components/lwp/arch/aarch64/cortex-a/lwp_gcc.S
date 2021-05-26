@@ -123,8 +123,15 @@ set_user_context:
     str x1, [x2, #4]
     ldr x1, [x0, #8]
     str x1, [x2, #8]
+
+    mov x3, x2
+    dc cvau, x3
+    add x3, x3, #8
+    dc cvau, x3
+    dsb sy
     ic ialluis
     dsb sy
+
     msr sp_el0, x2
     ret
 /*
@@ -361,11 +368,14 @@ user_do_signal:
     str w1, [sp]
     ldr w1, [x0, #4]
     str w1, [sp, #4]
-    ic ialluis
-    dsb sy
 
     mov x9, sp /* lwp_sigreturn */
     mov x0, sp
+
+    dc cvau, x0
+    dsb sy
+    ic ialluis
+    dsb sy
 
     msr spsel, #1
 
