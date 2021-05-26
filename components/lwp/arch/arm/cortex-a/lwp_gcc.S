@@ -56,10 +56,21 @@ set_user_context:
     str r1, [sp, #4]
     ldr r1, [r0, #8]
     str r1, [sp, #8]
-    mov lr, sp
-    mov r0, #0
+
+    mov r1, sp
+    mcr p15, 0, r1, c7, c11, 1   ;//dc cmvau
+    add r1, #4
+    mcr p15, 0, r1, c7, c11, 1   ;//dc cmvau
+    add r1, #4
+    mcr p15, 0, r1, c7, c11, 1   ;//dc cmvau
+    dsb
+    isb
     mcr p15, 0, r0, c7, c5, 0   ;//iciallu
     dsb
+    isb
+
+    mov lr, sp
+    mov r0, #0
     cps #Mode_SVC
     mov pc, lr
 
@@ -201,10 +212,17 @@ lwp_check_debug:
     str r1, [sp]
     ldr r1, [r0, #4]
     str r1, [sp, #4]
-    mov r0, #0
+
+    mov r1, sp
+    mcr p15, 0, r1, c7, c11, 1   ;//dc cmvau
+    add r1, #4
+    mcr p15, 0, r1, c7, c11, 1   ;//dc cmvau
+    dsb
+    isb
     mcr p15, 0, r0, c7, c5, 0   ;//iciallu
     dsb
     isb
+
     mov r0, sp /* lwp_debugreturn */
     cps #Mode_SVC
 
@@ -257,9 +275,16 @@ user_do_signal:
     str r1, [sp]
     ldr r1, [r0, #4]
     str r1, [sp, #4]
-    mov r0, #0
+
+    mov r1, sp
+    mcr p15, 0, r1, c7, c11, 1   ;//dc cmvau
+    add r1, #4
+    mcr p15, 0, r1, c7, c11, 1   ;//dc cmvau
+    dsb
+    isb
     mcr p15, 0, r0, c7, c5, 0   ;//iciallu
     dsb
+    isb
 
     mov r5, sp  ;//if func is 0
     mov lr, sp
