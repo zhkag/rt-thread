@@ -19,6 +19,10 @@
 
 #include "posix_aio.h"
 
+#ifndef RT_POSIX_AIO_THREAD_STACK_SIZE
+#define RT_POSIX_AIO_THREAD_STACK_SIZE 2048
+#endif
+
 struct rt_workqueue* aio_queue = NULL;
 
 /**
