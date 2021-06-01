@@ -35,83 +35,86 @@ static int check_debug_event(struct rt_hw_exp_stack *regs, uint32_t pc_adj)
 {
     uint32_t mode = regs->cpsr;
 
-    if ((mode & 0x1f) == 0x10)
+    if ((mode & 0x1f) == 0x10) /* is user mode */
     {
-        /*
+        struct rt_channel_msg msg;
+        gdb_thread_info thread_info;
         uint32_t ifsr, dfar, dfsr;
-        */
-        uint32_t ifsr, dfar;
         int ret;
 
-        asm volatile ("MRC p15, 0, %0, c5, c0, 1":"=r"(ifsr));
-        ifsr &= ((1UL << 10) | 0xfUL);
-        if (ifsr == 0x2UL)
+        if (pc_adj == 4) /* pabt */
         {
-            uint32_t dbgdscr;
-            struct rt_channel_msg msg;
-            gdb_thread_info thread_info;
-
-            regs->pc -= pc_adj;
-
-            asm volatile ("MRC p14, 0, %0, c0, c1, 0":"=r"(dbgdscr));
-            switch ((dbgdscr & (0xfUL << 2)))
+            /* check breakpoint event */
+            asm volatile ("MRC p15, 0, %0, c5, c0, 1":"=r"(ifsr));
+            ifsr &= ((1UL << 12) | 0x3fUL); /* status */
+            if (ifsr == 0x2UL)
             {
-                case (0x1UL << 2): //breadkpoint
-                case (0x3UL << 2): //bkpt
-                    do {
-                        struct rt_lwp *gdb_lwp = gdb_get_dbg_lwp();
-                        struct rt_lwp *lwp;
+                /* is breakpoint event */
+                regs->pc -= pc_adj;
+                do {
+                    struct rt_lwp *gdb_lwp = gdb_get_dbg_lwp();
+                    struct rt_lwp *lwp;
 
-                        if (!gdb_lwp)
-                        {
-                            break;
-                        }
-                        lwp = lwp_self();
-                        if (lwp == gdb_lwp)
-                        {
-                            break;
-                        }
-                        *(uint32_t*)regs->pc = lwp->bak_first_ins;
-                        rt_hw_cpu_dcache_ops(RT_HW_CACHE_FLUSH, (void*)regs->pc, 4);
-                        icache_invalid_all();
-                        lwp->debug = 0;
-                        return 1;
-                    } while (0);
+                    if (!gdb_lwp)
+                    {
+                        break;
+                    }
+                    lwp = lwp_self();
+                    if (lwp == gdb_lwp)
+                    {
+                        break;
+                    }
+                    *(uint32_t *)regs->pc = lwp->bak_first_ins;
+                    rt_hw_cpu_dcache_ops(RT_HW_CACHE_FLUSH, (void *)regs->pc, 4);
+                    icache_invalid_all();
+                    lwp->debug = 0;
+                    return 1;
+                } while (0);
 
-                    thread_info.notify_type = GDB_NOTIFIY_BREAKPOINT;
-                    thread_info.abt_ins = *(uint32_t*)regs->pc;
-                    ret = 1;
-                    break;
-                case (0xaUL << 2): //watchpoint
-                    asm volatile ("MRC p15, 0, %0, c6, c0, 0":"=r"(dfar));
-                    thread_info.watch_addr = (void*)dfar;
-                    /*
-                    asm volatile ("MRC p15, 0, %0, c5, c0, 0":"=r"(dfsr));
-                    thread_info.rw = (1UL << ((dfsr >> 11) & 1UL));
-                    */
-                    thread_info.rw = (1UL << (((~*(uint32_t*)regs->pc) >> 20) & 1UL));
-                    thread_info.notify_type = GDB_NOTIFIY_WATCHPOINT;
-                    ret =  2;
-                    break;
-                default:
-                    return 0;
+                thread_info.notify_type = GDB_NOTIFIY_BREAKPOINT;
+                thread_info.abt_ins = *(uint32_t *)regs->pc;
+                ret = 1;
             }
-            thread_info.thread = rt_thread_self();
-            thread_info.thread->regs = regs;
-            msg.u.d = (void*)&thread_info;
-            dmb();
-            thread_info.thread->debug_suspend = 1;
-            dsb();
-            rt_thread_suspend_witch_flag(thread_info.thread, RT_UNINTERRUPTIBLE);
-            rt_raw_channel_send(gdb_get_server_channel(), &msg);
-            rt_schedule();
-            while (thread_info.thread->debug_suspend)
+            else
             {
-                rt_thread_suspend_witch_flag(thread_info.thread, RT_UNINTERRUPTIBLE);
-                rt_schedule();
+                return 0; /* not debug pabt */
             }
-            return ret;
         }
+        else
+        {
+            /* watchpoing event */
+            asm volatile ("MRC p15, 0, %0, c5, c0, 0":"=r"(dfsr));
+            dfsr = (((dfsr & (1UL << 10)) >> 6) | (dfsr & 0xfUL)); /* status */
+            if (dfsr == 0x2UL)
+            {
+                /* is watchpoint event */
+                regs->pc -= pc_adj;
+                asm volatile ("MRC p15, 0, %0, c6, c0, 0":"=r"(dfar));
+                thread_info.watch_addr = (void *)dfar;
+                thread_info.rw = (1UL << (((~*(uint32_t *)regs->pc) >> 20) & 1UL));
+                thread_info.notify_type = GDB_NOTIFIY_WATCHPOINT;
+                ret =  2;
+            }
+            else
+            {
+                return 0; /* not debug dabt */
+            }
+        }
+        thread_info.thread = rt_thread_self();
+        thread_info.thread->regs = regs;
+        msg.u.d = (void *)&thread_info;
+        rt_hw_dmb();
+        thread_info.thread->debug_suspend = 1;
+        rt_hw_dsb();
+        rt_thread_suspend_with_flag(thread_info.thread, RT_UNINTERRUPTIBLE);
+        rt_raw_channel_send(gdb_get_server_channel(), &msg);
+        rt_schedule();
+        while (thread_info.thread->debug_suspend)
+        {
+            rt_thread_suspend_with_flag(thread_info.thread, RT_UNINTERRUPTIBLE);
+            rt_schedule();
+        }
+        return ret;
     }
     return 0;
 }
@@ -169,7 +172,7 @@ void rt_hw_show_register(struct rt_hw_exp_stack *regs)
         rt_kprintf("ttbr0:0x%08x\n", v);
         asm volatile ("MRC p15, 0, %0, c6, c0, 0":"=r"(v));
         rt_kprintf("dfar:0x%08x\n", v);
-        rt_kprintf("0x%08x -> 0x%08x\n", v, rt_hw_mmu_v2p(&mmu_info, (void*)v));
+        rt_kprintf("0x%08x -> 0x%08x\n", v, rt_hw_mmu_v2p(&mmu_info, (void *)v));
     }
 #endif
 }
@@ -196,18 +199,18 @@ void rt_hw_trap_undef(struct rt_hw_exp_stack *regs)
         {
             /* thumb mode */
             addr = regs->pc - 2;
-            ins = (uint32_t)*(uint16_t*)addr;
+            ins = (uint32_t)*(uint16_t *)addr;
             if ((ins & (3 << 11)) != 0)
             {
                 /* 32 bit ins */
                 ins <<= 16;
-                ins += *(uint16_t*)(addr + 2);
+                ins += *(uint16_t *)(addr + 2);
             }
         }
         else
         {
             addr = regs->pc - 4;
-            ins = *(uint32_t*)addr;
+            ins = *(uint32_t *)addr;
         }
         if ((ins & 0xe00) == 0xa00)
         {

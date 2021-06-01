@@ -38,6 +38,11 @@ rt_inline unsigned long ffz(unsigned long x)
     return __builtin_ffs(~x) - 1;
 }
 
+rt_inline void icache_invalid_all(void)
+{
+    asm volatile ("mcr p15, 0, r0, c7, c5, 0\ndsb\nisb":::"memory");//iciallu
+}
+
 #ifdef __cplusplus
 }
 #endif

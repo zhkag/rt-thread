@@ -296,6 +296,12 @@ static int _msh_exec_cmd(char *cmd, rt_size_t length, int *retp)
     return 0;
 }
 
+#ifdef RT_USING_GDBSERVER
+pid_t exec(char*, int, int, char**);
+#else
+pid_t exec(char*, int, char**);
+#endif
+
 #if defined(RT_USING_LWP) && defined(RT_USING_DFS)
 static int _msh_exec_lwp(char *cmd, rt_size_t length)
 {
@@ -304,14 +310,36 @@ static int _msh_exec_lwp(char *cmd, rt_size_t length)
     char *argv[FINSH_ARG_MAX];
     int fd = -1;
     char *pg_name;
-
-    extern int exec(char*, int, char**);
+#ifdef RT_USING_GDBSERVER
+    int debug = 0;
+#endif
 
     /* find the size of first command */
     while ((cmd[cmd0_size] != ' ' && cmd[cmd0_size] != '\t') && cmd0_size < length)
         cmd0_size ++;
     if (cmd0_size == 0)
         return -1;
+
+#ifdef RT_USING_GDBSERVER
+    if ((cmd0_size == sizeof "gdb" - 1) && (memcmp(cmd, "gdb", sizeof "gdb" - 1) == 0))
+    {
+        cmd += cmd0_size;
+        length -= cmd0_size;
+        while (*cmd  == ' ' || *cmd == '\t')
+        {
+            cmd++;
+            length--;
+        }
+
+        if (length == 0)
+        {
+            rt_kprintf("Usage: gdb FILE...\n");
+            return 0;
+        }
+
+        debug = 1;
+    }
+#endif
 
     /* split arguments */
     rt_memset(argv, 0x00, sizeof(argv));
@@ -354,8 +382,12 @@ static int _msh_exec_lwp(char *cmd, rt_size_t length)
 
     /* found program */
     close(fd);
-    exec(pg_name, argc, argv);
 
+#ifdef RT_USING_GDBSERVER
+    exec(pg_name, debug, argc, argv);
+#else
+    exec(pg_name, argc, argv);
+#endif
     if (pg_name != argv[0])
         rt_free(pg_name);
 
