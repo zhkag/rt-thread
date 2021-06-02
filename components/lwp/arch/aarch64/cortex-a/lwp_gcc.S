@@ -198,9 +198,10 @@ SVC_Handler:
     bl  lwp_user_setting_save
 
     ldp x8, x9, [sp, #(CONTEXT_OFFSET_X8)]
-    uxtb x0, w8
-    cmp x0, #0xfe
+    and x0, x8, #0xf000
+    cmp x0, #0xe000
     beq lwp_signal_quit
+    uxtb x0, w8
     bl lwp_get_sys_api
     cmp x0, xzr
     mov x30, x0
@@ -395,7 +396,7 @@ user_do_signal:
     eret
 
 lwp_sigreturn:
-    mov x8, #0xfe
+    mov x8, #0xe000
     svc #0
 
 lwp_thread_return:

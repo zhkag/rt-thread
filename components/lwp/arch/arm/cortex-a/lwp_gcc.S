@@ -153,13 +153,15 @@ vector_swi:
     bl rt_thread_self
     bl lwp_user_setting_save
 
-    and r0, r7, #0xff
-    cmp r0, #0xfe
+    and r0, r7, #0xf000
+    cmp r0, #0xe000
     beq lwp_signal_quit
+
 #ifdef RT_USING_GDBSERVER
-    cmp r0, #0xff
+    cmp r0, #0xf000
     beq ret_from_user
 #endif
+    and r0, r7, #0xff
     bl lwp_get_sys_api
     cmp r0, #0           /* r0 = api */
     mov lr, r0
@@ -304,11 +306,11 @@ user_do_signal:
     movs pc, lr
 
 lwp_debugreturn:
-    mov r7, #0xff
+    mov r7, #0xf000
     svc #0
 
 lwp_sigreturn:
-    mov r7, #0xfe
+    mov r7, #0xe000
     svc #0
 
 lwp_thread_return:
