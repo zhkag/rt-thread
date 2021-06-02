@@ -19,11 +19,6 @@ config LWP_TASK_STACK_SIZE
     default 16384
     depends on RT_USING_LWP
 
-config RT_USING_GDBSERVER
-    bool "Using gdbserver"
-    default y
-    depends on RT_USING_USERSPACE
-
 config RT_CH_MSG_MAX_NR
     int "The maximum number of channel messages"
     default 1024
