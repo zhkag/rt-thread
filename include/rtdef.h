@@ -744,10 +744,13 @@ struct rt_thread
     struct rt_wakeup wakeup;                            /**< wakeup data */
     int exit_request;
 #ifdef RT_USING_USERSPACE
+#ifdef RT_USING_GDBSERVER
     int step_exec;
+    int debug_attach_req;
     int debug_ret_user;
     int debug_suspend;
     struct rt_hw_exp_stack *regs;
+#endif
     void * thread_idr;                                 /** lwp thread indicator */
     int *clear_child_tid;
 #endif

@@ -183,7 +183,12 @@ ret_to_user:
     cmp r0, #0
     pop {r0-r3, r12, lr}
     bne user_do_signal
-
+#ifdef RT_USING_GDBSERVER
+    push {r0-r3, r12, lr}
+    mov r0, lr
+    bl lwp_check_debug_attach_req
+    pop {r0-r3, r12, lr}
+#endif
     movs pc, lr
 
 #ifdef RT_USING_LWP
