@@ -431,7 +431,7 @@ static rt_uint32_t bcmgenet_gmac_eth_recv(rt_uint8_t **packetp)
     }
     else
     {
-        if(prev_recv_cnt == prod_index)
+        if(prev_recv_cnt == (prod_index & 0xffffUL))
         {
             return 0;
         }

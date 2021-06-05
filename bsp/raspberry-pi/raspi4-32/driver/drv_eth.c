@@ -49,7 +49,6 @@ static rt_uint32_t rx_index = 0;
 static rt_uint32_t index_flag = 0;
 
 static rt_uint8_t send_cache_pbuf[RECV_CACHE_BUF];
-static rt_uint8_t recv_data[RX_BUF_LENGTH];
 
 struct rt_eth_dev
 {
@@ -430,7 +429,7 @@ static rt_uint32_t bcmgenet_gmac_eth_recv(rt_uint8_t **packetp)
     }
     else
     {
-        if(prev_recv_cnt == prod_index)
+        if(prev_recv_cnt == (prod_index & 0xffffUL))
         {
             return 0;
         }
