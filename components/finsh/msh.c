@@ -314,6 +314,7 @@ int _msh_exec_lwp(char *cmd, rt_size_t length)
     char *argv[FINSH_ARG_MAX];
     int fd = -1;
     char *pg_name;
+    int ret;
 
     /* find the size of first command */
     while ((cmd[cmd0_size] != ' ' && cmd[cmd0_size] != '\t') && cmd0_size < length)
@@ -364,14 +365,14 @@ int _msh_exec_lwp(char *cmd, rt_size_t length)
     close(fd);
 
 #ifdef RT_USING_GDBSERVER
-    exec(pg_name, debug, argc, argv);
+    ret = exec(pg_name, debug, argc, argv);
 #else
-    exec(pg_name, argc, argv);
+    ret = exec(pg_name, argc, argv);
 #endif
     if (pg_name != argv[0])
         rt_free(pg_name);
 
-    return 0;
+    return ret;
 }
 #endif
 

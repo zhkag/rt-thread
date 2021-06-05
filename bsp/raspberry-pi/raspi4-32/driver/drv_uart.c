@@ -117,16 +117,6 @@ static rt_err_t uart_control(struct rt_serial_device *serial, int cmd, void *arg
     switch (cmd)
     {
     case RT_DEVICE_CTRL_CLR_INT:
-        /* disable rx irq */
-        if(uart->hw_base == AUX_BASE)
-        {
-            AUX_MU_IER_REG(uart->hw_base) = 0x0;
-        }
-        else
-        {
-            PL011_REG_IMSC(uart->hw_base) &= ~((uint32_t)PL011_IMSC_RXIM);
-        }
-        rt_hw_interrupt_mask(uart->irqno);
         break;
 
     case RT_DEVICE_CTRL_SET_INT:

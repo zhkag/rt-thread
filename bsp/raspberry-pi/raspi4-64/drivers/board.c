@@ -46,10 +46,10 @@ size_t mbox_addr = MBOX_ADDR;
 
 size_t wdt_base_addr = WDT_BASE;
 
-void* mac_reg_base_addr = (void *)MAC_REG;
+uint8_t *mac_reg_base_addr = (uint8_t *)MAC_REG;
 
-void* eth_send_no_cache = (void *)SEND_DATA_NO_CACHE;
-void* eth_recv_no_cache = (void *)RECV_DATA_NO_CACHE;
+uint8_t *eth_send_no_cache = (uint8_t *)SEND_DATA_NO_CACHE;
+uint8_t *eth_recv_no_cache = (uint8_t *)RECV_DATA_NO_CACHE;
 
 #ifdef RT_USING_USERSPACE
 struct mem_desc platform_mem_desc[] = {
