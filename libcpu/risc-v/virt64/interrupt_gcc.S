@@ -10,6 +10,7 @@
  * 2021/02/02     lizhirui     Add userspace support
  */
 
+#define __ASSEMBLY__
 #include "cpuport.h"
 #include "encoding.h"
 #include "stackframe.h"
@@ -141,6 +142,9 @@ copy_context_loop:
     OPEN_INTERRUPT
     call syscall_handler
     CLOSE_INTERRUPT
+
+.global syscall_exit
+syscall_exit:
 
     #if defined(RT_USING_USERSPACE) && defined(RT_USING_SIGNALS)
         LOAD s0, 2 * REGBYTES(sp)

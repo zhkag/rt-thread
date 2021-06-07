@@ -42,7 +42,7 @@
 #define RT_USING_CONSOLE
 #define RT_CONSOLEBUF_SIZE 256
 #define RT_CONSOLE_DEVICE_NAME "uart"
-#define RT_VER_NUM 0x40003
+#define RT_VER_NUM 0x50000
 #define ARCH_CPU_64BIT
 #define RT_USING_CACHE
 #define RT_USING_USERSPACE
@@ -64,6 +64,7 @@
 /* Command shell */
 
 #define RT_USING_FINSH
+#define RT_USING_MSH
 #define FINSH_THREAD_NAME "tshell"
 #define FINSH_USING_HISTORY
 #define FINSH_HISTORY_LINES 5
@@ -72,9 +73,6 @@
 #define FINSH_THREAD_PRIORITY 20
 #define FINSH_THREAD_STACK_SIZE 4096
 #define FINSH_CMD_SIZE 80
-#define FINSH_USING_MSH
-#define FINSH_USING_MSH_DEFAULT
-#define FINSH_USING_MSH_ONLY
 #define FINSH_ARG_MAX 10
 
 /* Device virtual file system */
@@ -127,6 +125,7 @@
 
 #define RT_USING_LWP
 #define RT_LWP_MAX_NR 30
+#define LWP_TASK_STACK_SIZE 16384
 #define RT_CH_MSG_MAX_NR 1024
 #define RT_LWP_SHM_MAX_NR 64
 #define LWP_CONSOLE_INPUT_BUFFER_SIZE 1024
@@ -169,13 +168,16 @@
 /* peripheral libraries and drivers */
 
 
+/* AI packages */
+
+
 /* miscellaneous packages */
 
 
 /* samples: kernel and components samples */
 
 
-/* games: games run on RT-Thread console */
+/* entertainment: terminal games and other interesting software packages */
 
 #define BOARD_virt
 

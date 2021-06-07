@@ -12,6 +12,7 @@
 
 #include "rtconfig.h"
 
+#define __ASSEMBLY__
 #include "cpuport.h"
 #include "encoding.h"
 #include "stackframe.h"
@@ -212,76 +213,22 @@ lwp_set_thread_area:
     mv tp, a0
     ret
 
-/*
-.globl rt_cpu_get_thread_idr
-rt_cpu_get_thread_idr:
-    mrc p15, 0, r0, c13, c0, 3
-    bx lr
+.global sys_fork
+.global sys_vfork
+.global sys_fork_exit
+sys_fork:
+sys_vfork:
+    jal _sys_fork
+sys_fork_exit:
+    j syscall_exit
 
-.global lwp_set_thread_area
-lwp_set_thread_area:
-.globl rt_cpu_set_thread_idr
-rt_cpu_set_thread_idr:
-    mcr p15, 0, r0, c13, c0, 3
-    bx lr
+.global sys_clone
+.global sys_clone_exit
+sys_clone:
+    jal _sys_clone
+sys_clone_exit:
+    j syscall_exit
 
-// kuser suppurt
-    .macro  kuser_pad, sym, size
-    .if (. - \sym) & 3
-    .rept   4 - (. - \sym) & 3
-    .byte   0
-    .endr
-    .endif
-    .rept   (\size - (. - \sym)) / 4
-    .word   0xe7fddef1
-    .endr
-    .endm
-
-.align  5
-.globl  __kuser_helper_start
-__kuser_helper_start:
-__kuser_cmpxchg64:              @ 0xffff0f60
-    stmfd   sp!, {r4, r5, r6, lr}
-    ldmia   r0, {r4, r5}            @ load old val
-    ldmia   r1, {r6, lr}            @ load new val
-1:  ldmia   r2, {r0, r1}            @ load current val
-    eors    r3, r0, r4          @ compare with oldval (1)
-    eorseq  r3, r1, r5          @ compare with oldval (2)
-2:  stmiaeq r2, {r6, lr}            @ store newval if eq
-    rsbs    r0, r3, #0          @ set return val and C flag
-    ldmfd   sp!, {r4, r5, r6, pc}
-
-    kuser_pad __kuser_cmpxchg64, 64
-
-__kuser_memory_barrier:             @ 0xffff0fa0
-    dmb
-    mov pc, lr
-
-    kuser_pad __kuser_memory_barrier, 32
-
-__kuser_cmpxchg:                @ 0xffff0fc0
-1:  ldr r3, [r2]            @ load current val
-    subs    r3, r3, r0          @ compare with oldval
-2:  streq   r1, [r2]            @ store newval if eq
-    rsbs    r0, r3, #0          @ set return val and C flag
-    mov pc, lr
-
-kuser_pad __kuser_cmpxchg, 32
-
-__kuser_get_tls:                @ 0xffff0fe0
-    mrc p15, 0, r0, c13, c0, 3  @ 0xffff0fe8 hardware TLS code
-    mov pc, lr
-    ldr r0, [pc, #(16 - 8)] @ read TLS, set in kuser_get_tls_init
-
-    kuser_pad __kuser_get_tls, 16
-
-    .rep    3
-    .word   0           @ 0xffff0ff0 software TLS value, then
-    .endr               @ pad up to __kuser_helper_version
-
-__kuser_helper_version:             @ 0xffff0ffc
-    .word   ((__kuser_helper_end - __kuser_helper_start) >> 5)
-
-    .globl  __kuser_helper_end
-__kuser_helper_end:
-*/
+.global lwp_exec_user
+lwp_exec_user:
+    ret//don't support
