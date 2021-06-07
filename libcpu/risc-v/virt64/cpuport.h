@@ -22,6 +22,24 @@
 // error here, not portable
 #endif
 
+#ifndef __ASSEMBLY__
+rt_inline void rt_hw_dsb()
+{
+    asm volatile("fence":::"memory");
+}
+
+rt_inline void rt_hw_dmb()
+{
+    asm volatile("fence":::"memory");
+}
+
+rt_inline void rt_hw_isb()
+{
+    asm volatile("fence.i":::"memory");
+}
+
+#endif
+
 #endif
 #ifdef RISCV_U_MODE
 #define RISCV_USER_ENTRY 0xFFFFFFE000000000ULL

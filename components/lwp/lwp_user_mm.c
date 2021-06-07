@@ -9,6 +9,7 @@
  * 2021-02-06     lizhirui     fixed fixed vtable size problem
  * 2021-02-12     lizhirui     add 64-bit support for lwp_brk
  * 2021-02-19     lizhirui     add riscv64 support for lwp_user_accessable and lwp_get_from_user
+ * 2021-06-07     lizhirui     modify user space bound check
  */
 
 #include <rtthread.h>
@@ -404,12 +405,11 @@ size_t lwp_get_from_user(void *dst, void *src, size_t size)
     rt_mmu_info *m_info = RT_NULL;
 
     /* check src */
-#ifdef ARCH_RISCV64
-    if(src < (void *)USER_VADDR_START)
+
+    if (src < (void *)USER_VADDR_START)
     {
         return 0;
     }
-#else
     if (src >= (void *)USER_VADDR_TOP)
     {
         return 0;
@@ -418,7 +418,6 @@ size_t lwp_get_from_user(void *dst, void *src, size_t size)
     {
         return 0;
     }
-#endif
 
     lwp = lwp_self();
     if (!lwp)
@@ -436,6 +435,10 @@ size_t lwp_put_to_user(void *dst, void *src, size_t size)
     rt_mmu_info *m_info = RT_NULL;
 
     /* check dst */
+    if (dst < (void *)USER_VADDR_START)
+    {
+        return 0;
+    }
     if (dst >= (void *)USER_VADDR_TOP)
     {
         return 0;

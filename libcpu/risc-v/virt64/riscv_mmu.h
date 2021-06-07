@@ -58,6 +58,13 @@
 
 #define mmu_flush_tlb() do{asm volatile("sfence.vma x0,x0");}while(0)
 
+//compatible to rt-smart new version
+#define MMU_MAP_K_DEVICE (PAGE_ATTR_RWX | PTE_V | PTE_G)
+#define MMU_MAP_K_RWCB (PAGE_ATTR_RWX | PTE_V | PTE_G)
+#define ARCH_PAGE_SIZE PAGE_SIZE
+#define ARCH_PAGE_MASK (ARCH_PAGE_SIZE - 1)
+#define ARCH_PAGE_SHIFT PAGE_OFFSET_BIT
+
 void mmu_set_pagetable(rt_ubase_t addr);
 void mmu_enable_user_page_access();
 void mmu_disable_user_page_access();

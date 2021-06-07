@@ -77,3 +77,8 @@ rt_base_t rt_hw_cpu_dcache_status()
 {
     return 0;
 }
+
+int sys_cacheflush(void *addr, int size, int cache)
+{
+    return 0;
+}
