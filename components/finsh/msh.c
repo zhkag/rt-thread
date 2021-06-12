@@ -544,9 +544,10 @@ int msh_exec(char *cmd, rt_size_t length)
 #ifdef RT_USING_LWP
 #ifdef RT_USING_GDBSERVER
     /* exec from msh_exec , debug = 0*/
-    if (_msh_exec_lwp(0, cmd, length) == 0)
+    /* _msh_exec_lwp return is pid , <= 0 means failed */
+    if (_msh_exec_lwp(0, cmd, length) > 0)
 #else
-    if (_msh_exec_lwp(cmd, length) == 0)
+    if (_msh_exec_lwp(cmd, length) > 0)
 #endif
     {
         return 0;
