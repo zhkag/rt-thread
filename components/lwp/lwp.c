@@ -40,7 +40,7 @@
 
 static const char elf_magic[] = {0x7f, 'E', 'L', 'F'};
 
-extern void lwp_user_entry(void *args, const void *text, void *data, void *k_stack);
+extern void lwp_user_entry(void *args, const void *text, void *ustack, void *k_stack);
 extern int libc_stdio_get_console(void);
 int load_ldso(struct rt_lwp *lwp, char *exec_name, char *const argv[], char *const envp[]);
 
@@ -998,7 +998,7 @@ static void lwp_thread_entry(void *parameter)
     }
 #endif
 
-    lwp_user_entry(lwp->args, lwp->text_entry, lwp->data_entry, tid->stack_addr + tid->stack_size);
+    lwp_user_entry(lwp->args, lwp->text_entry, (void *)USER_STACK_VEND, tid->stack_addr + tid->stack_size);
 }
 
 struct rt_lwp *lwp_self(void)

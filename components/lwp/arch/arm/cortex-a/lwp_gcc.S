@@ -29,7 +29,7 @@
 .text
 
 /*
- * void lwp_user_entry(args, text, data, kstack);
+ * void lwp_user_entry(args, text, ustack, kstack);
  */
 .global lwp_user_entry
 .type lwp_user_entry, % function
@@ -41,38 +41,50 @@ lwp_user_entry:
     msr     spsr, r9
     mov     sp, r3
 
-    ldr     r3, =0x80000000 ;/* user stack top */
+    mov     r3, r2 ;/* user stack top */
     /* set data address. */
     movs    pc, r1
 
-.global set_user_context
-set_user_context:
+/*
+ * void lwp_user_thread_entry(args, text, ustack, kstack);
+ */
+.global lwp_user_thread_entry
+.type lwp_user_thread_entry, % function
+lwp_user_thread_entry:
     cps #Mode_SYS
-    sub sp, r0, #12
-    ldr r0, =lwp_thread_return
-    ldr r1, [r0]
-    str r1, [sp]
-    ldr r1, [r0, #4]
-    str r1, [sp, #4]
-    ldr r1, [r0, #8]
-    str r1, [sp, #8]
+    sub sp, r2, #12
+    ldr r2, =lwp_thread_return
+    ldr r4, [r2]
+    str r4, [sp]
+    ldr r4, [r2, #4]
+    str r4, [sp, #4]
+    ldr r4, [r2, #8]
+    str r4, [sp, #8]
 
-    mov r1, sp
-    mcr p15, 0, r1, c7, c11, 1   ;//dc cmvau
-    add r1, #4
-    mcr p15, 0, r1, c7, c11, 1   ;//dc cmvau
-    add r1, #4
-    mcr p15, 0, r1, c7, c11, 1   ;//dc cmvau
+    mov r4, sp
+    mcr p15, 0, r4, c7, c11, 1   ;//dc cmvau
+    add r4, #4
+    mcr p15, 0, r4, c7, c11, 1   ;//dc cmvau
+    add r4, #4
+    mcr p15, 0, r4, c7, c11, 1   ;//dc cmvau
     dsb
     isb
-    mcr p15, 0, r0, c7, c5, 0   ;//iciallu
+    mcr p15, 0, r4, c7, c5, 0   ;//iciallu
     dsb
     isb
 
     mov lr, sp
-    mov r0, #0
     cps #Mode_SVC
-    mov pc, lr
+
+    mrs     r9, cpsr
+    bic     r9, #0x1f
+    orr     r9, #Mode_USR
+    cpsid i
+    msr     spsr, r9
+    mov     sp, r3
+
+    /* set data address. */
+    movs    pc, r1
 
 /*
 void lwp_set_thread_context(void *exit_addr, void *new_thread_stack, void *user_stack, void **thread_sp);
