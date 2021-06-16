@@ -27,7 +27,6 @@
 lwp_user_entry:
     csrci sstatus, 8//set sstatus.spp = 0
     csrw sepc, a1
-    mv sp, a2//user_sp
     sret//enter user mode
 
 /*
