@@ -20,29 +20,36 @@
 .section      .text.lwp
 
 /*
- * void lwp_user_entry(args, text, data);
+ * void lwp_user_entry(args, text, ustack, kstack);
  */
 .global lwp_user_entry
 .type lwp_user_entry, % function
 lwp_user_entry:
     csrci sstatus, 8//set sstatus.spp = 0
     csrw sepc, a1
+    mv sp, a2//user_sp
+    sret//enter user mode
+
+/*
+ * void lwp_user_thread_entry(args, text, ustack, kstack);
+ */
+.global lwp_user_thread_entry
+.type lwp_user_thread_entry, % function
+lwp_user_thread_entry:
+    csrci sstatus, 8//set sstatus.spp = 0
+    csrw sepc, a1
     mv s0, a0
-    mv a0, a3
+    mv s1, a1
+    mv s2, a2
+    mv s3, a3
+    mv a0, s2
+    call lwp_copy_return_code_to_user_stack
+    mv a0, s2
     call lwp_fix_sp
     mv sp, a0//user_sp
     mv ra, a0//return address
     mv a0, s0//args
     sret//enter user mode
-
-.global set_user_context
-set_user_context:
-    addi sp, sp, -8
-    STORE ra, 0(sp)
-    call lwp_copy_return_code_to_user_stack
-    LOAD ra, 0(sp)
-    addi sp, sp, 8
-    ret
 
 /*
 int lwp_set_thread_context(void *new_thread_stack, void *origin_thread_stack, void *user_stack, void **thread_sp, int tid);
