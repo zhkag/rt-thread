@@ -98,14 +98,14 @@
 .text
 
 /*
- * void lwp_user_entry(args, text, data, kstack);
+ * void lwp_user_entry(args, text, ustack, kstack);
  */
 .global lwp_user_entry
 .type lwp_user_entry, % function
 lwp_user_entry:
     mov sp, x3
     mov x4, #(SPSR_Mode(0) | SPSR_A64)
-    ldr x3, =0x0000ffff80000000
+    mov x3, x2 ;/* user stack top */
     msr daifset, #3
     dsb sy
     mrs x30, sp_el0
@@ -113,27 +113,40 @@ lwp_user_entry:
     msr elr_el1, x1
     eret
 
-.global set_user_context
-set_user_context:
-    sub x2, x0, #0x10
-    adr x0, lwp_thread_return
-    ldr x1, [x0]
-    str x1, [x2]
-    ldr x1, [x0, #4]
-    str x1, [x2, #4]
-    ldr x1, [x0, #8]
-    str x1, [x2, #8]
+/*
+ * void lwp_user_thread_entry(args, text, ustack, kstack);
+ */
+.global lwp_user_thread_entry
+.type lwp_user_thread_entry, % function
+lwp_user_thread_entry:
+    sub x4, x2, #0x10
+    adr x2, lwp_thread_return
+    ldr x5, [x2]
+    str x5, [x4]
+    ldr x5, [x2, #4]
+    str x5, [x4, #4]
+    ldr x5, [x2, #8]
+    str x5, [x4, #8]
 
-    mov x3, x2
-    dc cvau, x3
-    add x3, x3, #8
-    dc cvau, x3
+    mov x5, x4
+    dc cvau, x5
+    add x5, x5, #8
+    dc cvau, x5
     dsb sy
     ic ialluis
     dsb sy
 
-    msr sp_el0, x2
-    ret
+    msr sp_el0, x4
+
+    mov sp, x3
+    mov x4, #(SPSR_Mode(0) | SPSR_A64)
+    msr daifset, #3
+    dsb sy
+    mrs x30, sp_el0
+    msr spsr_el1, x4
+    msr elr_el1, x1
+    eret
+
 /*
 void lwp_set_thread_context(void *exit_addr, void *new_thread_stack, void *user_stack, void **thread_sp);
 */

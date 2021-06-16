@@ -65,8 +65,7 @@ struct musl_sockaddr
     char     sa_data[14];
 };
 
-extern void lwp_user_entry(void *args, const void *text, void *data, void *user_stack);
-extern void set_user_context(void *stack);
+extern void lwp_user_thread_entry(void *args, const void *text, void *ustack, void *user_stack);
 
 void lwp_cleanup(struct rt_thread *tid);
 #ifdef RT_USING_USERSPACE
@@ -343,16 +342,13 @@ static void lwp_user_thread(void *parameter)
 {
     rt_thread_t tid;
     rt_size_t user_stack;
-    struct rt_lwp *lwp;
 
     tid = rt_thread_self();
-    lwp = lwp_self();
 
     user_stack = (rt_size_t)tid->user_stack + tid->user_stack_size;
     user_stack &= ~7; //align 8
-    set_user_context((void *)user_stack);
 
-    lwp_user_entry(parameter, tid->user_entry, lwp->data_entry, tid->stack_addr + tid->stack_size);
+    lwp_user_thread_entry(parameter, tid->user_entry, (void *)user_stack, tid->stack_addr + tid->stack_size);
 }
 
 /* thread/process */
