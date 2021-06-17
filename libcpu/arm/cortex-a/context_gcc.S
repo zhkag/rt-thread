@@ -155,9 +155,10 @@ rt_hw_context_switch_interrupt:
 
     ldr     sp, [r2]
     mov     r0, r3
-
+    mov     r4, r0
     bl      rt_cpus_lock_status_restore
-
+    mov     r0, r4
+    bl      lwp_user_setting_restore
     b       rt_hw_context_switch_exit
 
 #else /*RT_USING_SMP*/
