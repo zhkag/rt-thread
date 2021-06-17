@@ -19,6 +19,7 @@ typedef struct tag_region
 
 rt_size_t rt_page_bits(rt_size_t size);
 void *rt_pages_alloc(rt_size_t size_bits);
+void rt_page_ref_inc(void *addr, uint32_t size_bits);
 void rt_pages_free(void *addr,rt_size_t size_bits);
 void rt_pageinfo_dump();
 void rt_page_get_info(size_t *total_nr, size_t *free_nr);
