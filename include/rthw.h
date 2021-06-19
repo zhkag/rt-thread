@@ -200,6 +200,14 @@ typedef int rt_spinlock_t;
 
 #endif
 
+#ifdef RT_USING_CACHE
+#include <cpuport.h>
+#else
+#define rt_hw_isb()
+#define rt_hw_dmb()
+#define rt_hw_dsb()
+#endif
+
 #ifdef __cplusplus
 }
 #endif
