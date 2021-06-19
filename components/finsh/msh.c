@@ -19,6 +19,7 @@
 
 #include "msh.h"
 #include "shell.h"
+#include <string.h>
 
 #ifdef RT_USING_DFS
 #include <dfs_posix.h>
