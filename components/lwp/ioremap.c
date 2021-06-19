@@ -36,7 +36,7 @@ static void _iounmap_range(void *addr, size_t size)
     }
 }
 
-static void *_ioremap_type(void *p_addr, size_t size, int type)
+static void *_ioremap_type(void *paddr, size_t size, int type)
 {
     rt_base_t level;
     void *v_addr = NULL;
@@ -55,7 +55,7 @@ static void *_ioremap_type(void *p_addr, size_t size, int type)
     }
 
     level = rt_hw_interrupt_disable();
-    v_addr = rt_hw_mmu_map(&mmu_info, 0, p_addr, size, attr);
+    v_addr = rt_hw_mmu_map(&mmu_info, 0, paddr, size, attr);
     if (v_addr)
     {
         int ret = lwp_map_area_insert(&k_map_area, (size_t)v_addr, size, type);
@@ -69,36 +69,36 @@ static void *_ioremap_type(void *p_addr, size_t size, int type)
     return v_addr;
 }
 
-void *rt_ioremap(void *p_addr, size_t size)
+void *rt_ioremap(void *paddr, size_t size)
 {
-    return _ioremap_type(p_addr, size, MM_AREA_TYPE_PHY);
-}
-
-void *rt_ioremap_nocache(void *p_addr, size_t size)
-{
-    return _ioremap_type(p_addr, size, MM_AREA_TYPE_PHY);
-}
-
-void *rt_ioremap_cached(void *p_addr, size_t size)
-{
-    return _ioremap_type(p_addr, size, MM_AREA_TYPE_PHY_CACHED);
-}
-
-#else
-
-void *rt_ioremap(void *p_addr, size_t size)
-{
-    return p_addr;
+    return _ioremap_type(paddr, size, MM_AREA_TYPE_PHY);
 }
 
 void *rt_ioremap_nocache(void *paddr, size_t size)
 {
-    return p_addr;
+    return _ioremap_type(paddr, size, MM_AREA_TYPE_PHY);
 }
 
 void *rt_ioremap_cached(void *paddr, size_t size)
 {
-    return p_addr;
+    return _ioremap_type(paddr, size, MM_AREA_TYPE_PHY_CACHED);
+}
+
+#else
+
+void *rt_ioremap(void *paddr, size_t size)
+{
+    return paddr;
+}
+
+void *rt_ioremap_nocache(void *paddr, size_t size)
+{
+    return paddr;
+}
+
+void *rt_ioremap_cached(void *paddr, size_t size)
+{
+    return paddr;
 }
 
 #endif

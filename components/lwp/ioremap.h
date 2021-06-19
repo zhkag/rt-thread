@@ -15,11 +15,8 @@ extern "C" {
 #endif
 
 void *rt_ioremap(void *paddr, size_t size);
-
 void *rt_ioremap_nocache(void *paddr, size_t size);
-
-void *rt_ioremap_cached(void *paddr, size_t size);
-
+void *rt_ioremap_cached (void *paddr, size_t size);
 void rt_iounmap(volatile void *addr);
 
 #ifdef __cplusplus
