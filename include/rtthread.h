@@ -22,7 +22,6 @@
 #include <rtconfig.h>
 #include <rtdebug.h>
 #include <rtdef.h>
-#include <cpuport.h>
 #include <rtservice.h>
 #include <rtm.h>
 
