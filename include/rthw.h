@@ -151,6 +151,7 @@ void rt_hw_exception_install(rt_err_t (*exception_handle)(void *context));
 void rt_hw_us_delay(rt_uint32_t us);
 
 #ifdef RT_USING_SMP
+#include <cpuport.h> /* for spinlock from arch */
 
 struct rt_spinlock
 {
