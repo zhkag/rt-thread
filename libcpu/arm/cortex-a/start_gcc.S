@@ -109,6 +109,19 @@ continue:
     msr cpsr_c, r0
 #endif
 
+    /* invalid tlb before enable mmu */
+    mrc p15, 0, r0, c1, c0, 0
+    bic r0, #1
+    mcr p15, 0, r0, c1, c0, 0
+    dsb
+    isb
+    mov r0, #0
+    mcr p15, 0, r0, c8, c7, 0
+    mcr p15, 0, r0, c7, c5, 0    /* iciallu */
+    mcr p15, 0, r0, c7, c5, 6    /* bpiall */
+    dsb
+    isb
+
 #ifdef RT_USING_USERSPACE
     ldr r5, =PV_OFFSET
 
