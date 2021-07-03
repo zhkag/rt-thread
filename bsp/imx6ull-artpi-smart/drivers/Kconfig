@@ -1,0 +1,130 @@
+menu "Platform Driver Configuration"
+
+menu "Select UART Driver"
+    if RT_USING_SERIAL
+        config BSP_USING_UART1
+            bool "Enable UART1"
+            default y
+        config BSP_USING_UART2
+            bool "Enable UART2"
+            default n
+        config BSP_USING_UART3
+            bool "Enable UART3"
+            default n
+        config BSP_USING_UART4
+            bool "Enable UART4"
+            default n
+        config BSP_USING_UART5
+            bool "Enable UART5"
+            default n
+        config BSP_USING_UART6
+            bool "Enable UART6"
+            default n
+        config BSP_USING_UART7
+            bool "Enable UART7"
+            default n
+        config BSP_USING_UART8
+            bool "Enable UART8"
+            default n
+    endif
+endmenu
+
+menu "Select SPI Driver"
+    config BSP_USING_SPI
+        bool "Enable SPI"
+            select RT_USING_SPI
+            default n
+
+    if BSP_USING_SPI
+        config BSP_USING_SPI1
+            bool "Enable SPI1"
+            default n
+        config BSP_USING_SPI2
+            bool "Enable SPI2"
+            default n
+        config BSP_USING_SPI3
+            bool "Enable SPI3"
+            default y
+        config BSP_USING_SPI4
+            bool "Enable SPI4"
+            default n
+    endif
+endmenu
+
+menu "Select I2C Driver"
+    config BSP_USING_I2C
+        bool "Enable I2C"
+            select RT_USING_I2C
+            default n
+
+    if BSP_USING_I2C
+        config BSP_USING_I2C1
+            bool "Enable I2C1"
+            default n
+        if BSP_USING_I2C1
+            config I2C1_BAUD_RATE
+                int "Set i2c1 baud rate (HZ)"
+                default 100000
+        endif
+
+        config BSP_USING_I2C2
+            bool "Enable I2C2"
+            default n
+        if BSP_USING_I2C2
+            config I2C2_BAUD_RATE
+                int "Set i2c2 baud rate (HZ)"
+                default 100000
+        endif
+
+        config BSP_USING_I2C3
+            bool "Enable I2C3"
+            default n
+        if BSP_USING_I2C3
+            config I2C3_BAUD_RATE
+                int "Set i2c3 baud rate (HZ)"
+                default 100000
+        endif
+
+        config BSP_USING_I2C4
+            bool "Enable I2C4"
+            default n
+        if BSP_USING_I2C4
+            config I2C4_BAUD_RATE
+                int "Set i2c4 baud rate (HZ)"
+                default 100000
+        endif
+    endif
+endmenu
+
+menu "Select LCD Driver"
+config BSP_USING_LCD
+    bool "Enable LCD"
+    default y
+
+    if BSP_USING_LCD
+        config BSP_LCD_WIDTH
+            int "Width of LCD panel"
+            default 1024
+        config BSP_LCD_HEIGHT
+            int "Height of LCD panel"
+            default 600
+    endif
+endmenu
+
+menu "Select SD Card Driver"
+    if RT_USING_SDIO
+        config BSP_USING_SDHC
+            bool "Enable SDHC"
+            default n
+    endif
+endmenu
+
+menu "Select RTC Driver"
+    if RT_USING_RTC
+        config BSP_USING_ONCHIP_RTC
+            bool "Enable On-Chip rtc"
+            default y
+    endif
+endmenu
+
+endmenu
