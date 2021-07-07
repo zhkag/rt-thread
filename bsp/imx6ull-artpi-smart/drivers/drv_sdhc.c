@@ -36,7 +36,7 @@ _internal_rw struct imx_sddev _s_sdcard_device = {
     .gpio = {
         {IOMUXC_SD1_CLK_USDHC1_CLK,         0U, 0x17049},
         {IOMUXC_SD1_CMD_USDHC1_CMD,         0U, 0x17089},
-        
+
         {IOMUXC_SD1_DATA0_USDHC1_DATA0,     0U, 0x17089},
         {IOMUXC_SD1_DATA1_USDHC1_DATA1,     0U, 0x17089},
         {IOMUXC_SD1_DATA2_USDHC1_DATA2,     0U, 0x17089},
@@ -197,9 +197,9 @@ static rt_err_t _sdcard_ops_close( rt_device_t dev )
     return RT_EOK;
 }
 
-static rt_size_t _sdcard_ops_read( rt_device_t dev, 
-                                   rt_off_t pos, 
-                                   void *buffer, 
+static rt_size_t _sdcard_ops_read( rt_device_t dev,
+                                   rt_off_t pos,
+                                   void *buffer,
                                    rt_size_t size )
 {
     RT_ASSERT(RT_NULL != dev);
@@ -217,9 +217,9 @@ static rt_size_t _sdcard_ops_read( rt_device_t dev,
     return size;
 }
 
-static rt_size_t _sdcard_ops_write( rt_device_t dev, 
-                                    rt_off_t pos, 
-                                    const void *buffer, 
+static rt_size_t _sdcard_ops_write( rt_device_t dev,
+                                    rt_off_t pos,
+                                    const void *buffer,
                                     rt_size_t size )
 {
     RT_ASSERT(RT_NULL != dev);
@@ -237,7 +237,7 @@ static rt_size_t _sdcard_ops_write( rt_device_t dev,
     return size;
 }
 
-static rt_err_t _sdcard_ops_control( rt_device_t dev, 
+static rt_err_t _sdcard_ops_control( rt_device_t dev,
                                      int cmd,
                                      void *args )
 {
@@ -317,6 +317,6 @@ int rt_hw_sdcard_init(void)
 
     return RT_EOK;
 }
-INIT_DEVICE_EXPORT(rt_hw_sdcard_init);
+//INIT_DEVICE_EXPORT(rt_hw_sdcard_init);
 
 #endif //#ifdef BSP_USING_SDHC
