@@ -87,12 +87,12 @@ static void eth_rx_irq(int irq, void *param)
 
     if (val & GENET_IRQ_RXDMA_DONE)
     {
-	    eth_device_ready(&eth_dev.parent);
+        eth_device_ready(&eth_dev.parent);
     }
 
     if (val & GENET_IRQ_TXDMA_DONE)
     {
-	    rt_sem_release(&send_finsh_sem_lock);
+        rt_sem_release(&send_finsh_sem_lock);
     }
 }
 
@@ -444,9 +444,9 @@ static rt_uint32_t bcmgenet_gmac_eth_recv(rt_uint8_t **packetp)
         * RBUF_ALIGN_2B
         */
 
-	    //Convert to memory address
-	    addr = addr + eth_recv_no_cache - RECV_DATA_NO_CACHE;
-	    rt_hw_cpu_dcache_invalidate(addr,length);
+        //Convert to memory address
+        addr = addr + eth_recv_no_cache - RECV_DATA_NO_CACHE;
+        rt_hw_cpu_dcache_invalidate(addr,length);
         *packetp = (rt_uint8_t *)(addr + RX_BUF_OFFSET);
         rx_index = rx_index + 1;
         if(rx_index >= RX_DESCS)
@@ -486,10 +486,10 @@ static int bcmgenet_gmac_eth_send(rt_uint32_t packet, int length,struct pbuf *p)
     write32((desc_base + DMA_DESC_ADDRESS_HI), 0);
     write32((desc_base + DMA_DESC_LENGTH_STATUS), len_stat);
 
-    tx_index ++;
+    tx_index++;
     if(tx_index >= TX_DESCS)
     {
-	    tx_index = 0;
+        tx_index = 0;
     }
     prod_index = prod_index+1;
 
@@ -568,13 +568,13 @@ static rt_err_t bcmgenet_eth_init(rt_device_t device)
     if (major != 6)
     {
         if (major == 5)
-	    {
+        {
             major = 4;
-	    }
+        }
         else if (major == 0)
-	    {
+	{
             major = 1;
-	    }
+	}
         rt_kprintf("Uns upported GENETv%d.%d\n", major, (hw_reg >> 16) & 0x0f);
         return RT_ERROR;
     }
@@ -609,13 +609,13 @@ static rt_err_t bcmgenet_eth_control(rt_device_t dev, int cmd, void *args)
     {
     case NIOCTL_GADDR:
         if (args)
-	    {
+        {
             rt_memcpy(args, eth_dev.dev_addr, 6);
-	    }
+        }
         else
-	    {
+        {
             return -RT_ERROR;
-	    }
+	}
         break;
     default:
         break;
@@ -628,7 +628,7 @@ rt_err_t rt_eth_tx(rt_device_t device, struct pbuf *p)
     if (link_flag == 1)
     {
         bcmgenet_gmac_eth_send((rt_uint32_t)eth_send_no_cache, p->tot_len,p);
-	    rt_sem_take(&send_finsh_sem_lock,RT_WAITING_FOREVER);
+        rt_sem_take(&send_finsh_sem_lock,RT_WAITING_FOREVER);
     }
     return RT_EOK;
 }
