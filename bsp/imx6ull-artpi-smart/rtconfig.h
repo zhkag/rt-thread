@@ -310,9 +310,9 @@
 #define BSP_LCD_WIDTH 1024
 #define BSP_LCD_HEIGHT 600
 
-/* Select SD Card Driver */
+/* Select SDHC Driver */
 
-#define BSP_USING_SDHC
+#define RT_USING_SDIO1
 
 /* Select RTC Driver */
 
