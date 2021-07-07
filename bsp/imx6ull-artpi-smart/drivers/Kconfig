@@ -111,12 +111,16 @@ config BSP_USING_LCD
     endif
 endmenu
 
-menu "Select SD Card Driver"
+menu "Select SDHC Driver"
     if RT_USING_SDIO
-        config BSP_USING_SDHC
-            bool "Enable SDHC"
+        config RT_USING_SDIO1
+            bool "Enable SDHC1"
             default n
+        config RT_USING_SDIO2
+            bool "Enable SDHC2"
+           	default n
     endif
+    
 endmenu
 
 menu "Select RTC Driver"

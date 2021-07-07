@@ -6,6 +6,7 @@
  * Change Logs:
  * Date           Author       Notes
  * 2017-10-10     Tanek        first version
+ * 2021-07-07     linzhenxing  add sd card drivers in mmu
  */
 
 #include <rtthread.h>
@@ -18,27 +19,15 @@
 #include <fsl_gpio.h>
 #include <fsl_iomuxc.h>
 
-#include <finsh.h>
+#include <ioremap.h>
 
-#define RT_USING_SDIO1
-//#define RT_USING_SDIO2
-
-//#define DEBUG
-
-#ifdef DEBUG
-static int enable_log = 1;
-
-#define MMCSD_DGB(fmt, ...)                 \
-    do                                      \
-    {                                       \
-        if (enable_log)                     \
-        {                                   \
-            rt_kprintf(fmt, ##__VA_ARGS__); \
-        }                                   \
-    } while (0)
+#define DBG_TAG               "drv_sdio"
+#ifdef RT_SDIO_DEBUG
+#define DBG_LVL               DBG_LOG
 #else
-#define MMCSD_DGB(fmt, ...)
-#endif
+#define DBG_LVL               DBG_INFO
+#endif /* RT_SDIO_DEBUG */
+#include <rtdbg.h>
 
 #define CACHE_LINESIZE              (32)
 
@@ -85,8 +74,6 @@ struct imxrt_mmcsd
 
     uint32_t *usdhc_adma2_table;
 };
-
-extern void *rt_ioremap(void *paddr, size_t size);
 
 /*! @name Configuration */
 /*@{*/
@@ -157,29 +144,11 @@ static inline void _IOMUXC_SetPinConfig(uint32_t muxRegister,
     }
 }
 
-void rt_hw_usdhc1_isr(int irqno, void *param)
-{
-    struct rt_mmcsd_host *host = (struct rt_mmcsd_host *)param;
-    struct imxrt_mmcsd *mmcsd = host->private_data;
-    rt_uint32_t intstatus = mmcsd->usdhc_host.base->INT_STATUS;
-
-    rt_interrupt_enter();
-    mmcsd->usdhc_host.base->INT_STATUS = intstatus;
-    if (intstatus & kUSDHC_CardDetectFlag)
-    {
-        host_change();
-    }
-    else
-    {
-
-    }
-    rt_interrupt_leave();
-}
-
 static void _mmcsd_gpio_init(struct imxrt_mmcsd *mmcsd)
 {
 
     CLOCK_EnableClock(kCLOCK_Iomuxc);          /* iomuxc clock (iomuxc_clk_enable): 0x03u */
+#ifdef RT_USING_SDIO1
     /* uSDHC1 pins start*/
     _IOMUXC_SetPinMux(IOMUXC_UART1_RTS_B_USDHC1_CD_B, 0U);
     _IOMUXC_SetPinConfig(IOMUXC_UART1_RTS_B_USDHC1_CD_B,
@@ -248,7 +217,9 @@ static void _mmcsd_gpio_init(struct imxrt_mmcsd *mmcsd)
                         IOMUXC_SW_PAD_CTL_PAD_HYS_MASK);
 
     /* uSDHC1 pins end*/
+#endif
 
+#ifdef RT_USING_SDIO2
     /* uSDHC2 pins start*/
     _IOMUXC_SetPinMux(IOMUXC_NAND_WE_B_USDHC2_CMD, 0U);
     _IOMUXC_SetPinConfig(IOMUXC_NAND_WE_B_USDHC2_CMD,
@@ -261,7 +232,7 @@ static void _mmcsd_gpio_init(struct imxrt_mmcsd *mmcsd)
                         IOMUXC_SW_PAD_CTL_PAD_HYS_MASK);
     _IOMUXC_SetPinMux(IOMUXC_NAND_RE_B_USDHC2_CLK, 0U);
 
-_IOMUXC_SetPinConfig(IOMUXC_NAND_RE_B_USDHC2_CLK,
+    _IOMUXC_SetPinConfig(IOMUXC_NAND_RE_B_USDHC2_CLK,
                         IOMUXC_SW_PAD_CTL_PAD_SRE_MASK |
                         IOMUXC_SW_PAD_CTL_PAD_DSE(1U) |
                         IOMUXC_SW_PAD_CTL_PAD_SPEED(2U) |
@@ -352,6 +323,7 @@ _IOMUXC_SetPinConfig(IOMUXC_NAND_RE_B_USDHC2_CLK,
                         IOMUXC_SW_PAD_CTL_PAD_HYS_MASK);
 
     /* uSDHC2 pins end*/
+#endif
 }
 static void SDMMCHOST_ErrorRecovery(USDHC_Type *base)
 {
@@ -393,11 +365,6 @@ static void _mmcsd_clk_init(struct imxrt_mmcsd *mmcsd)
     CLOCK_SetDiv(mmcsd->usdhc_div, 5U);
 }
 
-static void _mmcsd_isr_init(struct imxrt_mmcsd *mmcsd)
-{
-    //NVIC_SetPriority(USDHC1_IRQn, 5U);
-}
-
 static void _mmc_request(struct rt_mmcsd_host *host, struct rt_mmcsd_req *req)
 {
     struct imxrt_mmcsd *mmcsd;
@@ -421,7 +388,7 @@ static void _mmc_request(struct rt_mmcsd_host *host, struct rt_mmcsd_req *req)
     cmd = req->cmd;
     RT_ASSERT(cmd != RT_NULL);
 
-    MMCSD_DGB("\tcmd->cmd_code: %02d, cmd->arg: %08x, cmd->flags: %08x --> ", cmd->cmd_code, cmd->arg, cmd->flags);
+    LOG_D("\tcmd->cmd_code: %02d, cmd->arg: %08x, cmd->flags: %08x --> ", cmd->cmd_code, cmd->arg, cmd->flags);
 
     data = cmd->data;
 
@@ -489,7 +456,7 @@ static void _mmc_request(struct rt_mmcsd_host *host, struct rt_mmcsd_req *req)
         fsl_data.blockSize = data->blksize;
         fsl_data.blockCount = data->blks;
 
-        MMCSD_DGB(" blksize:%d, blks:%d ", fsl_data.blockSize, fsl_data.blockCount);
+        LOG_D(" blksize:%d, blks:%d ", fsl_data.blockSize, fsl_data.blockCount);
 
         if (((rt_uint32_t)data->buf & (CACHE_LINESIZE - 1)) ||         // align cache(32byte)
                 ((rt_uint32_t)data->buf >  0x00000000 && (rt_uint32_t)data->buf < 0x00080000) /*||  // ITCM
@@ -499,7 +466,7 @@ static void _mmc_request(struct rt_mmcsd_host *host, struct rt_mmcsd_req *req)
             buf = rt_malloc_align(fsl_data.blockSize * fsl_data.blockCount, CACHE_LINESIZE);
             RT_ASSERT(buf != RT_NULL);
 
-            MMCSD_DGB(" malloc buf: %p, data->buf:%p, %d ", buf, data->buf, fsl_data.blockSize * fsl_data.blockCount);
+            LOG_D(" malloc buf: %p, data->buf:%p, %d ", buf, data->buf, fsl_data.blockSize * fsl_data.blockCount);
         }
 
 
@@ -507,7 +474,7 @@ static void _mmc_request(struct rt_mmcsd_host *host, struct rt_mmcsd_req *req)
         {
             if (buf)
             {
-                MMCSD_DGB(" write(data->buf to buf) ");
+                LOG_D(" write(data->buf to buf) ");
                 rt_memcpy(buf, data->buf, fsl_data.blockSize * fsl_data.blockCount);
                 fsl_data.txData = (uint32_t const *)buf;
             }
@@ -543,7 +510,7 @@ static void _mmc_request(struct rt_mmcsd_host *host, struct rt_mmcsd_req *req)
     if (error == kStatus_Fail)
     {
         SDMMCHOST_ErrorRecovery(mmcsd->usdhc_host.base);
-        MMCSD_DGB(" ***USDHC_TransferBlocking error: %d*** --> \n", error);
+        LOG_D(" ***USDHC_TransferBlocking error: %d*** --> \n", error);
         cmd->err = -RT_ERROR;
     }
 
@@ -551,7 +518,7 @@ static void _mmc_request(struct rt_mmcsd_host *host, struct rt_mmcsd_req *req)
     {
         if (fsl_data.rxData)
         {
-            MMCSD_DGB("read copy buf to data->buf ");
+            LOG_D("read copy buf to data->buf ");
             rt_memcpy(data->buf, buf, fsl_data.blockSize * fsl_data.blockCount);
         }
 
@@ -564,13 +531,13 @@ static void _mmc_request(struct rt_mmcsd_host *host, struct rt_mmcsd_req *req)
         cmd->resp[2] = fsl_command.response[1];
         cmd->resp[1] = fsl_command.response[2];
         cmd->resp[0] = fsl_command.response[3];
-        MMCSD_DGB(" resp 0x%08X 0x%08X 0x%08X 0x%08X\n",
+        LOG_D(" resp 0x%08X 0x%08X 0x%08X 0x%08X\n",
                   cmd->resp[0], cmd->resp[1], cmd->resp[2], cmd->resp[3]);
     }
     else
     {
         cmd->resp[0] = fsl_command.response[0];
-        MMCSD_DGB(" resp 0x%08X\n", cmd->resp[0]);
+        LOG_D(" resp 0x%08X\n", cmd->resp[0]);
     }
 
     mmcsd_req_complete(host);
@@ -600,7 +567,7 @@ static void _mmc_set_iocfg(struct rt_mmcsd_host *host, struct rt_mmcsd_io_cfg *i
         usdhc_clk = IMXRT_MAX_FREQ;
     src_clk = (CLOCK_GetSysPfdFreq(kCLOCK_Pfd2) / (CLOCK_GetDiv(mmcsd->usdhc_div) + 1U));
 
-    MMCSD_DGB("\tsrc_clk: %d, usdhc_clk: %d, bus_width: %d\n", src_clk, usdhc_clk, bus_width);
+    LOG_D("\tsrc_clk: %d, usdhc_clk: %d, bus_width: %d\n", src_clk, usdhc_clk, bus_width);
     if (usdhc_clk)
     {
         USDHC_SetSdClock(mmcsd->usdhc_host.base, src_clk, usdhc_clk);
@@ -617,14 +584,6 @@ static void _mmc_set_iocfg(struct rt_mmcsd_host *host, struct rt_mmcsd_io_cfg *i
     }
 }
 
-#ifdef DEBUG
-static void log_toggle(int en)
-{
-    enable_log = en;
-}
-FINSH_FUNCTION_EXPORT(log_toggle, toglle log dumple);
-#endif
-
 static const struct rt_mmcsd_host_ops ops =
 {
     _mmc_request,
@@ -633,11 +592,11 @@ static const struct rt_mmcsd_host_ops ops =
     RT_NULL,//_mmc_enable_sdio_irq,
 };
 
-rt_int32_t _imxrt_mci_init(void)
+rt_int32_t imxrt_mci_init(void)
 {
-    struct imxrt_mmcsd *mmcsd1;
-    //struct imxrt_mmcsd *mmcsd2;
 #ifdef RT_USING_SDIO1
+    struct imxrt_mmcsd *mmcsd1;
+
     host1 = mmcsd_alloc_host();
     if (!host1)
     {
@@ -669,7 +628,6 @@ rt_int32_t _imxrt_mci_init(void)
 
     mmcsd1->host = host1;
     _mmcsd_clk_init(mmcsd1);
-    _mmcsd_isr_init(mmcsd1);
     _mmcsd_gpio_init(mmcsd1);
     _mmcsd_host_init(mmcsd1);
 
@@ -679,6 +637,7 @@ rt_int32_t _imxrt_mci_init(void)
 #endif
 
 #ifdef RT_USING_SDIO2
+    struct imxrt_mmcsd *mmcsd2;
     host2 = mmcsd_alloc_host();
     if (!host2)
     {
@@ -710,7 +669,6 @@ rt_int32_t _imxrt_mci_init(void)
 
     mmcsd2->host = host2;
     _mmcsd_clk_init(mmcsd2);
-    _mmcsd_isr_init(mmcsd2);
     _mmcsd_gpio_init(mmcsd2);
     _mmcsd_host_init(mmcsd2);
 
@@ -727,26 +685,14 @@ rt_int32_t _imxrt_mci_init(void)
     return 0;
 
 err:
+#ifdef RT_USING_SDIO1
     mmcsd_free_host(host1);
+#endif
+#ifdef RT_USING_SDIO2
     mmcsd_free_host(host2);
-
+#endif
     return -RT_ENOMEM;
 }
 
-int imxrt_mci_init(void)
-{
-    /* initilize sd card */
-    _imxrt_mci_init();
-
-    return 0;
-}
 INIT_DEVICE_EXPORT(imxrt_mci_init);
-
-
-void host_change(void)
-{
-    mmcsd_change(host1);
-
-}
-MSH_CMD_EXPORT(host_change, host_change);
 
