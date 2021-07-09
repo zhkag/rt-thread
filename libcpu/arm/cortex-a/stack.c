@@ -9,6 +9,7 @@
  * 2011-10-05     Bernard      add thumb mode
  */
 #include <rtthread.h>
+#include <cpuport.h>
 #include <board.h>
 
 /**
