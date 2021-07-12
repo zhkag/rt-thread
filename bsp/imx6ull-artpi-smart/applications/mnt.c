@@ -17,17 +17,13 @@
 int mnt_init(void)
 {
     rt_thread_mdelay(500);
-    if (dfs_mount("sd0", "/", "elm", 0, NULL) != 0)
+    if (dfs_mount(NULL, "/", "rom", 0, &romfs_root) != 0)
     {
         rt_kprintf("Dir / mount failed!\n");
         return -1;
     }
-    else
-    {
-        mkdir("/romfs", 777);
-        mkdir("/flash", 777);
-        mkdir("/download", 777);
-    }
+
+	sd_task();
     rt_kprintf("file system initialization done!\n");
     return 0;
 }
