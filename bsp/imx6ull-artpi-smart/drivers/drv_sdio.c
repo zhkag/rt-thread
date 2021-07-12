@@ -611,7 +611,7 @@ rt_int32_t imxrt_mci_init(void)
     }
 
     rt_memset(mmcsd1, 0, sizeof(struct imxrt_mmcsd));
-    mmcsd1->usdhc_host.base = (struct USDHC_Type *)rt_ioremap((void*)USDHC1_BASE, 0x1000);
+    mmcsd1->usdhc_host.base = (USDHC_Type *)rt_ioremap((void*)USDHC1_BASE, 0x1000);
     mmcsd1->usdhc_div = kCLOCK_Usdhc1Div;
     mmcsd1->usdhc_adma2_table = g_usdhcAdma2Table;
 
