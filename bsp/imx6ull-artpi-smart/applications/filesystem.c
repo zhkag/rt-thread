@@ -46,28 +46,28 @@ static void _sdcard_unmount(void)
 static void sd_mount(void *parameter)
 {
     volatile unsigned int *IN_STATUS;
-	IN_STATUS = (volatile unsigned int *)rt_ioremap((void *)0x2190030, 4);
+    IN_STATUS = (volatile unsigned int *)rt_ioremap((void *)0x2190030, 4);
     rt_thread_mdelay(20);
-	if (dfs_mount("sd0", "/mnt", "elm", 0, 0) == RT_EOK)
-	{
-		LOG_I("sd card mount to '/mnt'");
-	}
-	else
-	{
-		LOG_W("sd card mount to '/mnt' failed!");
-	}
+    if (dfs_mount("sd0", "/mnt", "elm", 0, 0) == RT_EOK)
+    {
+        LOG_I("sd card mount to '/mnt'");
+    }
+    else
+    {
+        LOG_W("sd card mount to '/mnt' failed!");
+    }
     while (1)
     {
         rt_thread_mdelay(200);
         if (((*IN_STATUS >>6) & 0x1) == 1)
         {
-        	*IN_STATUS = 0x40;
+            *IN_STATUS = 0x40;
             _sdcard_mount();
         }
 
         if (((*IN_STATUS >>7) & 0x1) == 1)
         {
-        	*IN_STATUS = (0x80);
+            *IN_STATUS = (0x80);
             _sdcard_unmount();
         }
     }

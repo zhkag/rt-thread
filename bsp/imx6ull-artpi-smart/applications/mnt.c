@@ -23,7 +23,7 @@ int mnt_init(void)
         return -1;
     }
 
-	sd_task();
+    sd_task();
     rt_kprintf("file system initialization done!\n");
     return 0;
 }
