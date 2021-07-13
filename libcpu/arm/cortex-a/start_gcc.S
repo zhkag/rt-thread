@@ -480,8 +480,8 @@ rt_hw_context_switch_interrupt_do:
     mov     r4, r0
     bl      lwp_mmu_switch
     mov     r0, r4
-#endif
     bl      lwp_user_setting_restore
+#endif
 
 #ifdef RT_USING_FPU
     /* fpu context */
