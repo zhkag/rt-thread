@@ -506,7 +506,9 @@ static int __rt_hw_mmu_map(rt_mmu_info *mmu_info, void* v_addr, void* p_addr, si
         if (*mmu_l1 & ARCH_MMU_USED_MASK)
         {
             mmu_l2 = (size_t *)((*mmu_l1 & ~ARCH_PAGE_TBL_MASK) - mmu_info->pv_off);
+#ifdef RT_USING_USERSPACE
             rt_page_ref_inc(mmu_l2, 0);
+#endif
         }
         else
         {
