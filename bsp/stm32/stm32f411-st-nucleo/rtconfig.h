@@ -39,7 +39,8 @@
 #define RT_USING_CONSOLE
 #define RT_CONSOLEBUF_SIZE 128
 #define RT_CONSOLE_DEVICE_NAME "uart2"
-#define RT_VER_NUM 0x40001
+#define RT_VER_NUM 0x50000
+#define RT_USING_CPU_FFS
 #define ARCH_ARM
 #define ARCH_ARM_CORTEX_M
 #define ARCH_ARM_CORTEX_M4
@@ -57,6 +58,7 @@
 /* Command shell */
 
 #define RT_USING_FINSH
+#define RT_USING_MSH
 #define FINSH_THREAD_NAME "tshell"
 #define FINSH_USING_HISTORY
 #define FINSH_HISTORY_LINES 5
@@ -65,9 +67,6 @@
 #define FINSH_THREAD_PRIORITY 20
 #define FINSH_THREAD_STACK_SIZE 4096
 #define FINSH_CMD_SIZE 80
-#define FINSH_USING_MSH
-#define FINSH_USING_MSH_DEFAULT
-#define FINSH_USING_MSH_ONLY
 #define FINSH_ARG_MAX 10
 
 /* Device virtual file system */
@@ -81,24 +80,22 @@
 #define RT_SERIAL_RB_BUFSZ 64
 #define RT_USING_PIN
 
-/* Using WiFi */
-
-
 /* Using USB */
 
 
 /* POSIX layer and C standard library */
 
+#define RT_LIBC_USING_TIME
 
 /* Network */
 
 /* Socket abstraction layer */
 
 
+/* Network interface device */
+
+
 /* light weight TCP/IP stack */
-
-
-/* Modbus master and slave stack */
 
 
 /* AT commands */
@@ -140,14 +137,31 @@
 
 /* system packages */
 
+/* acceleration: Assembly language or algorithmic acceleration packages */
+
+
+/* Micrium: Micrium software products porting for RT-Thread */
+
 
 /* peripheral libraries and drivers */
+
+
+/* AI packages */
 
 
 /* miscellaneous packages */
 
 
 /* samples: kernel and components samples */
+
+
+/* entertainment: terminal games and other interesting software packages */
+
+
+/* Privated Packages of RealThread */
+
+
+/* Network Utilities */
 
 #define SOC_FAMILY_STM32
 #define SOC_SERIES_STM32F4
