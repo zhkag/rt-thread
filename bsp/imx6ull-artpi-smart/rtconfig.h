@@ -267,6 +267,9 @@
 
 /* Micrium: Micrium software products porting for RT-Thread */
 
+#define PKG_USING_LWEXT4
+#define RT_USING_DFS_LWEXT4
+#define PKG_USING_LWEXT4_LATEST_VERSION
 
 /* peripheral libraries and drivers */
 
@@ -313,6 +316,7 @@
 /* Select SDHC Driver */
 
 #define RT_USING_SDIO1
+#define RT_USING_SDIO2
 
 /* Select RTC Driver */
 
