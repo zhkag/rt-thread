@@ -506,7 +506,7 @@ static void _mmc_request(struct rt_mmcsd_host *host, struct rt_mmcsd_req *req)
     {
         fsl_content.data = NULL;
     }
-    mmcsd_delay_ms(2);
+
     error = USDHC_TransferBlocking(mmcsd->usdhc_host.base, &dmaConfig, &fsl_content);
     if (error == kStatus_Fail)
     {
