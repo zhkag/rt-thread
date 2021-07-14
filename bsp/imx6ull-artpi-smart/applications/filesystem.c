@@ -2,6 +2,7 @@
 
 #include <dfs_fs.h>
 #include <ioremap.h>
+#include <drv_sdio.h>
 
 #define DBG_TAG "app.filesystem"
 #define DBG_LVL DBG_INFO
