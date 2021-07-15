@@ -357,8 +357,8 @@ rt_int32_t rt_mmcsd_blk_probe(struct rt_mmcsd_card *card)
     rt_int32_t err = 0;
     rt_uint8_t i, status;
     rt_uint8_t *sector;
-    char dname[RT_NAME_MAX];
-    char sname[RT_NAME_MAX];
+    char dname[10];
+    char sname[16];
     struct mmcsd_blk_device *blk_dev = RT_NULL;
 
     err = mmcsd_set_blksize(card);
