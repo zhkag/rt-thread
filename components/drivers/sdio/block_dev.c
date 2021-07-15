@@ -357,8 +357,8 @@ rt_int32_t rt_mmcsd_blk_probe(struct rt_mmcsd_card *card)
     rt_int32_t err = 0;
     rt_uint8_t i, status;
     rt_uint8_t *sector;
-    char dname[8];
-    char sname[8];
+    char dname[RT_NAME_MAX];
+    char sname[RT_NAME_MAX];
     struct mmcsd_blk_device *blk_dev = RT_NULL;
 
     err = mmcsd_set_blksize(card);
@@ -394,7 +394,7 @@ rt_int32_t rt_mmcsd_blk_probe(struct rt_mmcsd_card *card)
                                          card->host->max_blk_size) >> 9);
         blk_dev->part.offset = 0;
         blk_dev->part.size   = 0;
-        rt_snprintf(sname, 8, "sem_%s%d", card->host->name,0);
+        rt_snprintf(sname, sizeof(sname)-1, "sem_%s%d", card->host->name,0);
         blk_dev->part.lock = rt_sem_create(sname, 1, RT_IPC_FLAG_FIFO);
         /* register mmcsd device */
         blk_dev->dev.type  = RT_Device_Class_Block;
@@ -439,8 +439,8 @@ rt_int32_t rt_mmcsd_blk_probe(struct rt_mmcsd_card *card)
             status = dfs_filesystem_get_partition(&blk_dev->part, sector, i);
             if (status == RT_EOK)
             {
-                rt_snprintf(dname, 8, "%s%d", card->host->name,i);
-                rt_snprintf(sname, 8, "sem_%s%d", card->host->name,i+1);
+                rt_snprintf(dname, sizeof(dname)-1, "%s%d", card->host->name,i);
+                rt_snprintf(sname, sizeof(sname)-1, "sem_%s%d", card->host->name,i+1);
                 blk_dev->part.lock = rt_sem_create(sname, 1, RT_IPC_FLAG_FIFO);
 
                 /* register mmcsd device */
