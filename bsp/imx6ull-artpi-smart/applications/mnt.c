@@ -20,7 +20,7 @@ int mnt_init(void)
     int part_id = 1;
     rt_thread_mdelay(500);
 
-    if (dfs_mount("em","/","ext",0,(void *)part_id) != 0)
+    if (dfs_mount("emmc","/","ext",0,(void *)part_id) != 0)
     {
         rt_kprintf("Dir / mount failed!\n");
         return -1;

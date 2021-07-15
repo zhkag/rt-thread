@@ -616,7 +616,7 @@ rt_int32_t imxrt_mci_init(void)
     mmcsd1->usdhc_div = kCLOCK_Usdhc1Div;
     mmcsd1->usdhc_adma2_table = g_usdhcAdma2Table;
 
-    strncpy(host1->name, "sd", 8);
+    strncpy(host1->name, "sd", sizeof(host1->name)-1);
     host1->ops = &ops;
     host1->freq_min = 375000;
     host1->freq_max = 25000000;
@@ -658,7 +658,7 @@ rt_int32_t imxrt_mci_init(void)
     mmcsd2->usdhc_div = kCLOCK_Usdhc1Div;
     mmcsd2->usdhc_adma2_table = g_usdhcAdma2Table;
 
-    strncpy(host2->name, "em", 8);
+    strncpy(host2->name, "emmc", sizeof(host2->name)-1);
     host2->ops = &ops;
     host2->freq_min = 375000;
     host2->freq_max = 52000000;
