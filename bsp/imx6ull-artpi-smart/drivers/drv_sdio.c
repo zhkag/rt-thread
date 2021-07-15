@@ -7,6 +7,7 @@
  * Date           Author       Notes
  * 2017-10-10     Tanek        first version
  * 2021-07-07     linzhenxing  add sd card drivers in mmu
+ * 2021-07-14     linzhenxing  add emmc
  */
 
 #include <rtthread.h>
@@ -20,7 +21,7 @@
 #include <fsl_iomuxc.h>
 
 #include <ioremap.h>
-
+#include <string.h>
 #define DBG_TAG               "drv_sdio"
 #ifdef RT_SDIO_DEBUG
 #define DBG_LVL               DBG_LOG
@@ -606,7 +607,7 @@ rt_int32_t imxrt_mci_init(void)
     mmcsd1 = rt_malloc(sizeof(struct imxrt_mmcsd));
     if (!mmcsd1)
     {
-        rt_kprintf("alloc mci failed\n");
+        LOG_E("alloc mci failed\n");
         goto err;
     }
 
@@ -615,6 +616,7 @@ rt_int32_t imxrt_mci_init(void)
     mmcsd1->usdhc_div = kCLOCK_Usdhc1Div;
     mmcsd1->usdhc_adma2_table = g_usdhcAdma2Table;
 
+    strncpy(host1->name, "sd", sizeof(host1->name)-1);
     host1->ops = &ops;
     host1->freq_min = 375000;
     host1->freq_max = 25000000;
@@ -647,19 +649,20 @@ rt_int32_t imxrt_mci_init(void)
     mmcsd2 = rt_malloc(sizeof(struct imxrt_mmcsd));
     if (!mmcsd2)
     {
-        rt_kprintf("alloc mci failed\n");
+        LOG_E("alloc mci failed\n");
         goto err;
     }
 
     rt_memset(mmcsd2, 0, sizeof(struct imxrt_mmcsd));
-    mmcsd2->usdhc_host.base = (struct USDHC_Type *)rt_ioremap((void*)USDHC2_BASE, 0x1000);
+    mmcsd2->usdhc_host.base = (USDHC_Type *)rt_ioremap((void*)USDHC2_BASE, 0x1000);
     mmcsd2->usdhc_div = kCLOCK_Usdhc1Div;
     mmcsd2->usdhc_adma2_table = g_usdhcAdma2Table;
 
+    strncpy(host2->name, "emmc", sizeof(host2->name)-1);
     host2->ops = &ops;
     host2->freq_min = 375000;
     host2->freq_max = 52000000;
-    host2->valid_ocr = VDD_32_33 | VDD_33_34;
+    host2->valid_ocr = VDD_35_36;
     host2->flags = MMCSD_BUSWIDTH_4 | MMCSD_MUTBLKWRITE | \
                   MMCSD_SUP_HIGHSPEED | MMCSD_SUP_SDIO_IRQ;
     host2->max_seg_size = 65535;
@@ -678,7 +681,7 @@ rt_int32_t imxrt_mci_init(void)
     mmcsd_mutex = rt_mutex_create("mmutex", RT_IPC_FLAG_FIFO);
     if (mmcsd_mutex == RT_NULL)
     {
-        rt_kprintf("create mmcsd mutex failed.\n");
+        LOG_E("create mmcsd mutex failed.\n");
         return -1;
     }
 

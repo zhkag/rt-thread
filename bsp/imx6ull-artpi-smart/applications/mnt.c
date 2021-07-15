@@ -16,6 +16,20 @@
 
 int mnt_init(void)
 {
+#ifdef RT_USING_SDIO2
+    int part_id = 1;
+    rt_thread_mdelay(500);
+
+    if (dfs_mount("emmc","/","ext",0,(void *)part_id) != 0)
+    {
+        rt_kprintf("Dir / mount failed!\n");
+        return -1;
+    }
+    else
+    {
+        rt_kprintf("file system initialization done!\n");
+    }
+#else
     rt_thread_mdelay(500);
     if (dfs_mount(NULL, "/", "rom", 0, &romfs_root) != 0)
     {
@@ -25,6 +39,7 @@ int mnt_init(void)
 
     sd_task();
     rt_kprintf("file system initialization done!\n");
+#endif
     return 0;
 }
 INIT_APP_EXPORT(mnt_init);
