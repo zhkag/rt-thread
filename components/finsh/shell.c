@@ -22,7 +22,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#ifdef RT_USING_MSH
+#if defined(RT_USING_MSH) || defined(FINSH_USING_MSH)
 
 #include "shell.h"
 #include "msh.h"
@@ -40,10 +40,8 @@ struct finsh_shell _shell;
 #endif
 
 /* finsh symtab */
-#ifdef FINSH_USING_SYMTAB
 struct finsh_syscall *_syscall_table_begin  = NULL;
 struct finsh_syscall *_syscall_table_end    = NULL;
-#endif
 
 struct finsh_shell *shell;
 static char *finsh_prompt_custom = RT_NULL;

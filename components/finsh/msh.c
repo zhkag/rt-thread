@@ -11,7 +11,7 @@
  */
 #include <rtthread.h>
 
-#ifdef RT_USING_MSH
+#if defined(RT_USING_MSH) || defined(FINSH_USING_MSH)
 
 #ifndef FINSH_ARG_MAX
 #define FINSH_ARG_MAX    8
