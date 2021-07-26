@@ -119,7 +119,7 @@ void rt_hw_board_init(void)
 
 void rt_hw_cpu_reset(void)
 {
-    SBI_CALL_0(SBI_SHUTDOWN);
+    sbi_shutdown();
     while(1);
 }
 MSH_CMD_EXPORT_ALIAS(rt_hw_cpu_reset, reboot, reset machine);
