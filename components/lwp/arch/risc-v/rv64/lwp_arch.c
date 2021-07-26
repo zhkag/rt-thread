@@ -27,7 +27,6 @@
 
 extern size_t MMUTable[];
 
-//该函数用于支持用户栈扩展功能
 int arch_expand_user_stack(void *addr)
 {
     int ret = 0;
@@ -63,6 +62,13 @@ void *lwp_copy_return_code_to_user_stack()
     return RT_NULL;
 }
 
+rt_mmu_info* arch_kernel_get_mmu_info(void)
+{
+    extern rt_mmu_info *mmu_info;
+
+    return mmu_info;
+}
+
 uint32_t lwp_fix_sp(uint32_t cursp)
 {
     void lwp_thread_return();
@@ -92,7 +98,6 @@ void *lwp_get_user_sp()
     return RT_NULL;
 }
 
-//该函数负责初始化lwp的页表和堆
 int arch_user_space_init(struct rt_lwp *lwp)
 {
     size_t *mmu_table;
@@ -104,6 +109,7 @@ int arch_user_space_init(struct rt_lwp *lwp)
     }
 
     lwp->end_heap = USER_HEAP_VADDR;
+
     memcpy(mmu_table, MMUTable, PAGE_SIZE);
     rt_hw_cpu_dcache_ops(RT_HW_CACHE_FLUSH, mmu_table, 4 * PAGE_SIZE);
     rt_hw_mmu_map_init(&lwp->mmu_info, (void *)0x100000000UL, 0xFFFFFFFEFFFFFFFFUL, (rt_size_t *)mmu_table, 0);
@@ -111,7 +117,6 @@ int arch_user_space_init(struct rt_lwp *lwp)
     return 0;
 }
 
-//该函数负责返回内核页表指针
 void *arch_kernel_mmu_table_get(void)
 {
     return (void *)((char *)MMUTable);
