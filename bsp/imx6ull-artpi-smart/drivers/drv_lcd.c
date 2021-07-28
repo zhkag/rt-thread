@@ -81,7 +81,7 @@ static rt_err_t imx6ull_elcd_control(rt_device_t device, int cmd, void *args)
     {
         case RTGRAPHIC_CTRL_RECT_UPDATE:
         {
-            mem_size = elcd_dev->info.width * elcd_dev->info.height * elcd_dev->info.bits_per_pixel/8;
+            mem_size = elcd_dev->info.width * elcd_dev->info.height * elcd_dev->info.bits_per_pixel / 8;
             rt_hw_cpu_dcache_clean((void *)(g_lcd_obj.info.framebuffer), mem_size);
             break;
         }
@@ -101,7 +101,7 @@ static rt_err_t imx6ull_elcd_control(rt_device_t device, int cmd, void *args)
             RT_ASSERT(info != RT_NULL);
 
             rt_memcpy(&info->graphic, &elcd_dev->info, sizeof(struct rt_device_graphic_info));
-            info->screen.shamem_len = elcd_dev->info.width * elcd_dev->info.height * elcd_dev->info.bits_per_pixel/8;
+            info->screen.shamem_len = elcd_dev->info.width * elcd_dev->info.height * elcd_dev->info.bits_per_pixel / 8;
             info->screen.shamem_start = (rt_uint32_t)lwp_map_user_phy(lwp_self(), RT_NULL,
                                                                         elcd_dev->fb_phy,
                                                                         info->screen.shamem_len, 1);
