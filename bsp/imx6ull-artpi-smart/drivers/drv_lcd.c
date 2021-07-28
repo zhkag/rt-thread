@@ -7,10 +7,12 @@
  * Date           Author       Notes
  * 2021-01-11     Lyons        first version
  * 2021-06-24     RiceChen     refactor
+ * 2021-07-28     songchao     add cmd
  */
 
 #include <rthw.h>
 #include <rtdevice.h>
+#include <rtthread.h>
 
 #ifdef BSP_USING_LCD
 
@@ -20,6 +22,7 @@
 #include "fsl_iomuxc.h"
 #include "drv_lcd.h"
 #include <lwp_user_mm.h>
+#include "rt_lcd.h"
 
 struct imx6ull_lcd_config lcd_config = LCD_BUS_CONFIG;
 struct imx6ull_lcd_bus lcd_obj;
@@ -64,7 +67,7 @@ static rt_err_t imx6ull_elcd_init(rt_device_t device)
 
     return RT_EOK;
 }
-
+void rt_hw_cpu_dcache_clean(void *addr, int size);
 static rt_err_t imx6ull_elcd_control(rt_device_t device, int cmd, void *args)
 {
     struct imx6ull_lcd_bus *elcd_dev = RT_NULL;
@@ -77,6 +80,8 @@ static rt_err_t imx6ull_elcd_control(rt_device_t device, int cmd, void *args)
     {
         case RTGRAPHIC_CTRL_RECT_UPDATE:
         {
+            rt_hw_cpu_dcache_clean((void *)(lcd_obj.info.framebuffer),
+                                    elcd_dev->info.width * elcd_dev->info.height * elcd_dev->info.bits_per_pixel/8);
             break;
         }
         case RTGRAPHIC_CTRL_POWERON:
@@ -95,9 +100,9 @@ static rt_err_t imx6ull_elcd_control(rt_device_t device, int cmd, void *args)
             RT_ASSERT(info != RT_NULL);
 
             rt_memcpy(&info->graphic, &elcd_dev->info, sizeof(struct rt_device_graphic_info));
-            
-            info->screen.shamem_len   = elcd_dev->info.width * elcd_dev->info.width * elcd_dev->info.bits_per_pixel/8;
-            info->screen.shamem_start = (rt_uint32_t)lwp_map_user_phy(lwp_self(), RT_NULL, 
+
+            info->screen.shamem_len   = elcd_dev->info.width * elcd_dev->info.height * elcd_dev->info.bits_per_pixel/8;
+            info->screen.shamem_start = (rt_uint32_t)lwp_map_user_phy(lwp_self(), RT_NULL,
                                                                         elcd_dev->fb_phy,
                                                                         info->screen.shamem_len, 1);
             break;
@@ -106,6 +111,26 @@ static rt_err_t imx6ull_elcd_control(rt_device_t device, int cmd, void *args)
         {
             break;
         }
+        case FBIOGET_FSCREENINFO:
+        {
+            struct fb_fix_screeninfo *info = (struct fb_fix_screeninfo *)args;
+            strncpy(info->id, elcd_dev->config->name, (strlen(elcd_dev->config->name)+1));
+            info->smem_len    = elcd_dev->info.width * elcd_dev->info.height * 2;;
+            info->smem_start  = (rt_uint32_t)lwp_map_user_phy(lwp_self(), RT_NULL,
+                                                                            elcd_dev->fb_phy,
+                                                                            info->smem_len, 1);
+            info->line_length = elcd_dev->info.width * 2;
+            break;
+        }
+        case FBIOGET_VSCREENINFO:
+        {
+            struct fb_var_screeninfo *info = (struct fb_var_screeninfo *)args;
+            info->bits_per_pixel = elcd_dev->info.bits_per_pixel;
+            info->xres = elcd_dev->info.width;
+            info->yres = elcd_dev->info.height;
+            break;
+        }
+
     }
     return RT_EOK;
 }
@@ -133,7 +158,7 @@ int rt_hw_elcd_init(void)
     for(int i = 0; i < LCD_GPIO_MAX; i++)
     {
         IOMUXC_SetPinMux((lcd_config.lcd_mux_base + i * 4), 0x0U, 0x00000000U, 0x0U, (lcd_config.lcd_cfg_base + i * 4), 0);
-	    IOMUXC_SetPinConfig((lcd_config.lcd_mux_base + i * 4), 0x0U, 0x00000000U, 0x0U, (lcd_config.lcd_cfg_base + i * 4), 0xB9);
+        IOMUXC_SetPinConfig((lcd_config.lcd_mux_base + i * 4), 0x0U, 0x00000000U, 0x0U, (lcd_config.lcd_cfg_base + i * 4), 0xB9);
     }
 
     CLOCK_EnableClock(lcd_config.apd_clk_name);
@@ -144,10 +169,10 @@ int rt_hw_elcd_init(void)
     lcd_obj.fb_virt = rt_pages_alloc(rt_page_bits(LCD_BUF_SIZE));
     lcd_obj.fb_phy = lcd_obj.fb_virt + PV_OFFSET;
 
-    rt_kprintf("fb address => 0x%08x\n", lcd_obj.fb_phy);
+    LOG_D("fb address => 0x%08x\n", lcd_obj.fb_phy);
     if(lcd_obj.fb_phy == RT_NULL)
     {
-        rt_kprintf("initialize frame buffer failed!\n");
+        LOG_E("initialize frame buffer failed!\n");
         return -RT_ERROR;
     }
 
@@ -156,7 +181,7 @@ int rt_hw_elcd_init(void)
     lcd_obj.info.pixel_format   = RTGRAPHIC_PIXEL_FORMAT_RGB565;
     lcd_obj.info.bits_per_pixel = LCD_BITS_PER_PIXEL;
     lcd_obj.info.framebuffer    = (void *)lcd_obj.fb_virt;
-    
+
     lcd_obj.parent.type = RT_Device_Class_Graphic;
 
 #ifdef RT_USING_DEVICE_OPS
@@ -175,7 +200,7 @@ int rt_hw_elcd_init(void)
     ret = rt_device_register(&lcd_obj.parent, lcd_obj.config->name, RT_DEVICE_FLAG_RDWR);
 
     /* LCD_BL */
-    rt_pin_mode (IMX6ULL_LCD_BL_PIN, PIN_MODE_OUTPUT);  
+    rt_pin_mode (IMX6ULL_LCD_BL_PIN, PIN_MODE_OUTPUT);
     rt_pin_write(IMX6ULL_LCD_BL_PIN, PIN_HIGH);
 
     rt_memset((rt_uint8_t *)lcd_obj.fb_virt, 0xff, LCD_BUF_SIZE);
