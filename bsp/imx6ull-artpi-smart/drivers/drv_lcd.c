@@ -115,7 +115,7 @@ static rt_err_t imx6ull_elcd_control(rt_device_t device, int cmd, void *args)
         {
             struct fb_fix_screeninfo *info = (struct fb_fix_screeninfo *)args;
             strncpy(info->id, elcd_dev->config->name, (strlen(elcd_dev->config->name)+1));
-            info->smem_len    = elcd_dev->info.width * elcd_dev->info.height * 2;
+            info->smem_len = elcd_dev->info.width * elcd_dev->info.height * 2;
             info->smem_start  = (rt_uint32_t)lwp_map_user_phy(lwp_self(), RT_NULL,
                                                                             elcd_dev->fb_phy,
                                                                             info->smem_len, 1);

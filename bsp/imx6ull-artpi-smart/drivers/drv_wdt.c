@@ -183,11 +183,12 @@ static struct rt_watchdog_ops imx6ull_wdog_ops =
 int rt_hw_wdt_init(void)
 {
     rt_err_t ret = RT_EOK;
-    for(int idx=0; idx<GET_ARRAY_NUM(imx6ull_watchdog); idx++)
+    for(int idx = 0; idx < GET_ARRAY_NUM(imx6ull_watchdog); idx++)
     {
         imx6ull_watchdog[idx].ops = &imx6ull_wdog_ops;
         imx6ull_watchdog[idx].vaddr = platform_get_periph_vaddr(imx6ull_watchdog[idx].paddr);
-        ret = rt_hw_watchdog_register(&imx6ull_watchdog[idx], imx6ull_watchdog[idx].name, RT_DEVICE_FLAG_DEACTIVATE, RT_NULL);
+        ret = rt_hw_watchdog_register(&imx6ull_watchdog[idx], imx6ull_watchdog[idx].name,
+                                         RT_DEVICE_FLAG_DEACTIVATE, RT_NULL);
         if (ret != RT_EOK)
         {
             LOG_E("rt device register failed %d\n", ret);
