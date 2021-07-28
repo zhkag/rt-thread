@@ -81,7 +81,7 @@ static rt_err_t imx6ull_elcd_control(rt_device_t device, int cmd, void *args)
         case RTGRAPHIC_CTRL_RECT_UPDATE:
         {
             rt_hw_cpu_dcache_clean((void *)(g_lcd_obj.info.framebuffer),
-                                    elcd_dev->info.width * elcd_dev->info.height * elcd_dev->info.bits_per_pixel/8);
+                                        elcd_dev->info.width * elcd_dev->info.height * elcd_dev->info.bits_per_pixel/8);
             break;
         }
         case RTGRAPHIC_CTRL_POWERON:
@@ -101,7 +101,7 @@ static rt_err_t imx6ull_elcd_control(rt_device_t device, int cmd, void *args)
 
             rt_memcpy(&info->graphic, &elcd_dev->info, sizeof(struct rt_device_graphic_info));
 
-            info->screen.shamem_len   = elcd_dev->info.width * elcd_dev->info.height * elcd_dev->info.bits_per_pixel/8;
+            info->screen.shamem_len = elcd_dev->info.width * elcd_dev->info.height * elcd_dev->info.bits_per_pixel/8;
             info->screen.shamem_start = (rt_uint32_t)lwp_map_user_phy(lwp_self(), RT_NULL,
                                                                         elcd_dev->fb_phy,
                                                                         info->screen.shamem_len, 1);
@@ -157,9 +157,9 @@ int rt_hw_elcd_init(void)
 
     for(int i = 0; i < LCD_GPIO_MAX; i++)
     {
-        IOMUXC_SetPinMux((g_lcd_config.lcd_mux_base + i * 4), 
+        IOMUXC_SetPinMux((g_lcd_config.lcd_mux_base + i * 4),
                             0x0U, 0x0U, 0x0U, (g_lcd_config.lcd_cfg_base + i * 4), 0);
-        IOMUXC_SetPinConfig((g_lcd_config.lcd_mux_base + i * 4), 
+        IOMUXC_SetPinConfig((g_lcd_config.lcd_mux_base + i * 4),
                             0x0U, 0x0U, 0x0U, (g_lcd_config.lcd_cfg_base + i * 4), 0xB9);
     }
 
