@@ -1,11 +1,11 @@
 /*
- * COPYRIGHT (C) 2018, Real-Thread Information Technology Ltd
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
  * Change Logs:
- * Date           Author       Notes
- * 2012-09-12     heyuanjie87  first version.
+ * Date           Author         Notes
+ * 2021-07-28     songchao           first version
  */
 
 #ifndef  __WATCHDOG_H__

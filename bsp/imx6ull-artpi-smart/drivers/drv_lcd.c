@@ -24,8 +24,8 @@
 #include <lwp_user_mm.h>
 #include "rt_lcd.h"
 
-static struct imx6ull_lcd_config g_lcd_config = LCD_BUS_CONFIG;
-static struct imx6ull_lcd_bus g_lcd_obj;
+static struct imx6ull_lcd_config _lcd_config = LCD_BUS_CONFIG;
+static struct imx6ull_lcd_bus _lcd_obj;
 
 static rt_err_t imx6ull_elcd_init(rt_device_t device)
 {
@@ -67,7 +67,6 @@ static rt_err_t imx6ull_elcd_init(rt_device_t device)
 
     return RT_EOK;
 }
-void rt_hw_cpu_dcache_clean(void *addr, int size);
 static rt_err_t imx6ull_elcd_control(rt_device_t device, int cmd, void *args)
 {
     struct imx6ull_lcd_bus *elcd_dev = RT_NULL;
@@ -76,13 +75,12 @@ static rt_err_t imx6ull_elcd_control(rt_device_t device, int cmd, void *args)
     RT_ASSERT(device != RT_NULL);
 
     elcd_dev = (struct imx6ull_lcd_bus *)device;
-
     switch(cmd)
     {
         case RTGRAPHIC_CTRL_RECT_UPDATE:
         {
             mem_size = elcd_dev->info.width * elcd_dev->info.height * elcd_dev->info.bits_per_pixel / 8;
-            rt_hw_cpu_dcache_clean((void *)(g_lcd_obj.info.framebuffer), mem_size);
+            rt_hw_cpu_dcache_ops(RT_HW_CACHE_FLUSH, (void *)(_lcd_obj.info.framebuffer), mem_size);
             break;
         }
         case RTGRAPHIC_CTRL_POWERON:
@@ -99,7 +97,6 @@ static rt_err_t imx6ull_elcd_control(rt_device_t device, int cmd, void *args)
         {
             struct lcd_info *info = (struct lcd_info *)args;
             RT_ASSERT(info != RT_NULL);
-
             rt_memcpy(&info->graphic, &elcd_dev->info, sizeof(struct rt_device_graphic_info));
             info->screen.shamem_len = elcd_dev->info.width * elcd_dev->info.height * elcd_dev->info.bits_per_pixel / 8;
             info->screen.shamem_start = (rt_uint32_t)lwp_map_user_phy(lwp_self(), RT_NULL,
@@ -114,11 +111,11 @@ static rt_err_t imx6ull_elcd_control(rt_device_t device, int cmd, void *args)
         case FBIOGET_FSCREENINFO:
         {
             struct fb_fix_screeninfo *info = (struct fb_fix_screeninfo *)args;
-            strncpy(info->id, elcd_dev->config->name, (strlen(elcd_dev->config->name)+1));
-            info->smem_len = elcd_dev->info.width * elcd_dev->info.height * 2;
-            info->smem_start  = (rt_uint32_t)lwp_map_user_phy(lwp_self(), RT_NULL,
-                                                                            elcd_dev->fb_phy,
-                                                                            info->smem_len, 1);
+            rt_memcpy(info->id, elcd_dev->config->name, (strlen(elcd_dev->config->name)+1));
+            info->smem_len = elcd_dev->info.width * elcd_dev->info.height * elcd_dev->info.bits_per_pixel / 8;
+            info->smem_start = (rt_uint32_t)lwp_map_user_phy(lwp_self(), RT_NULL,
+                                                                        elcd_dev->fb_phy,
+                                                                        info->smem_len, 1);
             info->line_length = elcd_dev->info.width * 2;
             break;
         }
@@ -151,61 +148,61 @@ int rt_hw_elcd_init(void)
 {
     rt_err_t ret = 0;
 
-    g_lcd_config.ELCDIF       = (LCDIF_Type *)imx6ull_get_periph_vaddr((rt_uint32_t)(g_lcd_config.ELCDIF));
-    g_lcd_config.lcd_mux_base = (rt_uint32_t)imx6ull_get_periph_vaddr((rt_uint32_t)(g_lcd_config.lcd_mux_base));
-    g_lcd_config.lcd_cfg_base = (rt_uint32_t)imx6ull_get_periph_vaddr((rt_uint32_t)(g_lcd_config.lcd_cfg_base));
+    _lcd_config.ELCDIF       = (LCDIF_Type *)imx6ull_get_periph_vaddr((rt_uint32_t)(_lcd_config.ELCDIF));
+    _lcd_config.lcd_mux_base = (rt_uint32_t)imx6ull_get_periph_vaddr((rt_uint32_t)(_lcd_config.lcd_mux_base));
+    _lcd_config.lcd_cfg_base = (rt_uint32_t)imx6ull_get_periph_vaddr((rt_uint32_t)(_lcd_config.lcd_cfg_base));
 
     for(int i = 0; i < LCD_GPIO_MAX; i++)
     {
-        IOMUXC_SetPinMux((g_lcd_config.lcd_mux_base + i * 4),
-                            0x0U, 0x0U, 0x0U, (g_lcd_config.lcd_cfg_base + i * 4), 0);
-        IOMUXC_SetPinConfig((g_lcd_config.lcd_mux_base + i * 4),
-                            0x0U, 0x0U, 0x0U, (g_lcd_config.lcd_cfg_base + i * 4), 0xB9);
+        IOMUXC_SetPinMux((_lcd_config.lcd_mux_base + i * 4),
+                            0x0U, 0x0U, 0x0U, (_lcd_config.lcd_cfg_base + i * 4), 0);
+        IOMUXC_SetPinConfig((_lcd_config.lcd_mux_base + i * 4),
+                            0x0U, 0x0U, 0x0U, (_lcd_config.lcd_cfg_base + i * 4), 0xB9);
     }
 
-    CLOCK_EnableClock(g_lcd_config.apd_clk_name);
-    CLOCK_EnableClock(g_lcd_config.pix_clk_name);
+    CLOCK_EnableClock(_lcd_config.apd_clk_name);
+    CLOCK_EnableClock(_lcd_config.pix_clk_name);
 
-    g_lcd_obj.config = &g_lcd_config;
+    _lcd_obj.config = &_lcd_config;
 
-    g_lcd_obj.fb_virt = rt_pages_alloc(rt_page_bits(LCD_BUF_SIZE));
-    g_lcd_obj.fb_phy = g_lcd_obj.fb_virt + PV_OFFSET;
+    _lcd_obj.fb_virt = rt_pages_alloc(rt_page_bits(LCD_BUF_SIZE));
+    _lcd_obj.fb_phy = _lcd_obj.fb_virt + PV_OFFSET;
 
-    LOG_D("fb address => 0x%08x\n", g_lcd_obj.fb_phy);
-    if(g_lcd_obj.fb_phy == RT_NULL)
+    LOG_D("fb address => 0x%08x\n", _lcd_obj.fb_phy);
+    if(_lcd_obj.fb_phy == RT_NULL)
     {
         LOG_E("initialize frame buffer failed!\n");
         return -RT_ERROR;
     }
 
-    g_lcd_obj.info.width          = LCD_WIDTH;
-    g_lcd_obj.info.height         = LCD_HEIGHT;
-    g_lcd_obj.info.pixel_format   = RTGRAPHIC_PIXEL_FORMAT_RGB565;
-    g_lcd_obj.info.bits_per_pixel = LCD_BITS_PER_PIXEL;
-    g_lcd_obj.info.framebuffer    = (void *)g_lcd_obj.fb_virt;
+    _lcd_obj.info.width          = LCD_WIDTH;
+    _lcd_obj.info.height         = LCD_HEIGHT;
+    _lcd_obj.info.pixel_format   = RTGRAPHIC_PIXEL_FORMAT_RGB565;
+    _lcd_obj.info.bits_per_pixel = LCD_BITS_PER_PIXEL;
+    _lcd_obj.info.framebuffer    = (void *)_lcd_obj.fb_virt;
 
-    g_lcd_obj.parent.type = RT_Device_Class_Graphic;
+    _lcd_obj.parent.type = RT_Device_Class_Graphic;
 
 #ifdef RT_USING_DEVICE_OPS
-    g_lcd_obj.parent.ops         = &elcd_ops;
+    _lcd_obj.parent.ops         = &elcd_ops;
 #else
-    g_lcd_obj.parent.init    = imx6ull_elcd_init;
-    g_lcd_obj.parent.open    = RT_NULL;
-    g_lcd_obj.parent.close   = RT_NULL;
-    g_lcd_obj.parent.read    = RT_NULL;
-    g_lcd_obj.parent.write   = RT_NULL;
-    g_lcd_obj.parent.control = imx6ull_elcd_control;
+    _lcd_obj.parent.init    = imx6ull_elcd_init;
+    _lcd_obj.parent.open    = RT_NULL;
+    _lcd_obj.parent.close   = RT_NULL;
+    _lcd_obj.parent.read    = RT_NULL;
+    _lcd_obj.parent.write   = RT_NULL;
+    _lcd_obj.parent.control = imx6ull_elcd_control;
 #endif
 
-    g_lcd_obj.parent.user_data = (void *)&g_lcd_obj.info;
+    _lcd_obj.parent.user_data = (void *)&_lcd_obj.info;
 
-    ret = rt_device_register(&g_lcd_obj.parent, g_lcd_obj.config->name, RT_DEVICE_FLAG_RDWR);
+    ret = rt_device_register(&_lcd_obj.parent, _lcd_obj.config->name, RT_DEVICE_FLAG_RDWR);
 
     /* LCD_BL */
     rt_pin_mode(IMX6ULL_LCD_BL_PIN, PIN_MODE_OUTPUT);
     rt_pin_write(IMX6ULL_LCD_BL_PIN, PIN_HIGH);
 
-    rt_memset((rt_uint8_t *)g_lcd_obj.fb_virt, 0xff, LCD_BUF_SIZE);
+    rt_memset((rt_uint8_t *)_lcd_obj.fb_virt, 0xff, LCD_BUF_SIZE);
 
     return ret;
 }
