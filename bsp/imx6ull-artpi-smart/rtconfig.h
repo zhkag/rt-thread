@@ -116,6 +116,7 @@
 #define RT_SERIAL_RB_BUFSZ 64
 #define RT_USING_I2C
 #define RT_USING_PIN
+#define RT_USING_PWM
 #define RT_USING_RTC
 #define RT_USING_SDIO
 #define RT_SDIO_STACK_SIZE 512
@@ -268,6 +269,9 @@
 
 /* Micrium: Micrium software products porting for RT-Thread */
 
+#define PKG_USING_LWEXT4
+#define RT_USING_DFS_LWEXT4
+#define PKG_USING_LWEXT4_LATEST_VERSION
 
 /* peripheral libraries and drivers */
 
@@ -314,10 +318,15 @@
 /* Select SDHC Driver */
 
 #define RT_USING_SDIO1
+#define RT_USING_SDIO2
 
 /* Select RTC Driver */
 
 #define BSP_USING_ONCHIP_RTC
+
+/* Select PWM Driver */
+
+#define BSP_USING_PWM1
 
 /* Select WDT Driver */
 
