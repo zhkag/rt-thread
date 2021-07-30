@@ -124,6 +124,7 @@
 #define RT_MMCSD_THREAD_PREORITY 22
 #define RT_MMCSD_MAX_PARTITION 16
 #define RT_USING_SPI
+#define RT_USING_WDT
 
 /* Using USB */
 
@@ -267,9 +268,6 @@
 
 /* Micrium: Micrium software products porting for RT-Thread */
 
-#define PKG_USING_LWEXT4
-#define RT_USING_DFS_LWEXT4
-#define PKG_USING_LWEXT4_LATEST_VERSION
 
 /* peripheral libraries and drivers */
 
@@ -310,16 +308,20 @@
 /* Select LCD Driver */
 
 #define BSP_USING_LCD
-#define BSP_LCD_WIDTH 1024
+#define BSP_LCD_WIDTH 1000
 #define BSP_LCD_HEIGHT 600
 
 /* Select SDHC Driver */
 
 #define RT_USING_SDIO1
-#define RT_USING_SDIO2
 
 /* Select RTC Driver */
 
 #define BSP_USING_ONCHIP_RTC
+
+/* Select WDT Driver */
+
+#define RT_USING_WDT1
+#define RT_USING_WDT2
 
 #endif
