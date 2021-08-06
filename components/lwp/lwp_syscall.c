@@ -169,6 +169,7 @@ int sys_futex(int *uaddr, int op, int val, void *timeout, void *uaddr2, int val3
 #define INTF_IPV6_V6ONLY    26
 #define IMPL_IPV6_V6ONLY    27
 
+#ifdef RT_USING_SAL
 static void convert_sockopt(int *level, int *optname)
 {
     if (*level == INTF_SOL_SOCKET)
@@ -316,6 +317,7 @@ static void convert_sockopt(int *level, int *optname)
     }
 
 }
+#endif  /* RT_USING_SAL */
 
 #ifdef RT_USING_LWIP
     static void sockaddr_tolwip(const struct musl_sockaddr *std, struct sockaddr *lwip)

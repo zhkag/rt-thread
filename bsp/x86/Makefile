@@ -1,46 +1,62 @@
+# tools 
+GRUB_DIR	:= grub-2.04
+OS_NAME		:= rtthread
+QEMU		:= qemu-system-i386
+GDB			:= gdb
+TRUNC		:= truncate
+MCOPY		:= mcopy
 
-CC = gcc -O0 -m32 -fno-builtin -fno-stack-protector -nostdinc -nostdlib
-LD = ld -melf_i386 -nostdlib
+# file name
+DISK0		:= disk0.img
+DISK1		:= disk1.img
+SZ_DISK0	:= 64M
+SZ_DISK1	:= 64M
+MKFS		:= mkfs.fat
+ROM_DIR		:= ../../../userapps/root
 
-all: rtthread rtsym exe dll floppy.img
-	@mkdir -p tmp
-	@sudo mount -t vfat floppy.img tmp -o loop
-	@sudo cp -fv rtthread.elf tmp/boot/oskernel
-	@sudo rm tmp/bin/* -fr
-	@sudo cp out/*.mo tmp/bin/ -fv
-	@sudo umount tmp
+RTTHREAD_ELF:= rtthread.elf
 
-rtthread:
-	@scons
+# config graphic window ? (y/n)
+QEMU_WINDOW ?= n
 
-rtsym:
-	@./src/extract.sh ./rtthread-ia32.map ./src/rt_thread_sym.h
+# qemu args
+QEMU_ARGS	:= 	-m 256m \
+				-rtc base=localtime \
+				-boot d \
+				-cdrom $(OS_NAME).iso
+				
+ifeq ($(QEMU_WINDOW),y)
+	QEMU_ARGS += -serial stdio
+else
+	QEMU_ARGS += -nographic
+endif
 
-obj:
-	mkdir -p obj
+QEMU_ARGS +=-drive id=disk0,file=$(DISK0),format=raw,if=none \
+			-drive id=disk1,file=$(DISK1),format=raw,if=none \
+			-device ahci,id=ahci \
+			-device ide-hd,drive=disk0,bus=ahci.0 \
+			-device ide-hd,drive=disk1,bus=ahci.1
 
-out:
-	mkdir -p out
+all: makeiso makedisk
 
-dll: obj out
-	$(CC) -c -fPIC -Isrc src/hello.c -o out/hello.o
-	$(CC) -s -Wl,-shared,-melf_i386,--entry=main -o out/hello.mo out/hello.o
+makeiso: $(RTTHREAD_ELF)
+	@$(MAKE) -s -C $(GRUB_DIR) KERNEL=$(RTTHREAD_ELF) OS_NAME=$(OS_NAME)
 
-disasm: obj out
-	$(CC) -shared -S -fPIC -Isrc src/hello.c -o obj/hello.s
-	cat obj/hello.s
-	objdump --disassemble out/hello.mo
+makedisk:
+	$(TRUNC) --size $(SZ_DISK0) $(DISK0)
+	$(TRUNC) --size $(SZ_DISK1) $(DISK1)
+	$(MKFS) -F32 $(DISK0)
+	-$(MCOPY) -i $(DISK0) $(ROM_DIR)/bin/*.elf ::
 
-exe: obj out
+run: makedisk makeiso
+	$(QEMU) $(QEMU_ARGS)
 
+qemudbg:
+	$(QEMU) -S -gdb tcp::10001,ipv4 $(QEMU_ARGS)
+
+# 连接gdb server: target remote localhost:10001
+gdb:
+	$(GDB) $(RTTHREAD_ELF)
 
 clean:
-	scons -c clean
-	rm -fr build rtthread* out obj
-
-floppy.img:
-	wget https://github.com/bajdcc/tinix/raw/master/floppy.img
-
-# https://en.wikibooks.org/wiki/QEMU/Devices/Network
-run:
-	qemu-system-i386 -fda floppy.img -boot a -m 64M -serial stdio -net nic,model=ne2k_pci
+	@$(MAKE) -s -C $(GRUB_DIR) clean
