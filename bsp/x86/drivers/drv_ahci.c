@@ -70,8 +70,9 @@ static rt_uint32_t ahci_flush_commands(struct hba_port *port)
     /* the commands may not take effect until the command
      * register is read again by software, because reasons.
      */
+    rt_hw_dsb();
     volatile rt_uint32_t c = port->command;
-    c = c;
+    rt_hw_dmb();
     return c;
 }
 

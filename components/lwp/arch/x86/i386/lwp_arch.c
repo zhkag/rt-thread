@@ -189,7 +189,7 @@ void lwp_user_thread_entry(void *args, const void *text, void *ustack, void *k_s
     RT_ASSERT(ustack != NULL);
 
     rt_uint8_t *stk;
-    stk  = k_stack + sizeof(rt_ubase_t);
+    stk  = (rt_uint8_t *)((rt_uint8_t *)k_stack + sizeof(rt_ubase_t));
     stk  = (rt_uint8_t *)RT_ALIGN_DOWN(((rt_ubase_t)stk), sizeof(rt_ubase_t));
     stk -= sizeof(struct rt_hw_stack_frame);
     struct rt_hw_stack_frame *frame = (struct rt_hw_stack_frame *)stk;
