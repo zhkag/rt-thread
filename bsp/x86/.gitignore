@@ -13,25 +13,19 @@
 build
 Debug
 documentation/html
+packages/
 *~
 *.o
 *.obj
+*.out
 *.bak
 *.dep
 *.lib
-*.a
 *.i
 *.d
-tools/kconfig-frontends/kconfig-mconf
-packages
-cconfig.h
-GPUCache
+*.iso
+# grub efi
+*.efi 
 
-#cscope files
-cscope.*
-ncscope.*
-
-#ctag files
-tags
-
-.vscode/
+grub-2.04
+*.img

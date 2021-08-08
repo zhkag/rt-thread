@@ -1,9 +1,11 @@
 import os
 
 # toolchains options
-ARCH='ia32'
-CPU=''
+ARCH='x86'
+CPU='i386'
 CROSS_TOOL='gcc'
+
+RTT_ROOT = os.getenv('RTT_ROOT') or os.path.join(os.getcwd(), '..', '..')
 
 if os.getenv('RTT_CC'):
 	CROSS_TOOL = os.getenv('RTT_CC')
@@ -13,7 +15,7 @@ if os.getenv('RTT_CC'):
 
 if  CROSS_TOOL == 'gcc':
 	PLATFORM 	= 'gcc'
-	EXEC_PATH 	= 'E:/Program Files/CodeSourcery/Sourcery_CodeBench_Lite_for_IA32_ELF/bin'
+	EXEC_PATH 	= '/home/jasonhu/Desktop/rtthread-smart/tools/gnu_gcc/i386-linux-musleabi_for_x86_64-pc-linux-gnu/bin'
 elif CROSS_TOOL == 'keil':
     print('================ERROR============================')
     print('Not support keil yet!')
@@ -32,11 +34,11 @@ BUILD = 'debug'
 
 if PLATFORM == 'gcc':
     # toolchains
-    PREFIX = ''
-    CC = PREFIX + 'gcc -m32 -fno-builtin -fno-stack-protector -nostdinc'
-    AS = PREFIX + 'gcc -m32'
+    PREFIX = 'i386-unknown-linux-musl-'
+    CC = PREFIX + 'gcc -fno-builtin -fno-stack-protector -nostdinc -nostdlib'
+    AS = PREFIX + 'gcc -nostdinc -nostdlib'
     AR = PREFIX + 'ar'
-    LINK = PREFIX + 'ld -melf_i386'
+    LINK = PREFIX + 'ld'
     TARGET_EXT = 'elf'
     SIZE = PREFIX + 'size'
     OBJDUMP = PREFIX + 'objdump'
@@ -45,7 +47,7 @@ if PLATFORM == 'gcc':
     DEVICE = ''
     CFLAGS = DEVICE + ' -Wall'
     AFLAGS = ' -c' + DEVICE + ' -x assembler-with-cpp'
-    LFLAGS = DEVICE + ' -Map rtthread-ia32.map -T x86_ram.lds -nostdlib'
+    LFLAGS = DEVICE + ' -Map rtthread-i386.map -nostdlib -n -T link.lds'
 
     CPATH = ''
     LPATH = ''
@@ -55,5 +57,5 @@ if PLATFORM == 'gcc':
         AFLAGS += ' -gdwarf-2'
     else:
         CFLAGS += ' -O2'
-
-    POST_ACTION = OBJCPY + ' -O binary $TARGET rtthread.bin\n' + SIZE + ' $TARGET \n'
+DUMP_ACTION = OBJDUMP + ' -D -S $TARGET > rtthread.asm\n'
+POST_ACTION = OBJCPY + ' -O binary $TARGET rtthread.bin\n' + SIZE + ' $TARGET \n'
