@@ -16,6 +16,7 @@
 
 #include "mmu.h"
 #include "cache.h"
+#include "i386.h"
 
 #ifdef RT_USING_USERSPACE
 #include "page.h"
@@ -661,4 +662,23 @@ void *rt_hw_mmu_v2p(rt_mmu_info *mmu_info,void *v_addr)
 #endif
     rt_hw_interrupt_enable(level);
     return ret;
+}
+
+void mmu_set_pagetable(rt_ubase_t addr)
+{
+    /* set new pgdir will flush tlb */
+    write_cr3(addr);
+}
+
+void mmu_enable_user_page_access()
+{
+}
+
+void mmu_disable_user_page_access()
+{
+}
+
+void mmu_enable()
+{
+    write_cr0(read_cr0() | CR0_PG);
 }

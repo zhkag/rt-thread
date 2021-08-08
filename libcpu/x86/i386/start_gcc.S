@@ -62,7 +62,7 @@ multiboot_entry:
     popl %eax
     cmpl $-1, %eax
     je setup_fail
-	
+    
     # set kernel stack top
     movl $KSTACK_TOP_PHY, %esp
 

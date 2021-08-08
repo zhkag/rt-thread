@@ -23,10 +23,10 @@ rt_hw_context_switch_to_real:
     movl (%eax), %esp       // restore sp
     
     popl %ebp
-	popl %ebx
-	popl %edi
-	popl %esi
-	ret
+    popl %ebx
+    popl %edi
+    popl %esi
+    ret
 
 /*
  * void rt_hw_context_switch_real(rt_ubase_t from, rt_ubase_t to);
@@ -45,7 +45,7 @@ rt_hw_context_switch_real:
     movl (%eax), %esp       // restore sp
 
     popl %ebp
-	popl %ebx
-	popl %edi
-	popl %esi
-	ret
+    popl %ebx
+    popl %edi
+    popl %esi
+    ret

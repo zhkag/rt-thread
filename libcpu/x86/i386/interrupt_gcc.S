@@ -35,8 +35,8 @@ rt_hw_intr_entry\p1:
     pushal
 
     movl %ss, %edx
-	movl %edx, %ds
-	movl %edx, %es
+    movl %edx, %ds
+    movl %edx, %es
 
     pushl $\p1
 
@@ -58,10 +58,10 @@ rt_hw_intr_entry\p1:
      *     jmp rt_hw_intr_thread_switch
      * end
      */
-	movl $rt_thread_switch_interrupt_flag, %eax
-	movl (%eax), %ebx
-	cmp $0x1, %ebx
-	jz rt_hw_intr_thread_switch
+    movl $rt_thread_switch_interrupt_flag, %eax
+    movl (%eax), %ebx
+    cmp $0x1, %ebx
+    jz rt_hw_intr_thread_switch
 
     // jmp to exit
     movl $rt_hw_intr_exit, %eax
@@ -81,8 +81,8 @@ rt_hw_intr_entry\p1:
     pushal
 
     movl %ss, %edx
-	movl %edx, %ds
-	movl %edx, %es
+    movl %edx, %ds
+    movl %edx, %es
 
     pushl $\p1
 
@@ -104,10 +104,10 @@ rt_hw_intr_entry\p1:
      *     jmp rt_hw_intr_thread_switch
      * end
      */
-	movl $rt_thread_switch_interrupt_flag, %eax
-	movl (%eax), %ebx
-	cmp $0x1, %ebx
-	jz rt_hw_intr_thread_switch
+    movl $rt_thread_switch_interrupt_flag, %eax
+    movl (%eax), %ebx
+    cmp $0x1, %ebx
+    jz rt_hw_intr_thread_switch
 
     // jmp to exit
     movl $rt_hw_intr_exit, %eax
@@ -162,17 +162,17 @@ rt_hw_intr_entry_push_errcode 0x2c
 rt_hw_intr_entry_push_errcode 0x2d
 rt_hw_intr_entry_push_errcode 0x2e
 rt_hw_intr_entry_push_errcode 0x2f
-rt_hw_intr_entry_push_errcode 0x80	// syscall
+rt_hw_intr_entry_push_errcode 0x80    // syscall
 
 rt_hw_intr_thread_switch:
     // set rt_thread_switch_interrupt_flag as 0
-	movl $0x0, %ebx
-	movl %ebx, (%eax)
+    movl $0x0, %ebx
+    movl %ebx, (%eax)
 
     // push to into stack
     movl $rt_interrupt_to_thread, %eax   // get "to"
     movl (%eax), %ebx
-	
+    
     // push from into stack
     movl $rt_interrupt_from_thread, %ecx   // get "from"
     movl (%ecx), %edx
@@ -182,7 +182,7 @@ rt_hw_intr_thread_switch:
     call rt_hw_context_switch
     addl $8, %esp   // restore stack
 
-	// jmp to exit
+    // jmp to exit
     movl $rt_hw_intr_exit, %eax
     jmp *%eax
 
@@ -206,8 +206,8 @@ hw_syscall_entry:
     pushal
 
     movl %ss, %edx
-	movl %edx, %ds
-	movl %edx, %es
+    movl %edx, %ds
+    movl %edx, %es
 
     pushl $0x80
 
@@ -235,7 +235,7 @@ syscall_exit:
 #endif /* RT_USING_USERSPACE */
 .global rt_hw_intr_exit
 rt_hw_intr_exit:
-    addl $4, %esp			   // skip intr no
+    addl $4, %esp               // skip intr no
 
     popal
     
@@ -244,6 +244,6 @@ rt_hw_intr_exit:
     popl %es
     popl %ds
 
-    addl $4, %esp			   // skip error_code
+    addl $4, %esp               // skip error_code
 
     iret

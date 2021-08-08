@@ -1,8 +1,0 @@
-{
-    "files.associations": {
-        "lwp_arch.h": "c",
-        "cpuport.h": "c",
-        "rtdevice.h": "c",
-        "rtthread.h": "c"
-    }
-}
