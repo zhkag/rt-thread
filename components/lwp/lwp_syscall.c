@@ -3262,7 +3262,9 @@ char *sys_getcwd(char *buf, size_t size)
         return RT_NULL;
     }
 #endif
-    return getcwd(buf, size);
+	getcwd(buf, size);
+
+    return (char *)strlen(buf);
 }
 
 int sys_chdir(const char *path)
