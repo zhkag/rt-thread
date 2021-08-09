@@ -3158,7 +3158,7 @@ int sys_gethostbyname2_r(const char *name, int af, struct hostent *ret,
     int a_err = 0;
 
 #ifdef RT_USING_USERSPACE
-	if (!lwp_user_accessable((void *)err, sizeof(*err)))
+    if (!lwp_user_accessable((void *)err, sizeof(*err)))
     {
         rt_set_errno(EFAULT);
         goto __exit;
@@ -3166,7 +3166,7 @@ int sys_gethostbyname2_r(const char *name, int af, struct hostent *ret,
 
     if (!lwp_user_accessable((void *)result, sizeof(*result))
     || !lwp_user_accessable((void *)ret, sizeof(*ret))
-	|| !lwp_user_accessable((void *)buf, buflen))
+    || !lwp_user_accessable((void *)buf, buflen))
     {
         /* not all arguments given */
         *err = EFAULT;
@@ -3262,7 +3262,7 @@ char *sys_getcwd(char *buf, size_t size)
         return RT_NULL;
     }
 #endif
-	getcwd(buf, size);
+    getcwd(buf, size);
 
     return (char *)strlen(buf);
 }
@@ -3793,7 +3793,7 @@ const static void* func_table[] =
     (void *)sys_pmutex,
     (void *)sys_dup,
     (void *)sys_dup2,
-    (void *)sys_rename,			/* 135 */
+    (void *)sys_rename,         /* 135 */
     (void *)sys_fork,
     (void *)sys_execve,
     (void *)sys_vfork,

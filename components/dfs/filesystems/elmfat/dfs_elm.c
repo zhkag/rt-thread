@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2018, RT-Thread Development Team
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -551,7 +551,7 @@ int dfs_elm_ioctl(struct dfs_fd *file, int cmd, void *args)
             fd->fptr = fptr;
             return elm_result_to_dfs(result);
         }
-	case F_GETLK:
+    case F_GETLK:
             return 0;
     case F_SETLK:
             return 0;
