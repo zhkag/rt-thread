@@ -151,7 +151,6 @@ static struct rt_touch_data *read_data;
 
 static void gt911_touch_up(void *buf, int8_t id)
 {
-    long test;
     read_data = (struct rt_touch_data *)buf;
 
     if(s_tp_dowm[id] == 1)
@@ -269,7 +268,9 @@ static rt_size_t gt911_read_point(struct rt_touch_device *touch, void *buf, rt_s
                 read_id = read_buf[j * 8] & 0x0F;
 
                 if (pre_id[read_index] == read_id)                   /* this id is not free */
+                {
                     break;
+                }
 
                 if (j >= touch_num - 1)
                 {
