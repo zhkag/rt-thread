@@ -126,6 +126,7 @@
 #define RT_MMCSD_MAX_PARTITION 16
 #define RT_USING_SPI
 #define RT_USING_WDT
+#define RT_USING_TOUCH
 
 /* Using USB */
 
