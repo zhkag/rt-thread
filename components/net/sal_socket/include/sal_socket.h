@@ -197,6 +197,36 @@ struct sockaddr_storage
 #endif /* NETDEV_IPV6 */
 };
 
+#define IFNAMSIZ	16
+struct sal_ifmap {
+	unsigned long int mem_start;
+	unsigned long int mem_end;
+	unsigned short int base_addr;
+	unsigned char irq;
+	unsigned char dma;
+	unsigned char port;
+};
+
+struct sal_ifreq {
+	union {
+		char ifrn_name[IFNAMSIZ];
+	} ifr_ifrn;
+	union {
+		struct sockaddr ifru_addr;
+		struct sockaddr ifru_dstaddr;
+		struct sockaddr ifru_broadaddr;
+		struct sockaddr ifru_netmask;
+		struct sockaddr ifru_hwaddr;
+		short int ifru_flags;
+		int ifru_ivalue;
+		int ifru_mtu;
+		struct sal_ifmap ifru_map;
+		char ifru_slave[IFNAMSIZ];
+		char ifru_newname[IFNAMSIZ];
+		char *ifru_data;
+	} ifr_ifru;
+};
+
 int sal_accept(int socket, struct sockaddr *addr, socklen_t *addrlen);
 int sal_bind(int socket, const struct sockaddr *name, socklen_t namelen);
 int sal_shutdown(int socket, int how);

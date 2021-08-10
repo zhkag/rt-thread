@@ -1005,13 +1005,55 @@ int sal_ioctlsocket(int socket, long cmd, void *arg)
 {
     struct sal_socket *sock;
     struct sal_proto_family *pf;
-
+    struct sockaddr_in *addr_in = RT_NULL;
+    struct sockaddr *addr = RT_NULL;
+    ip_addr_t input_ipaddr;
     /* get the socket object by socket descriptor */
     SAL_SOCKET_OBJ_GET(sock, socket);
-
     /* check the network interface socket opreation */
     SAL_NETDEV_SOCKETOPS_VALID(sock->netdev, pf, ioctlsocket);
 
+    struct sal_ifreq *ifr = (struct sal_ifreq *)arg;
+ 
+    if((sock->domain == AF_INET)&&(sock->netdev))
+    {
+        switch (cmd)
+        {
+        case SIOCGIFADDR:
+            addr_in = (struct sockaddr_in *)&(ifr->ifr_ifru.ifru_addr);
+            addr_in->sin_addr.s_addr = sock->netdev->ip_addr.u_addr.ip4.addr;
+            return 0;
+
+        case SIOCSIFADDR:
+            addr = (struct sockaddr *)&(ifr->ifr_ifru.ifru_addr);
+            sal_sockaddr_to_ipaddr(addr,&input_ipaddr);
+            netdev_set_ipaddr(sock->netdev,&input_ipaddr);
+            return 0;    
+
+        case SIOCGIFNETMASK:
+            addr_in = (struct sockaddr_in *)&(ifr->ifr_ifru.ifru_netmask);
+            addr_in->sin_addr.s_addr = sock->netdev->netmask.u_addr.ip4.addr;
+            return 0;
+
+        case SIOCSIFNETMASK:
+            addr = (struct sockaddr *)&(ifr->ifr_ifru.ifru_netmask);
+            sal_sockaddr_to_ipaddr(addr,&input_ipaddr);
+            netdev_set_netmask(sock->netdev,&input_ipaddr);
+            return 0;            
+
+        case SIOCGIFHWADDR:
+            addr = (struct sockaddr *)&(ifr->ifr_ifru.ifru_hwaddr);
+            rt_memcpy(addr->sa_data,sock->netdev->hwaddr,sock->netdev->hwaddr_len);
+            return 0;
+
+        case SIOCGIFMTU:
+            ifr->ifr_ifru.ifru_mtu = sock->netdev->mtu;
+            return 0;            
+
+        default:
+            break;
+        }
+    }
     return pf->skt_ops->ioctlsocket((int)(size_t)sock->user_data, cmd, arg);
 }
 
