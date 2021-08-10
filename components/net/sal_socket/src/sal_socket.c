@@ -1014,8 +1014,8 @@ int sal_ioctlsocket(int socket, long cmd, void *arg)
     SAL_NETDEV_SOCKETOPS_VALID(sock->netdev, pf, ioctlsocket);
 
     struct sal_ifreq *ifr = (struct sal_ifreq *)arg;
- 
-    if((sock->domain == AF_INET)&&(sock->netdev))
+
+    if((sock->domain == AF_INET)&&(sock->netdev)&&(ifr != RT_NULL))
     {
         switch (cmd)
         {
