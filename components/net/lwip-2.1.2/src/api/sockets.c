@@ -3905,7 +3905,7 @@ lwip_fcntl(int s, int cmd, int val)
     case F_SETFL:
       /* Bits corresponding to the file access mode and the file creation flags [..] that are set in arg shall be ignored */
       val &= ~(O_RDONLY | O_WRONLY | O_RDWR);
-      if ((val & ~O_NONBLOCK) == 0) {
+      if ((val & O_NONBLOCK) == O_NONBLOCK) {
         /* only O_NONBLOCK, all other bits are zero */
         netconn_set_nonblocking(sock->conn, val & O_NONBLOCK);
         ret = 0;
