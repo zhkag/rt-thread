@@ -22,6 +22,7 @@
 #include "fsl_pwm.h"
 #include "drv_pwm.h"
 #include <drv_common.h>
+#include <drivers/rt_drv_pwm.h>
 
 #define PWM_SRC_CLK_FREQ              CLOCK_GetFreq(kCLOCK_IpgClk)
 /* PWMPR register value of 0xffff has the same effect as 0xfffe */
@@ -44,17 +45,18 @@
 #define MX3_PWMCR_DBGEN         BIT(22)
 #define MX3_PWMCR_BCTR          BIT(21)
 #define MX3_PWMCR_HCTR          BIT(20)
+#define MX3_PWMCR_CLKSRC        BIT(17)
 
 #define MX3_PWMCR_EN            BIT(0)
 
-static rt_err_t imxrt_drv_pwm_control(struct rt_device_pwm *device, int cmd, void *arg);
+static rt_err_t imx6ull_drv_pwm_control(struct rt_device_pwm *device, int cmd, void *arg);
 
 static struct rt_pwm_ops imxrt_drv_ops =
 {
-    .control = imxrt_drv_pwm_control
+    .control = imx6ull_drv_pwm_control
 };
 
-static void imx6ul_pwm_reset(PWM_Type *base)
+static void imx6ull_pwm_reset(PWM_Type *base)
 {
     int wait_count = 0;
     uint32_t cr = 0;
@@ -68,10 +70,10 @@ static void imx6ul_pwm_reset(PWM_Type *base)
 
     if (cr & MX3_PWMCR_SWR)
     {
-        rt_kprintf("software reset timeout\n");
+        LOG_E("software reset timeout\n");
     }
 }
-static void imx6ul_pwm_wait_fifo_slot(PWM_Type *base, struct rt_pwm_configuration *configuration)
+static void imx6ull_pwm_wait_fifo_slot(PWM_Type *base, struct rt_pwm_configuration *configuration)
 {
     unsigned int period_ms = 0;
     int fifoav = 0;
@@ -86,12 +88,12 @@ static void imx6ul_pwm_wait_fifo_slot(PWM_Type *base, struct rt_pwm_configuratio
         sr = base->PWMSR;
         if (fifoav == (sr & 0x7))
         {
-            rt_kprintf("there is no free FIFO slot\n");
+            LOG_E("there is no free FIFO slot\n");
         }
     }
 }
 
-static rt_err_t imx6ul_pwm_enable(struct rt_device_pwm *device, rt_bool_t enable)
+static rt_err_t imx6ull_pwm_enable(struct rt_device_pwm *device, rt_bool_t enable)
 {
     PWM_Type *base = (PWM_Type *)device->parent.user_data;
 
@@ -107,7 +109,7 @@ static rt_err_t imx6ul_pwm_enable(struct rt_device_pwm *device, rt_bool_t enable
     return RT_EOK;
 }
 
-static rt_err_t imx6ul_pwm_get(struct rt_device_pwm *device, struct rt_pwm_configuration *configuration)
+static rt_err_t imx6ull_pwm_get(struct rt_device_pwm *device, struct rt_pwm_configuration *configuration)
 {
     uint32_t period = 0, prescaler = 0, val = 0;
     uint64_t tmp = 0;
@@ -134,7 +136,7 @@ static rt_err_t imx6ul_pwm_get(struct rt_device_pwm *device, struct rt_pwm_confi
     return RT_EOK;
 }
 
-static rt_err_t imx6ul_pwm_set(struct rt_device_pwm *device, struct rt_pwm_configuration *configuration)
+static rt_err_t imx6ull_pwm_set(struct rt_device_pwm *device, struct rt_pwm_configuration *configuration)
 {
     RT_ASSERT(configuration->period > 0);
     RT_ASSERT(configuration->pulse <= configuration->period);
@@ -167,20 +169,19 @@ static rt_err_t imx6ul_pwm_set(struct rt_device_pwm *device, struct rt_pwm_confi
 
     if (((base->PWMCR) & 0x1) == 1)
     {
-        imx6ul_pwm_wait_fifo_slot(base, configuration);
+        imx6ull_pwm_wait_fifo_slot(base, configuration);
     }
     else
     {
-
         pwm_start_timer(base);
-        imx6ul_pwm_reset(base);
+        imx6ull_pwm_reset(base);
     }
 
     base->PWMSAR = duty_cycles;
     base->PWMPR = period_cycles;
 
     cr = (prescale << 4) |
-         MX3_PWMCR_STOPEN | MX3_PWMCR_DOZEN | MX3_PWMCR_WAITEN | 0x2 << 16 | MX3_PWMCR_DBGEN;
+         MX3_PWMCR_STOPEN | MX3_PWMCR_DOZEN | MX3_PWMCR_WAITEN | MX3_PWMCR_CLKSRC | MX3_PWMCR_DBGEN;
 
     cr |= MX3_PWMCR_EN;
 
@@ -188,26 +189,26 @@ static rt_err_t imx6ul_pwm_set(struct rt_device_pwm *device, struct rt_pwm_confi
     return RT_EOK;
 }
 
-static rt_err_t imxrt_drv_pwm_control(struct rt_device_pwm *device, int cmd, void *arg)
+static rt_err_t imx6ull_drv_pwm_control(struct rt_device_pwm *device, int cmd, void *arg)
 {
     struct rt_pwm_configuration *configuration = (struct rt_pwm_configuration *)arg;
 
     switch (cmd)
     {
     case PWM_CMD_ENABLE:
-        return imx6ul_pwm_enable(device, RT_TRUE);
+        return imx6ull_pwm_enable(device, RT_TRUE);
     case PWM_CMD_DISABLE:
-        return imx6ul_pwm_enable(device, RT_FALSE);
+        return imx6ull_pwm_enable(device, RT_FALSE);
     case PWM_CMD_SET:
-        return imx6ul_pwm_set(device, configuration);
+        return imx6ull_pwm_set(device, configuration);
     case PWM_CMD_GET:
-        return imx6ul_pwm_get(device, configuration);
+        return imx6ull_pwm_get(device, configuration);
     default:
         return RT_EINVAL;
     }
 }
 
-static rt_err_t imxrt_drv_pwm_init(PWM_Type *base)
+static rt_err_t imx6ull_drv_pwm_init(PWM_Type *base)
 {
     pwm_config_t PwmConfig;
 
@@ -251,7 +252,7 @@ int rt_hw_pwm_init(void)
 
     imx6ull_pwm_gpio_init();
     pwm1_base = (PWM_Type *)rt_ioremap((void*)PWM1, 0x1000);
-    if (imxrt_drv_pwm_init(pwm1_base) != RT_EOK)
+    if (imx6ull_drv_pwm_init(pwm1_base) != RT_EOK)
     {
         LOG_E("init pwm1 failed\n");
     }
@@ -270,7 +271,7 @@ int rt_hw_pwm_init(void)
     static struct rt_device_pwm pwm2_device;
 
     imx6ull_pwm_gpio_init();
-    if (imxrt_drv_pwm_init(PWM2) != RT_EOK)
+    if (imx6ull_drv_pwm_init(PWM2) != RT_EOK)
     {
         LOG_E("init pwm2 failed\n");
     }
@@ -288,7 +289,7 @@ int rt_hw_pwm_init(void)
     static struct rt_device_pwm pwm3_device;
 
     imx6ull_pwm_gpio_init();
-    if (imxrt_drv_pwm_init(PWM3) != RT_EOK)
+    if (imx6ull_drv_pwm_init(PWM3) != RT_EOK)
     {
         LOG_E("init pwm3 failed\n");
     }
@@ -307,7 +308,7 @@ int rt_hw_pwm_init(void)
     static struct rt_device_pwm pwm4_device;
 
     imx6ull_pwm_gpio_init();
-    if (imxrt_drv_pwm_init(PWM4) != RT_EOK)
+    if (imx6ull_drv_pwm_init(PWM4) != RT_EOK)
     {
         LOG_E("init pwm4 failed\n");
     }
@@ -324,5 +325,23 @@ int rt_hw_pwm_init(void)
 }
 
 INIT_DEVICE_EXPORT(rt_hw_pwm_init);
+int set_pwm_default(void)
+{
+    int result = 0;
+    struct rt_device_pwm *device = RT_NULL;
 
+    device = (struct rt_device_pwm *)rt_device_find("pwm1");
+    if (!device)
+    {
+        result = -RT_EIO;
+        goto _exit;
+    }
+    
+    result = rt_pwm_set(device, 1, 1000000, 500000);
+    result = rt_pwm_enable(device, 1);
+_exit:
+    return result;
+
+}
+INIT_APP_EXPORT(set_pwm_default);
 #endif /* BSP_USING_PWM */
