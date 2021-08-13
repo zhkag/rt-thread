@@ -3349,8 +3349,8 @@ int sys_getdents(int fd, struct libc_dirent *dirp, size_t nbytes)
         return -1;
     }
     dfs_fd = fd_get(fd);
-    ret = dfs_file_getdents(dfs_fd, rtt_dirp, nbytes);
-    if (ret)
+    ret = dfs_file_getdents(dfs_fd, rtt_dirp, rtt_nbytes);
+    if (ret > 0)
     {
         size_t i = 0;
         cnt = ret / sizeof(struct dirent);
@@ -3418,6 +3418,13 @@ int sys_access(const char *filename, int mode)
     {
         rt_set_errno(EFAULT);
         ret = -1;
+    }
+
+    len = rt_strlen(filename);
+    if (!len)
+    {
+        rt_set_errno(EINVAL);
+        return -1;
     }
 
     kname = (char *)kmem_get(len + 1);
