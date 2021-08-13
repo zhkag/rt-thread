@@ -11,6 +11,7 @@
 #include <rthw.h>
 #include <stddef.h>
 #include <rtconfig.h>
+#include <rtdbg.h>
 
 #ifdef RT_USING_USERSPACE
 
@@ -23,7 +24,10 @@
 #include <lwp_mm_area.h>
 #include <lwp_user_mm.h>
 #include <lwp_arch.h>
+
+#ifdef RT_USING_SIGNALS
 #include <lwp_signal.h>
+#endif /* RT_USING_SIGNALS */
 
 extern size_t g_mmu_table[];
 
@@ -39,8 +43,24 @@ int arch_expand_user_stack(void *addr)
 
         if (map || lwp_user_accessable(addr, 1))
         {
-            ret = 1;
+            ret = 1;    /* map success */
         }
+        else /* map failed, send signal SIGSEGV */
+        {
+#ifdef RT_USING_SIGNALS
+            dbg_log(DBG_ERROR, "[fault] thread %s mapped addr %p failed!\n", rt_thread_self()->name, addr);
+            lwp_thread_kill(rt_thread_self(), SIGSEGV);
+            ret = 1;    /* return 1, will return back to intr, then check exit */
+#endif
+        }
+    }
+    else    /* not stack, send signal SIGSEGV */
+    {
+#ifdef RT_USING_SIGNALS
+        dbg_log(DBG_ERROR, "[fault] thread %s access unmapped addr %p!\n", rt_thread_self()->name, addr);
+        lwp_thread_kill(rt_thread_self(), SIGSEGV);
+        ret = 1;    /* return 1, will return back to intr, then check exit */
+#endif
     }
     return ret;
 }
