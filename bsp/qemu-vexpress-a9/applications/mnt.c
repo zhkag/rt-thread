@@ -13,7 +13,7 @@ int mnt_init(void)
     }
 
     rt_thread_mdelay(200);
-    if (dfs_mount("sd0", "/mnt", "elm", 0, NULL) != 0)
+    if (dfs_mount("sd", "/mnt", "elm", 0, NULL) != 0)
     {
         rt_kprintf("Dir /mnt mount failed!\n");
         return -1;
