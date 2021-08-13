@@ -40,27 +40,9 @@
 /*******************************************************************************
  * Definitions
  ******************************************************************************/
-#define BSP_USING_IMX6ULL_ART_PI
 
 #define ENET_PHY2  0x01U
 #define ENET_PHY1  0x0U
-
-#ifdef BSP_USING_IMX6ULL_ART_PI
-#define ENET_PHY ENET_PHY1
-#define IMX6UL_ENET ENET1
-#define IMX_INT_ENET IMX_INT_ENET1
-#define ENET_NAME "e1"
-#define ENET_IRQ_NAME "emac1_intr"
-
-#endif
-
-#ifdef BSP_USING_IMX6ULL_POR
-#define ENET_PHY ENET_PHY2
-#define IMX6UL_ENET ENET2
-#define IMX_INT_ENET IMX_INT_ENET2
-#define ENET_NAME "e2"
-#define ENET_IRQ_NAME "emac2_intr"
-#endif
 
 #define DETECT_DELAY_ONE_SECOND 1000
 #define ENET_RXBD_NUM (128)

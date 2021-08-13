@@ -15,6 +15,7 @@
 #define DBG_TAG "drv.enet"
 #define DBG_LVL DBG_LOG
 #include <rtdbg.h>
+#include "drv_eth.h"
 
 #define ETH_ENABLE (1U)
 /*******************************************************************************
@@ -185,14 +186,6 @@ static enet_handle_t *s_ENETHandle[FSL_FEATURE_SOC_ENET_COUNT] = {NULL,NULL};
 const clock_ip_name_t s_enetClock[] = ENET_CLOCKS;
 #endif /* FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL */
 
-/*! @brief Pointers to enet transmit IRQ number for each instance. */
-static const IRQn_Type s_enetTxIrqId[] = ENET_Transmit_IRQS;
-/*! @brief Pointers to enet receive IRQ number for each instance. */
-static const IRQn_Type s_enetRxIrqId[] = ENET_Receive_IRQS;
-
-/*! @brief Pointers to enet error IRQ number for each instance. */
-static const IRQn_Type s_enetErrIrqId[] = ENET_Error_IRQS;
-
 /*! @brief Pointers to enet bases for each instance. */
 static ENET_Type *const s_enetBases[] = ENET_BASE_PTRS;
 
@@ -205,7 +198,6 @@ static enet_isr_t s_enetTsIsr = NULL;
 /*******************************************************************************
  * Code
  ******************************************************************************/
-
 uint32_t ENET_GetInstance(ENET_Type *base)
 {
     uint32_t instance;
@@ -267,11 +259,6 @@ void ENET_Init(ENET_Type *base,
         RT_ASSERT(bufferConfig->rxBuffSizeAlign * bufferConfig->rxBdNumber > config->rxMaxFrameLen);
     }
 
-#if !(defined(FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL) && FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL)
-    /* Ungate ENET clock. */
-    uint32_t instance = ENET_GetInstance(IMX6UL_ENET);
-    CLOCK_EnableClock(s_enetClock[instance]);
-#endif /* FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL */
     /* Reset ENET module. */
     ENET_Reset(base);
     /* Initializes the ENET transmit buffer descriptors. */
@@ -297,10 +284,6 @@ void ENET_Deinit(ENET_Type *base)
     /* Disable ENET. */
     base->ECR &= ~ENET_ECR_ETHEREN_MASK;
 
-#if !(defined(FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL) && FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL)
-    /* Disables the clock source. */
-    CLOCK_DisableClock(s_enetClock[ENET_GetInstance(IMX6UL_ENET)]);
-#endif /* FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL */
 }
 
 void ENET_SetCallback(enet_handle_t *handle, enet_callback_t callback, void *userData)
@@ -317,7 +300,8 @@ static void ENET_SetHandler(ENET_Type *base,
                             const enet_config_t *config,
                             const enet_buffer_config_t *bufferConfig)
 {
-    uint32_t instance = ENET_GetInstance(IMX6UL_ENET);
+    struct rt_imx6ul_ethps *imx6ul_device = rt_container_of(config,struct rt_imx6ul_ethps,config);
+    uint32_t instance = get_instance_by_base(base);
     memset(handle, 0, sizeof(enet_handle_t));
     handle->rxBdBase = bufferConfig->rxBdStartAddrAlign;
     handle->rxBdCurrent = bufferConfig->rxBdStartAddrAlign;
@@ -333,17 +317,17 @@ static void ENET_SetHandler(ENET_Type *base,
     if (config->interrupt & ENET_TX_INTERRUPT)
     {
         s_enetTxIsr = ENET_TransmitIRQHandler;
-        EnableIRQ(s_enetTxIrqId[instance]);
+        EnableIRQ(imx6ul_device->irq_num);
     }
     if (config->interrupt & ENET_RX_INTERRUPT)
     {
         s_enetRxIsr = ENET_ReceiveIRQHandler;
-        EnableIRQ(s_enetRxIrqId[instance]);
+        EnableIRQ(imx6ul_device->irq_num);
     }
     if (config->interrupt & ENET_ERR_INTERRUPT)
     {
         s_enetErrIsr = ENET_ErrorIRQHandler;
-        EnableIRQ(s_enetErrIrqId[instance]);
+        EnableIRQ(imx6ul_device->irq_num);
     }
 }
 
@@ -746,7 +730,6 @@ status_t ENET_ReadFrame(ENET_Type *base,enet_handle_t *handle,const enet_config_
 
     uint16_t validLastMask = ENET_BUFFDESCRIPTOR_RX_LAST_MASK | ENET_BUFFDESCRIPTOR_RX_EMPTY_MASK;
     volatile enet_rx_bd_struct_t *curBuffDescrip = handle->rxBdCurrent;
-
     rt_hw_cpu_dcache_invalidate((void *)physical_to_virtual(curBuffDescrip->buffer), handle->rxBuffSizeAlign);
 
     /* Check the current buffer descriptor's empty flag.  if empty means there is no frame received. */
@@ -762,7 +745,7 @@ status_t ENET_ReadFrame(ENET_Type *base,enet_handle_t *handle,const enet_config_
             {
                 *length = curBuffDescrip->length;
 
-                memcpy(data, physical_to_virtual(curBuffDescrip->buffer),curBuffDescrip->length);
+                rt_memcpy(data, physical_to_virtual(curBuffDescrip->buffer),curBuffDescrip->length);
                 /* Updates the receive buffer descriptors. */
                 ENET_UpdateReadBuffers(base, handle);
                 return kStatus_Success;
@@ -826,7 +809,7 @@ status_t ENET_SendFrame(ENET_Type *base, enet_handle_t *handle, const uint8_t *d
     if (handle->txBuffSizeAlign >= length)
     {
         /* Copy data to the buffer for uDMA transfer. */
-        memcpy(physical_to_virtual(curBuffDescrip->buffer), data, length);
+        rt_memcpy(physical_to_virtual(curBuffDescrip->buffer), data, length);
         /* Set data length. */
         curBuffDescrip->length = length;
         if(last_flag)
@@ -940,7 +923,7 @@ void ENET_LeaveMulticastGroup(ENET_Type *base, uint8_t *address)
         base->GAUR &= ~(1U << ((crc >> 0x1AU) & 0x1FU));
     }
 }
-void tx_enet_callback();
+void tx_enet_callback(void *base);
 void ENET_TransmitIRQHandler(ENET_Type *base, enet_handle_t *handle)
 {
     RT_ASSERT(handle);
@@ -950,9 +933,9 @@ void ENET_TransmitIRQHandler(ENET_Type *base, enet_handle_t *handle)
         /* Clear the transmit interrupt event. */
         base->EIR = kENET_TxFrameInterrupt | kENET_TxBufferInterrupt;
     }
-    tx_enet_callback();
+    tx_enet_callback((void *)base);
 }
-void rx_enet_callback();
+void rx_enet_callback(void *base);
 void ENET_ReceiveIRQHandler(ENET_Type *base, enet_handle_t *handle)
 {
     RT_ASSERT(handle);
@@ -962,7 +945,7 @@ void ENET_ReceiveIRQHandler(ENET_Type *base, enet_handle_t *handle)
     {
         /* Clear the transmit interrupt event. */
         base->EIR = kENET_RxFrameInterrupt | kENET_RxBufferInterrupt;
-        rx_enet_callback();
+        rx_enet_callback((void *)base);
     }
 }
 void ENET_ErrorIRQHandler(ENET_Type *base, enet_handle_t *handle)
@@ -1000,7 +983,7 @@ void ENET_ErrorIRQHandler(ENET_Type *base, enet_handle_t *handle)
 void ENET_CommonFrame0IRQHandler(ENET_Type *base)
 {
     uint32_t event = base->EIR;
-    uint32_t instance = ENET_GetInstance(IMX6UL_ENET);
+    uint32_t instance = get_instance_by_base(base);
 
     if(base->EIMR & ENET_TX_INTERRUPT)
     {
@@ -1042,202 +1025,8 @@ void ENET_CommonFrame0IRQHandler(ENET_Type *base)
             }
         }
     }
-
 }
 void ENET_DriverIRQHandler(int irq, void *base)
 {
     ENET_CommonFrame0IRQHandler((ENET_Type *)base);
 }
-
-static inline void RT_IOMUXC_SetPinMux(uint32_t muxRegister,
-                                    uint32_t muxMode,
-                                    uint32_t inputRegister,
-                                    uint32_t inputDaisy,
-                                    uint32_t configRegister,
-                                    uint32_t inputOnfield)
-{
-    void *muxRegisterVir = (void *)rt_ioremap((void *)muxRegister,0x1000);
-    *((volatile uint32_t *)muxRegisterVir) =
-        IOMUXC_SW_MUX_CTL_PAD_MUX_MODE(muxMode) | IOMUXC_SW_MUX_CTL_PAD_SION(inputOnfield);
-
-    if (inputRegister)
-    {
-        void *inputRegisterVir = (void *)rt_ioremap((void *)inputRegister,0x1000);
-        *((volatile uint32_t *)inputRegisterVir) = IOMUXC_SELECT_INPUT_DAISY(inputDaisy);
-    }
-
-}
-
-static inline void RT_IOMUXC_SetPinConfig(uint32_t muxRegister,
-                                       uint32_t muxMode,
-                                       uint32_t inputRegister,
-                                       uint32_t inputDaisy,
-                                       uint32_t configRegister,
-                                       uint32_t configValue)
-{
-    if (configRegister)
-    {
-        void *configRegisterVir = (void *)rt_ioremap((void *)configRegister,0x1000);
-        *((volatile uint32_t *)configRegisterVir) = configValue;
-    }
-
-}
-
-void ENET_InitPins(void)
-{
-    rt_uint32_t reg_value;
-    #ifdef BSP_USING_IMX6ULL_ART_PI
-    RT_IOMUXC_SetPinMux(IOMUXC_SNVS_SNVS_TAMPER9_GPIO5_IO09, 0U);
-    RT_IOMUXC_SetPinConfig(IOMUXC_SNVS_SNVS_TAMPER9_GPIO5_IO09,
-                        IOMUXC_SW_PAD_CTL_PAD_DSE(6U) |
-                        IOMUXC_SW_PAD_CTL_PAD_SPEED(2U) |
-                        IOMUXC_SW_PAD_CTL_PAD_PKE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_HYS_MASK);
-
-    RT_IOMUXC_SetPinMux(IOMUXC_ENET1_RX_DATA0_ENET1_RDATA00, 0U);
-    RT_IOMUXC_SetPinConfig(IOMUXC_ENET1_RX_DATA0_ENET1_RDATA00, 0xB0E9);
-
-    RT_IOMUXC_SetPinMux(IOMUXC_ENET1_RX_DATA1_ENET1_RDATA01, 0U);
-    RT_IOMUXC_SetPinConfig(IOMUXC_ENET1_RX_DATA1_ENET1_RDATA01, 0xB0E9);
-
-    RT_IOMUXC_SetPinMux(IOMUXC_ENET1_RX_EN_ENET1_RX_EN, 0U);
-    RT_IOMUXC_SetPinConfig(IOMUXC_ENET1_RX_EN_ENET1_RX_EN, 0xB0E9);
-
-    RT_IOMUXC_SetPinMux(IOMUXC_ENET1_RX_ER_ENET1_RX_ER, 0U);
-    RT_IOMUXC_SetPinConfig(IOMUXC_ENET1_RX_ER_ENET1_RX_ER, 0xB0E9);
-
-    RT_IOMUXC_SetPinMux(IOMUXC_ENET1_TX_CLK_ENET1_REF_CLK1, 1U);
-    RT_IOMUXC_SetPinConfig(IOMUXC_ENET1_TX_CLK_ENET1_REF_CLK1, 0x0031);
-
-    RT_IOMUXC_SetPinMux(IOMUXC_ENET1_TX_DATA0_ENET1_TDATA00, 0U);
-    RT_IOMUXC_SetPinConfig(IOMUXC_ENET1_TX_DATA0_ENET1_TDATA00, 0xB0E9);
-
-    RT_IOMUXC_SetPinMux(IOMUXC_ENET1_TX_DATA1_ENET1_TDATA01, 0U);
-    RT_IOMUXC_SetPinConfig(IOMUXC_ENET1_TX_DATA1_ENET1_TDATA01, 0xB0E9);
-
-    RT_IOMUXC_SetPinMux(IOMUXC_ENET1_TX_EN_ENET1_TX_EN, 0U);
-    RT_IOMUXC_SetPinConfig(IOMUXC_ENET1_TX_EN_ENET1_TX_EN, 0xB0E9);
-
-    RT_IOMUXC_SetPinMux(IOMUXC_GPIO1_IO06_ENET1_MDIO, 0U);
-    RT_IOMUXC_SetPinConfig(IOMUXC_GPIO1_IO06_ENET1_MDIO, 0xB829);
-
-    RT_IOMUXC_SetPinMux(IOMUXC_GPIO1_IO07_ENET1_MDC, 0U);
-    RT_IOMUXC_SetPinConfig(IOMUXC_GPIO1_IO07_ENET1_MDC, 0xB0E9);
-
-    IOMUXC_GPR_Type *GPR1 = (IOMUXC_GPR_Type *)rt_ioremap((void *)IOMUXC_GPR,0x1000);
-    reg_value = GPR1->GPR1;
-    reg_value &= ~(IOMUXC_GPR_GPR1_ENET1_CLK_SEL_MASK
-                 | IOMUXC_GPR_GPR1_ENET1_CLK_SEL_MASK);
-    reg_value |=  IOMUXC_GPR_GPR1_ENET1_TX_CLK_DIR(1);
-    reg_value |=  IOMUXC_GPR_GPR1_ENET1_CLK_SEL(0);
-    GPR1->GPR1 = reg_value;
-    #endif
-
-    #ifdef BSP_USING_IMX6ULL_POR
-    RT_IOMUXC_SetPinMux(IOMUXC_SNVS_SNVS_TAMPER6_GPIO5_IO06, 0U);
-    RT_IOMUXC_SetPinConfig(IOMUXC_SNVS_SNVS_TAMPER6_GPIO5_IO06,
-                        IOMUXC_SW_PAD_CTL_PAD_DSE(6U) |
-                        IOMUXC_SW_PAD_CTL_PAD_SPEED(2U) |
-                        IOMUXC_SW_PAD_CTL_PAD_PKE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_HYS_MASK);
-
-    RT_IOMUXC_SetPinMux(IOMUXC_ENET2_RX_DATA0_ENET2_RDATA00, 0U);
-    RT_IOMUXC_SetPinConfig(IOMUXC_ENET2_RX_DATA0_ENET2_RDATA00,
-                        IOMUXC_SW_PAD_CTL_PAD_SRE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_DSE(5U) |
-                        IOMUXC_SW_PAD_CTL_PAD_SPEED(3U) |
-                        IOMUXC_SW_PAD_CTL_PAD_PKE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_PUE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_PUS(2U));
-
-    RT_IOMUXC_SetPinMux(IOMUXC_ENET2_RX_DATA1_ENET2_RDATA01, 0U);
-    RT_IOMUXC_SetPinConfig(IOMUXC_ENET2_RX_DATA1_ENET2_RDATA01,
-                        IOMUXC_SW_PAD_CTL_PAD_SRE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_DSE(5U) |
-                        IOMUXC_SW_PAD_CTL_PAD_SPEED(3U) |
-                        IOMUXC_SW_PAD_CTL_PAD_PKE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_PUE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_PUS(2U));
-
-    RT_IOMUXC_SetPinMux(IOMUXC_ENET2_RX_EN_ENET2_RX_EN, 0U);
-    RT_IOMUXC_SetPinConfig(IOMUXC_ENET2_RX_EN_ENET2_RX_EN,
-                        IOMUXC_SW_PAD_CTL_PAD_SRE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_DSE(5U) |
-                        IOMUXC_SW_PAD_CTL_PAD_SPEED(3U) |
-                        IOMUXC_SW_PAD_CTL_PAD_PKE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_PUE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_PUS(2U));
-
-    RT_IOMUXC_SetPinMux(IOMUXC_ENET2_RX_ER_ENET2_RX_ER, 0U);
-    RT_IOMUXC_SetPinConfig(IOMUXC_ENET2_RX_ER_ENET2_RX_ER,
-                        IOMUXC_SW_PAD_CTL_PAD_SRE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_DSE(5U) |
-                        IOMUXC_SW_PAD_CTL_PAD_SPEED(3U) |
-                        IOMUXC_SW_PAD_CTL_PAD_PKE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_PUE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_PUS(2U));
-
-    RT_IOMUXC_SetPinMux(IOMUXC_ENET2_TX_CLK_ENET2_REF_CLK2, 1U);
-    RT_IOMUXC_SetPinConfig(IOMUXC_ENET2_TX_CLK_ENET2_REF_CLK2,
-                        IOMUXC_SW_PAD_CTL_PAD_DSE(6U) |
-                        IOMUXC_SW_PAD_CTL_PAD_SPEED(3U));
-
-    RT_IOMUXC_SetPinMux(IOMUXC_ENET2_TX_DATA0_ENET2_TDATA00, 0U);
-    RT_IOMUXC_SetPinConfig(IOMUXC_ENET2_TX_DATA0_ENET2_TDATA00,
-                        IOMUXC_SW_PAD_CTL_PAD_SRE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_DSE(5U) |
-                        IOMUXC_SW_PAD_CTL_PAD_SPEED(3U) |
-                        IOMUXC_SW_PAD_CTL_PAD_PKE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_PUE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_PUS(2U));
-
-    RT_IOMUXC_SetPinMux(IOMUXC_ENET2_TX_DATA1_ENET2_TDATA01, 0U);
-    RT_IOMUXC_SetPinConfig(IOMUXC_ENET2_TX_DATA1_ENET2_TDATA01,
-                        IOMUXC_SW_PAD_CTL_PAD_SRE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_DSE(5U) |
-                        IOMUXC_SW_PAD_CTL_PAD_SPEED(3U) |
-                        IOMUXC_SW_PAD_CTL_PAD_PKE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_PUE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_PUS(2U));
-
-    RT_IOMUXC_SetPinMux(IOMUXC_ENET2_TX_EN_ENET2_TX_EN, 0U);
-    RT_IOMUXC_SetPinConfig(IOMUXC_ENET2_TX_EN_ENET2_TX_EN,
-                        IOMUXC_SW_PAD_CTL_PAD_SRE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_DSE(5U) |
-                        IOMUXC_SW_PAD_CTL_PAD_SPEED(3U) |
-                        IOMUXC_SW_PAD_CTL_PAD_PKE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_PUE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_PUS(2U));
-
-    RT_IOMUXC_SetPinMux(IOMUXC_GPIO1_IO04_ENET2_1588_EVENT0_IN, 0U);
-
-    RT_IOMUXC_SetPinMux(IOMUXC_GPIO1_IO05_ENET2_1588_EVENT0_OUT, 0U);
-
-    RT_IOMUXC_SetPinMux(IOMUXC_GPIO1_IO06_ENET2_MDIO, 0U);
-    RT_IOMUXC_SetPinConfig(IOMUXC_GPIO1_IO06_ENET2_MDIO,
-                        IOMUXC_SW_PAD_CTL_PAD_SRE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_DSE(5U) |
-                        IOMUXC_SW_PAD_CTL_PAD_PKE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_PUE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_PUS(2U));
-
-    RT_IOMUXC_SetPinMux(IOMUXC_GPIO1_IO07_ENET2_MDC, 0U);
-    RT_IOMUXC_SetPinConfig(IOMUXC_GPIO1_IO07_ENET2_MDC,
-                        IOMUXC_SW_PAD_CTL_PAD_SRE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_DSE(5U) |
-                        IOMUXC_SW_PAD_CTL_PAD_SPEED(3U) |
-                        IOMUXC_SW_PAD_CTL_PAD_PKE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_PUE_MASK |
-                        IOMUXC_SW_PAD_CTL_PAD_PUS(2U));
-    IOMUXC_GPR_Type *GPR1 = (IOMUXC_GPR_Type *)rt_ioremap((void *)IOMUXC_GPR,0x1000);
-    reg_value = GPR1->GPR1;
-    reg_value &= ~(IOMUXC_GPR_GPR1_ENET2_CLK_SEL_MASK
-                 | IOMUXC_GPR_GPR1_ENET2_CLK_SEL_MASK);
-    reg_value |=  IOMUXC_GPR_GPR1_ENET2_TX_CLK_DIR(1);
-    reg_value |=  IOMUXC_GPR_GPR1_ENET2_CLK_SEL(0);
-    GPR1->GPR1 = reg_value;
-    #endif
-
-}
-
-
