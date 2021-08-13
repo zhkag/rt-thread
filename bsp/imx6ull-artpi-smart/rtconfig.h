@@ -334,4 +334,8 @@
 #define RT_USING_WDT1
 #define RT_USING_WDT2
 
+/* Select ENET Driver */
+
+#define RT_USING_ENET1
+
 #endif

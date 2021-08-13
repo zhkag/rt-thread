@@ -164,4 +164,13 @@ menu "Select WDT Driver"
     endif
 endmenu
 
+menu "Select ENET Driver"
+    config RT_USING_ENET1
+        bool "Enable ENET1"
+        default y
+    config RT_USING_ENET2
+        bool "Enable ENET2"
+        default n
+endmenu
+
 endmenu

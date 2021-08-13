@@ -138,7 +138,7 @@ extern "C" {
  * @retval kStatus_Success  PHY initialize success
  * @retval kStatus_PHY_SMIVisitTimeout  PHY SMI visit time out
  */
-status_t PHY_Init(ENET_Type *base, uint32_t phyAddr, uint32_t srcClock_Hz);
+status_t PHY_Init(ENET_Type *base, uint32_t phyAddr, uint32_t srcClock_Hz,uint32_t phy_id);
 
 /*!
  * @brief PHY Negotiation function.
@@ -221,7 +221,7 @@ status_t PHY_GetLinkSpeedDuplex(ENET_Type *base, uint32_t phyAddr, phy_speed_t *
 /*!
  * @brief hardware reset phy device.
  */
-status_t phy_reset();
+status_t phy_reset(GPIO_Type *base,uint32_t pin);
 /* @} */
 
 #if defined(__cplusplus)

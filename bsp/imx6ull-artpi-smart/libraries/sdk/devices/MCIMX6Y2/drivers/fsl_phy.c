@@ -41,15 +41,6 @@
 #define PHY_NEGOTIATION_DELAY 100
 #define PHY_ID 0X7
 
-#ifdef BSP_USING_IMX6ULL_ART_PI
-#define PHY_SW_GPIO GPIO5
-#define PHY_SW_GPIO_PIN 9U
-#endif
-
-#ifdef BSP_USING_IMX6ULL_POR
-#define PHY_SW_GPIO GPIO5
-#define PHY_SW_GPIO_PIN 6U
-#endif
 /*******************************************************************************
  * Prototypes
  ******************************************************************************/
@@ -74,7 +65,7 @@ extern clock_ip_name_t s_enetClock[FSL_FEATURE_SOC_ENET_COUNT];
 /*******************************************************************************
  * Code
  ******************************************************************************/
-status_t phy_reset()
+status_t phy_reset(GPIO_Type *base,uint32_t pin)
 {
      GPIO_Type *gpio_base = NULL;
     gpio_pin_config_t sw_config =
@@ -84,11 +75,11 @@ status_t phy_reset()
         kGPIO_NoIntmode,
     };
 
-    gpio_base = (GPIO_Type *)rt_ioremap((void *)PHY_SW_GPIO,0x1000);
-    GPIO_PinInit(gpio_base, PHY_SW_GPIO_PIN, &sw_config);
-    GPIO_WritePinOutput(gpio_base,PHY_SW_GPIO_PIN,0);
+    gpio_base = (GPIO_Type *)rt_ioremap((void *)base,0x1000);
+    GPIO_PinInit(gpio_base, pin, &sw_config);
+    GPIO_WritePinOutput(gpio_base,pin,0);
     rt_thread_delay(50);
-    GPIO_WritePinOutput(gpio_base,PHY_SW_GPIO_PIN,1);
+    GPIO_WritePinOutput(gpio_base,pin,1);
 
     return kStatus_Success;
 
@@ -156,20 +147,15 @@ status_t PHY_StartNegotiation(ENET_Type *base, uint32_t phyAddr)
     return kStatus_Success;
 }
 
-status_t PHY_Init(ENET_Type *base, uint32_t phyAddr, uint32_t srcClock_Hz)
+status_t PHY_Init(ENET_Type *base, uint32_t phyAddr, uint32_t srcClock_Hz,uint32_t phy_id)
 {
     uint32_t counter = PHY_TIMEOUT_COUNT;
     uint32_t idReg = 0;
     status_t result = kStatus_Success;
-#if !(defined(FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL) && FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL)
-    /* Set SMI first. */
-    uint32_t instance = ENET_GetInstance(IMX6UL_ENET);
-    CLOCK_EnableClock(s_enetClock[instance]);
-#endif /* FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL */
 
     ENET_SetSMI(base, srcClock_Hz, false);
     PHY_Read(base, phyAddr, PHY_ID1_REG, &idReg);
-    while ((idReg != PHY_ID) && (counter != 0))
+    while ((idReg != phy_id) && (counter != 0))
     {
         PHY_Read(base, phyAddr, PHY_ID1_REG, &idReg);
         counter --;
