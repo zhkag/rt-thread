@@ -31,23 +31,37 @@ if os.getenv('RTT_EXEC_PATH'):
 	EXEC_PATH = os.getenv('RTT_EXEC_PATH')
 
 BUILD = 'debug'
+LIBC_MODE = 'release' # 'debug' or 'release', if debug, use libc in components, or not use libc with toolchain
 
 if PLATFORM == 'gcc':
     # toolchains
     PREFIX = 'i386-unknown-linux-musl-'
-    CC = PREFIX + 'gcc -fno-builtin -fno-stack-protector -nostdinc -nostdlib'
-    AS = PREFIX + 'gcc -nostdinc -nostdlib'
+ 
+    CC = PREFIX + 'gcc'
+    AS = PREFIX + 'gcc'
     AR = PREFIX + 'ar'
-    LINK = PREFIX + 'ld'
+    LINK = PREFIX + 'gcc'
     TARGET_EXT = 'elf'
     SIZE = PREFIX + 'size'
     OBJDUMP = PREFIX + 'objdump'
     OBJCPY = PREFIX + 'objcopy'
 
     DEVICE = ''
-    CFLAGS = DEVICE + ' -Wall'
+
+    if LIBC_MODE == 'debug':
+        EXT_CFLAGS = ' -nostdinc -nostdlib -fno-builtin -fno-stack-protector'
+    else:
+        EXT_CFLAGS = ''
+
+    CFLAGS = DEVICE + ' -Wall'  + EXT_CFLAGS
     AFLAGS = ' -c' + DEVICE + ' -x assembler-with-cpp'
-    LFLAGS = DEVICE + ' -Map rtthread-i386.map -nostdlib -n -T link.lds'
+
+    if LIBC_MODE == 'debug':
+        EXT_LFLAGS = ' -nostdlib'
+    else:
+        EXT_LFLAGS = ''
+        
+    LFLAGS = DEVICE + ' -static -nostartfiles -Wl,--gc-sections,-Map=rtthread.map,-cref -n -T link.lds' + EXT_LFLAGS
 
     CPATH = ''
     LPATH = ''
