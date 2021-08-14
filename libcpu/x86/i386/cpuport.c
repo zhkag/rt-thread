@@ -54,7 +54,8 @@ static void rt_hw_thread_entry(hw_thread_func_t function, void *arg, void (*texi
         texit();
     dbg_log(DBG_ERROR, "rt thread execute done, should never be here!");
     for (;;)
-        ;
+    {
+    }
 }
 
 rt_uint8_t *rt_hw_stack_init(void       *tentry,
@@ -132,7 +133,7 @@ void rt_hw_context_switch_interrupt(rt_ubase_t from, rt_ubase_t to, rt_thread_t 
 
     rt_interrupt_to_thread = to;
     rt_thread_switch_interrupt_flag = 1;
-    return ;
+    return;
 }
 
 void rt_hw_cpu_shutdown()

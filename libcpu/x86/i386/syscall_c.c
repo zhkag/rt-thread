@@ -43,7 +43,9 @@ void rt_hw_syscall_dispath(struct rt_hw_stack_frame *frame)
 #ifdef RT_USING_SIGNALS
         lwp_thread_kill(rt_thread_self(), SIGSYS);
 #else
-        while(1);
+        for(;;)
+        {
+        }
 #endif
     }
 
@@ -53,7 +55,9 @@ void rt_hw_syscall_dispath(struct rt_hw_stack_frame *frame)
 #ifdef RT_USING_SIGNALS
         lwp_thread_kill(rt_thread_self(), SIGSYS);
 #else
-        while(1);
+        for(;;)
+        {
+        }
 #endif
     }
 
@@ -69,15 +73,19 @@ void rt_hw_syscall_dispath(struct rt_hw_stack_frame *frame)
 
     if(syscallfunc == RT_NULL)
     {
-        dbg_log(DBG_ERROR, "[syscall] thread %s called unsupported syscall %d!\n", rt_thread_self()->name, frame->eax);
+        dbg_log(DBG_ERROR, "[syscall] thread %s called unsupported syscall %d!\n",
+            rt_thread_self()->name, frame->eax);
 #ifdef RT_USING_SIGNALS
         lwp_thread_kill(rt_thread_self(), SIGSYS);
 #else
-        while(1);
+        for(;;)
+        {
+        }
 #endif
     }
     /* TODO: support arg6 */
-    LOG_I("\033[36msyscall id = %d,arg0 = 0x%p,arg1 = 0x%p,arg2 = 0x%p,arg3 = 0x%p,arg4 = 0x%p,arg5 = 0x%p,arg6 = 0x%p(unsupport)\n\033[37m",
+    LOG_I("\033[36msyscall id = %d,arg0 = 0x%p,arg1 = 0x%p,arg2 = 0x%p,arg3 = 0x%p,arg4 = 0x%p,"
+          "arg5 = 0x%p,arg6 = 0x%p(unsupport)\n\033[37m",
         frame->eax, frame->ebx, frame->ecx, frame->edx, frame->esi, frame->edi, frame->ebp, 0);
     frame->eax = syscallfunc(frame->ebx, frame->ecx, frame->edx, frame->esi, frame->edi, frame->ebp, 0);
     LOG_I("\033[36msyscall deal ok,ret = 0x%p\n\033[37m",frame->eax);

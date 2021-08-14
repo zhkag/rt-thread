@@ -53,8 +53,8 @@ if PLATFORM == 'gcc':
     else:
         EXT_CFLAGS = ''
 
-    CFLAGS = DEVICE + ' -Wall'  + EXT_CFLAGS
-    AFLAGS = ' -c' + DEVICE + ' -x assembler-with-cpp'
+    CFLAGS = DEVICE + ' -Wall' + EXT_CFLAGS
+    AFLAGS = ' -c' + DEVICE + ' -x assembler-with-cpp -I.'
 
     if LIBC_MODE == 'debug':
         EXT_LFLAGS = ' -nostdlib'

@@ -31,21 +31,29 @@ enum HW_EXCEPTION_TYPE
     HW_EXCEPT_BREAKPOINT,                          /* Debug breakpoint: instruction INT3 */
     HW_EXCEPT_OVERFLOW,                            /* Overflow: instruction INTO */
     HW_EXCEPT_BOUND_RANGE,                         /* Out of bounds: command BOUND */
-    HW_EXCEPT_INVALID_OPCODE,                      /* Invalid (undefined) opcode: instruction UD2 or invalid instruction */
-    HW_EXCEPT_DEVICE_NOT_AVAILABLE,                /* Device unavailable (no math processor): floating point or WAIT/FWAIT instructions */
-    HW_EXCEPT_DOUBLE_FAULT,                        /* Double error: all instructions that can generate an exception or NMI or INTR */
-    HW_EXCEPT_COPROCESSOR_SEGMENT_OVERRUN,         /* Assist the processor segment to cross the boundary: floating-point instructions 
-                                                      (IA32 processors after 386 no longer generate such exceptions) */
+    HW_EXCEPT_INVALID_OPCODE,                      /* Invalid (undefined) opcode: 
+                                                      instruction UD2 or invalid instruction */
+    HW_EXCEPT_DEVICE_NOT_AVAILABLE,                /* Device unavailable (no math processor): 
+                                                      floating point or WAIT/FWAIT instructions */
+    HW_EXCEPT_DOUBLE_FAULT,                        /* Double error: all instructions that can generate an exception 
+                                                      or NMI or INTR */
+    HW_EXCEPT_COPROCESSOR_SEGMENT_OVERRUN,         /* Assist the processor segment to cross the boundary: 
+                                                      floating-point instructions (IA32 processors after 386 
+                                                      no longer generate such exceptions) */
     HW_EXCEPT_INVALID_TSS,                         /* Invalid TSS: When switching tasks or accessing TSS */
-    HW_EXCEPT_SEGMENT_NOT_PRESENT,                 /* Segment does not exist: when loading segment registers or accessing system segments */
+    HW_EXCEPT_SEGMENT_NOT_PRESENT,                 /* Segment does not exist: when loading segment registers 
+                                                      or accessing system segments */
     HW_EXCEPT_STACK_FAULT,                         /* Stack segmentation error: stack operation or loading SS */
     HW_EXCEPT_GENERAL_PROTECTION,                  /* General protection error: memory or other protection check */
     HW_EXCEPT_PAGE_FAULT,                          /* Page fault: memory access */
     HW_EXCEPT_RESERVED,                            /* INTEL reserved, not used */
-    HW_EXCEPT_X87_FLOAT_POINT,                     /* X87FPU floating point error (math error): X87FPU floating point instruction or WAIT/FWAIIT instruction */
+    HW_EXCEPT_X87_FLOAT_POINT,                     /* X87FPU floating point error (math error): 
+                                                      X87FPU floating point instruction or WAIT/FWAIIT instruction */
     HW_EXCEPT_ALIGNMENT_CHECK,                     /* Alignment check: data access in memory (supported from 486) */
-    HW_EXCEPT_MACHINE_CHECK,                       /* Machine Check: The error code (if any) and source depend on the specific mode (Pentium CPU starts to support) */
-    HW_EXCEPT_SIMD_FLOAT_POINT,                    /* SIMD floating-point exceptions: SSE and SSE2 floating-point instructions (supported by Pentium III) */
+    HW_EXCEPT_MACHINE_CHECK,                       /* Machine Check: The error code (if any) and source 
+                                                      depend on the specific mode (Pentium CPU starts to support) */
+    HW_EXCEPT_SIMD_FLOAT_POINT,                    /* SIMD floating-point exceptions: SSE and SSE2 floating-point 
+                                                      instructions (supported by Pentium III) */
 };
 
 typedef void (*rt_hw_intr_handler_t)(rt_hw_stack_frame_t *);
@@ -188,7 +196,8 @@ static void hw_exception_handler(rt_hw_stack_frame_t *frame)
     /* unhandled exception */
     rt_hw_interrupt_disable();
     for (;;)
-        ;
+    {
+    }
 }
 
 rt_base_t rt_hw_interrupt_disable(void)
