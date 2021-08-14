@@ -41,8 +41,8 @@ struct hw_uart_device
 #define SERIAL0_IRQ    4
 #define SERIAL1_IRQ    3
 
-#define MAX_BAUD_VALUE  11520
-#define DEFAULT_BAUD_VALUE  11520
+#define MAX_BAUD_VALUE  115200
+#define DEFAULT_BAUD_VALUE  115200
 #define DEFAULT_DIVISOR_VALUE (MAX_BAUD_VALUE / DEFAULT_BAUD_VALUE)
 
 enum uart_fifo_control_register_bits
@@ -281,7 +281,7 @@ static void do_uart_init(char *name, struct hw_uart_device *uart, struct rt_seri
 
     /* register device */
     rt_hw_serial_register(serial, name,
-                          RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,
+                          RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX | RT_DEVICE_FLAG_STREAM,
                           uart);
     rt_hw_interrupt_install(uart->irqno, rt_hw_uart_isr, serial, name);
     rt_hw_interrupt_umask(uart->irqno);

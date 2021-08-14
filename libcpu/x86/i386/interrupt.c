@@ -11,12 +11,42 @@
 #include <rtthread.h>
 #include <rthw.h>
 #include <rtdbg.h>
+#include <rtconfig.h>
 
 #include <interrupt.h>
 #include <stackframe.h>
 #include <backtrace.h>
 #include <pic.h>
 #include <lwp_arch.h>
+
+#ifdef RT_USING_SIGNALS
+#include <lwp_signal.h>
+#endif /* RT_USING_SIGNALS */
+
+enum HW_EXCEPTION_TYPE
+{
+    HW_EXCEPT_DIVIDE = 0,                          /* Division error: DIV and IDIV instructions */
+    HW_EXCEPT_DEBUG,                               /* Debugging exceptions: access to any code and data */
+    HW_EXCEPT_INTERRUPT,                           /* Unshielded interrupt: Unshielded external interrupt */
+    HW_EXCEPT_BREAKPOINT,                          /* Debug breakpoint: instruction INT3 */
+    HW_EXCEPT_OVERFLOW,                            /* Overflow: instruction INTO */
+    HW_EXCEPT_BOUND_RANGE,                         /* Out of bounds: command BOUND */
+    HW_EXCEPT_INVALID_OPCODE,                      /* Invalid (undefined) opcode: instruction UD2 or invalid instruction */
+    HW_EXCEPT_DEVICE_NOT_AVAILABLE,                /* Device unavailable (no math processor): floating point or WAIT/FWAIT instructions */
+    HW_EXCEPT_DOUBLE_FAULT,                        /* Double error: all instructions that can generate an exception or NMI or INTR */
+    HW_EXCEPT_COPROCESSOR_SEGMENT_OVERRUN,         /* Assist the processor segment to cross the boundary: floating-point instructions 
+                                                      (IA32 processors after 386 no longer generate such exceptions) */
+    HW_EXCEPT_INVALID_TSS,                         /* Invalid TSS: When switching tasks or accessing TSS */
+    HW_EXCEPT_SEGMENT_NOT_PRESENT,                 /* Segment does not exist: when loading segment registers or accessing system segments */
+    HW_EXCEPT_STACK_FAULT,                         /* Stack segmentation error: stack operation or loading SS */
+    HW_EXCEPT_GENERAL_PROTECTION,                  /* General protection error: memory or other protection check */
+    HW_EXCEPT_PAGE_FAULT,                          /* Page fault: memory access */
+    HW_EXCEPT_RESERVED,                            /* INTEL reserved, not used */
+    HW_EXCEPT_X87_FLOAT_POINT,                     /* X87FPU floating point error (math error): X87FPU floating point instruction or WAIT/FWAIIT instruction */
+    HW_EXCEPT_ALIGNMENT_CHECK,                     /* Alignment check: data access in memory (supported from 486) */
+    HW_EXCEPT_MACHINE_CHECK,                       /* Machine Check: The error code (if any) and source depend on the specific mode (Pentium CPU starts to support) */
+    HW_EXCEPT_SIMD_FLOAT_POINT,                    /* SIMD floating-point exceptions: SSE and SSE2 floating-point instructions (supported by Pentium III) */
+};
 
 typedef void (*rt_hw_intr_handler_t)(rt_hw_stack_frame_t *);
 
@@ -71,7 +101,6 @@ static void hw_external_handler(rt_hw_stack_frame_t *frame)
     rt_hw_pic_ack(irqno);
 }
 
-
 #ifdef RT_USING_LWP
 static int check_user_stack(rt_hw_stack_frame_t *frame)
 {
@@ -109,6 +138,53 @@ static void hw_exception_handler(rt_hw_stack_frame_t *frame)
 
     exception_frame_dump(frame);
     rt_hw_print_backtrace();
+
+#ifdef RT_USING_SIGNALS
+    dbg_log(DBG_ERROR, "[exception] send signal to thread %s\n", rt_thread_self()->name);
+    /* send signal to thread */
+    switch (frame->vec_no)
+    {
+    case HW_EXCEPT_DIVIDE:
+    case HW_EXCEPT_INVALID_OPCODE:
+        lwp_thread_kill(rt_thread_self(), SIGILL);
+        return;
+    case HW_EXCEPT_DEVICE_NOT_AVAILABLE:
+        lwp_thread_kill(rt_thread_self(), SIGIO);
+        return;
+    case HW_EXCEPT_COPROCESSOR_SEGMENT_OVERRUN:
+    case HW_EXCEPT_X87_FLOAT_POINT:
+    case HW_EXCEPT_SIMD_FLOAT_POINT:
+        lwp_thread_kill(rt_thread_self(), SIGFPE);
+        return;
+    case HW_EXCEPT_OVERFLOW:
+    case HW_EXCEPT_BOUND_RANGE:
+    case HW_EXCEPT_INVALID_TSS:
+    case HW_EXCEPT_ALIGNMENT_CHECK:
+        lwp_thread_kill(rt_thread_self(), SIGBUS);
+        return;
+    case HW_EXCEPT_SEGMENT_NOT_PRESENT:
+    case HW_EXCEPT_GENERAL_PROTECTION:
+        lwp_thread_kill(rt_thread_self(), SIGSEGV);
+        return;
+    case HW_EXCEPT_STACK_FAULT:
+        lwp_thread_kill(rt_thread_self(), SIGSTKFLT);
+        return;
+    case HW_EXCEPT_MACHINE_CHECK:
+    case HW_EXCEPT_INTERRUPT:
+        lwp_thread_kill(rt_thread_self(), SIGINT);
+        return;
+    case HW_EXCEPT_DOUBLE_FAULT:
+        lwp_thread_kill(rt_thread_self(), SIGKILL);
+        return;
+    case HW_EXCEPT_DEBUG:
+    case HW_EXCEPT_BREAKPOINT:
+        lwp_thread_kill(rt_thread_self(), SIGTRAP);
+        return;
+    default:
+        break;
+    }
+#endif
+
     /* unhandled exception */
     rt_hw_interrupt_disable();
     for (;;)
@@ -140,19 +216,17 @@ void rt_hw_interrupt_dispatch(rt_hw_stack_frame_t *frame)
 
 void rt_hw_stack_frame_dump(rt_hw_stack_frame_t *frame)
 {
-    rt_kprintf("====stack frame dump====\n");
-    rt_kprintf("edi:%x esi:%x ebp:%x esp dummy:%x ebx:%x edx:%x ecx:%x eax:%x\n",
+    rt_kprintf("edi:%x\nesi:%x\nebp:%x\nesp dummy:%x\nebx:%x\nedx:%x\necx:%x\neax:%x\n",
         frame->edi, frame->esi, frame->ebp, frame->esp_dummy,
         frame->ebx, frame->edx, frame->ecx, frame->eax);
-    rt_kprintf("gs:%x fs:%x es:%x ds:%x error code:%x eip:%x cs:%x eflags:%x esp:%x ss:%x\n",
+    rt_kprintf("gs:%x\nfs:%x\nes:%x\nds:%x\nerror code:%x\neip:%x\ncs:%x\neflags:%x\nesp:%x\nss:%x\n",
         frame->gs, frame->fs, frame->es, frame->ds, frame->error_code,
         frame->eip, frame->cs, frame->eflags, frame->esp, frame->ss);
 }
 
 static void exception_frame_dump(rt_hw_stack_frame_t *frame)
 {
-    rt_kprintf("====exception frame dump====\n");
-    rt_kprintf("Stack frame: exception name %s\n", hw_exception_names[frame->vec_no]);
+    rt_kprintf("\n!!! Stack frame: exception name %s\n", hw_exception_names[frame->vec_no]);
     if (frame->vec_no == 14)
     {
         rt_kprintf("page fault addr: %p\n", read_cr2());
