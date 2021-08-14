@@ -72,7 +72,7 @@ typedef struct rt_pci_device_id rt_pci_device_id_t;
 struct rt_pci_device_bar
 {
     rt_uint32_t type;          /* Type of address bar (IO address/MEM address) */
-    rt_uint32_t base_addr;     
+    rt_uint32_t base_addr;
     rt_uint32_t length;        /* Length of address */
 };
 typedef struct rt_pci_device_bar rt_pci_device_bar_t;

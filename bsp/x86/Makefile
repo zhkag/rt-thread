@@ -19,6 +19,13 @@ RTTHREAD_ELF:= rtthread.elf
 # config graphic window ? (y/n)
 QEMU_WINDOW ?= n
 
+# config netcard ? (y/n)
+QEMU_NETCARD ?= y
+QEMU_NETCARD_NAME ?=rtl8139
+
+# netcard type: tap/user
+QEMU_NET_MODE ?=user
+
 # qemu args
 QEMU_ARGS	:= 	-m 256m \
 				-rtc base=localtime \
@@ -29,6 +36,16 @@ ifeq ($(QEMU_WINDOW),y)
 	QEMU_ARGS += -serial stdio
 else
 	QEMU_ARGS += -nographic
+endif
+
+ifeq ($(QEMU_NETCARD),y)
+	QEMU_ARGS += -net nic,model=$(QEMU_NETCARD_NAME)
+ifeq ($(QEMU_NET_MODE),tap)
+	QEMU_ARGS += -net tap,ifname=tap0,script=no,downscript=no 
+else
+	QEMU_ARGS += -net user
+endif
+
 endif
 
 QEMU_ARGS +=-drive id=disk0,file=$(DISK0),format=raw,if=none \
