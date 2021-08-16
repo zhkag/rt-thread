@@ -16,7 +16,7 @@
 #define RT_USING_HOOK
 #define RT_USING_IDLE_HOOK
 #define RT_IDLE_HOOK_LIST_SIZE 4
-#define IDLE_THREAD_STACK_SIZE 4096
+#define IDLE_THREAD_STACK_SIZE 8192
 #define RT_USING_TIMER_SOFT
 #define RT_TIMER_THREAD_PRIO 4
 #define RT_TIMER_THREAD_STACK_SIZE 4096
@@ -89,7 +89,7 @@
 #define DFS_USING_WORKDIR
 #define DFS_FILESYSTEMS_MAX 4
 #define DFS_FILESYSTEM_TYPES_MAX 8
-#define DFS_FD_MAX 16
+#define DFS_FD_MAX 32
 #define RT_USING_DFS_ELMFAT
 
 /* elm-chan's FatFs, Generic FAT Filesystem Module */
@@ -206,7 +206,8 @@
 #define LWIP_SO_SNDTIMEO 1
 #define LWIP_SO_RCVBUF 1
 #define LWIP_SO_LINGER 0
-#define LWIP_NETIF_LOOPBACK 0
+#define RT_LWIP_NETIF_LOOPBACK
+#define LWIP_NETIF_LOOPBACK 1
 #define RT_LWIP_USING_PING
 
 /* AT commands */
