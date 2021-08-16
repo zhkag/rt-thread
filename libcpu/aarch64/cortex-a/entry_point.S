@@ -124,7 +124,7 @@ __start:
     dsb sy
 
     ldr x2, =0x40000000 //1G
-    mov x3, x9
+    ldr x3, =PV_OFFSET
     bl rt_hw_mmu_setup_early
 
     ldr x30, =after_mmu_enable
