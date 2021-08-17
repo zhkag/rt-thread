@@ -10,18 +10,14 @@
 
 #include "rtconfig.h"
 .section ".text.entrypoint","ax"
-
 .set EL1_stack,         __el1_stack
-
 .global __start
 
-/* This symbol is set to 0x80000 in ld script. That is the address that raspi3's firmware
-   loads 'kernel8.img' file in. */
 __start:
     /* read cpu id, stop slave cores */
-    mrs     x1, mpidr_el1            /* MPIDR_EL1: Multi-Processor Affinity Register */
+    mrs     x1, mpidr_el1           /* MPIDR_EL1: Multi-Processor Affinity Register */
     and     x1, x1, #3
-    cbz     x1, .L__cpu_0            /* .L prefix is the local label in ELF */
+    cbz     x1, .L__cpu_0           /* .L prefix is the local label in ELF */
 
     /* cpu id > 0, stop */
     /* cpu id == 0 will also goto here after returned from entry() if possible */
@@ -29,13 +25,10 @@ __start:
     wfe
     b       .L__current_cpu_idle
 
-.L__cpu_0:  /* cpu id == 0 */
-
-    /* set stack before our code */
-
-    /* Define stack pointer for current exception level */
+.L__cpu_0:
+    /* set stack before our code, Define stack pointer for current exception level */
     /* ldr	x2, =EL1_stack */
-    /* mov	sp, x2 */
+    /* mov	sp, x2         */
 
     adr     x1, __start
 
@@ -56,16 +49,15 @@ __start:
     msr     elr_el3, x2
     eret                            /* Exception Return: from EL3, continue from .L__not_in_el3 */
 
-/* running at EL2 or EL1 */
-.L__not_in_el3:
+.L__not_in_el3:                     /* running at EL2 or EL1 */
     cmp     x0, #4                  /* 0x04  0100 EL1 */
     beq     .L__in_el1              /* EL1 -> 5: */
  
     mrs     x0, hcr_el2
     bic     x0, x0, #0xff
     msr     hcr_el2, x0
-    /* in EL2 */
-    msr     sp_el1, x1              /* Set sp of EL1 to _start */
+
+    msr     sp_el1, x1              /* in EL2, set sp of EL1 to _start */
 
     /* enable CNTP for EL1 */
     mrs     x0, cnthctl_el2         /* Counter-timer Hypervisor Control register */
@@ -106,8 +98,7 @@ __start:
     sub     w2, w2, #1
     cbnz    w2, .L__clean_bss_loop
 
-/* jump to C code, should not return */
-.L__jump_to_entry:                 
+.L__jump_to_entry:          /* jump to C code, should not return */        
 
     bl get_free_page
     mov x21, x0
