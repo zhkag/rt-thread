@@ -293,6 +293,16 @@ static int console_fops_write(struct dfs_fd *fd, const void *buf, size_t count)
     return size;
 }
 
+static int console_fops_ioctl(struct dfs_fd *fd, int cmd, void *args)
+{
+    int size = 0;
+    struct rt_device *device = RT_NULL;
+
+    device = (struct rt_device *)fd->fnode->data;
+    RT_ASSERT(device != RT_NULL);
+    size = rt_device_control(device, cmd, args);
+    return size;	
+}
 static int console_fops_poll(struct dfs_fd *fd, struct rt_pollreq *req)
 {
     rt_base_t level = 0;
@@ -332,7 +342,7 @@ const static struct dfs_file_ops _console_fops =
 {
     console_fops_open,
     console_fops_close,
-    RT_NULL,
+    console_fops_ioctl,
     console_fops_read,
     console_fops_write,
     RT_NULL, /* flush */
@@ -451,6 +461,23 @@ static rt_size_t rt_console_write(struct rt_device *dev,
 
     return len;
 }
+		
+static rt_err_t  rt_console_control(rt_device_t dev, int cmd, void *args)
+{
+	rt_base_t level = 0;
+    rt_size_t len = 0;
+    struct rt_console_device *console = RT_NULL;
+
+    console = (struct rt_console_device *)dev;
+    RT_ASSERT(console != RT_NULL);
+    RT_ASSERT(console->init_flag == CONSOLE_INIT_FLAG_INITED);
+
+    level = rt_hw_interrupt_disable();
+    len = rt_device_control((struct rt_device *)console->iodev, cmd, args);
+    rt_hw_interrupt_enable(level);
+
+    return len;
+}
 
 #ifdef RT_USING_DEVICE_OPS
 const static struct rt_device_ops console_ops =
@@ -460,7 +487,7 @@ const static struct rt_device_ops console_ops =
     rt_console_close,
     rt_console_read,
     rt_console_write,
-    RT_NULL,
+    rt_console_control,
 };
 #endif
 
@@ -490,7 +517,7 @@ rt_err_t rt_console_register(const char *name, struct rt_device *iodev)
     device->close       = rt_console_close;
     device->read        = rt_console_read;
     device->write       = rt_console_write;
-    device->control     = RT_NULL;
+    device->control     = rt_console_control;
 #endif
 
     /* register a character device */

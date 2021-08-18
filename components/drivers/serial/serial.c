@@ -1130,6 +1130,8 @@ static rt_err_t rt_serial_control(struct rt_device *dev,
             break;
         case TCXONC:
             break;
+		case TIOCGWINSZ:
+			break;
 #endif
 #ifdef RT_USING_POSIX
         case FIONREAD:
