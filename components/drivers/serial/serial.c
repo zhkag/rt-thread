@@ -682,11 +682,15 @@ static rt_err_t rt_serial_open(struct rt_device *dev, rt_uint16_t oflag)
     else
     {
         if (oflag & RT_DEVICE_FLAG_INT_RX)
+        {
             dev->open_flag |= RT_DEVICE_FLAG_INT_RX;
+        }
 #ifdef RT_SERIAL_USING_DMA
         else if (oflag & RT_DEVICE_FLAG_DMA_RX)
+        {
             dev->open_flag |= RT_DEVICE_FLAG_DMA_RX;
-#endif /* RT_SERIAL_USING_DMA */
+        }
+#endif /* RT_SERIAL_USING_DMA */  
     }
 
     if (serial->serial_tx == RT_NULL)
@@ -730,10 +734,14 @@ static rt_err_t rt_serial_open(struct rt_device *dev, rt_uint16_t oflag)
     else
     {
         if (oflag & RT_DEVICE_FLAG_INT_TX)
+        {
             dev->open_flag |= RT_DEVICE_FLAG_INT_TX;
+        }
 #ifdef RT_SERIAL_USING_DMA
         else if (oflag & RT_DEVICE_FLAG_DMA_TX)
+        {
             dev->open_flag |= RT_DEVICE_FLAG_DMA_TX;
+        }            
 #endif /* RT_SERIAL_USING_DMA */
     }
 
