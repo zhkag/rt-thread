@@ -120,9 +120,9 @@ rt_hw_get_gtimer_frq:
     BL      lwp_check_exit
 
     BL      rt_thread_self
-    MOV     X8, X0
+    MOV     X19, X0
     BL      lwp_mmu_switch
-    MOV     X0, X8
+    MOV     X0, X19
     BL      lwp_user_setting_restore
 
     LDP     X2, X3, [SP], #0x10  /* SPSR and ELR. */
