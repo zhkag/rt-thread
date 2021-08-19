@@ -27,7 +27,7 @@ struct hw_uart_device
     rt_uint16_t divisor_high_reg;
     rt_uint16_t intr_indenty_reg;
     rt_uint16_t fifo_reg;
-    rt_uint16_t line_ctrl_reg; 
+    rt_uint16_t line_ctrl_reg;
     rt_uint16_t modem_ctrl_reg;
     rt_uint16_t line_status_reg;
     rt_uint16_t modem_status_reg;
@@ -266,7 +266,7 @@ static void do_uart_init(char *name, struct hw_uart_device *uart, struct rt_seri
 
     /*
      * Set FIFO, open FIFO, clear receive FIFO, clear transmit FIFO Open 64Byte FIFO,
-     * interrupt trigger level is 14Byte 
+     * interrupt trigger level is 14Byte
      */
     outb(uart->fifo_reg, FIFO_ENABLE | FIFO_CLEAR_TRANSMIT |
         FIFO_CLEAR_RECEIVE | FIFO_ENABLE_64 |

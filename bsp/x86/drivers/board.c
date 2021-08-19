@@ -67,8 +67,8 @@ void rt_hw_board_init(void)
     init_page_region.start = (size_t)HW_PAGE_START;
     init_page_region.end = page_region_init();
     /* init no mapped area in kernel table, must in kernel space */
-    RT_ASSERT(!rt_hw_mmu_map_init(&mmu_info, (void *)HW_KERNEL_DELAY_MAP_START, 
-              HW_KERNEL_DELAY_MAP_SIZE, (rt_size_t *)g_mmu_table, 0))
+    RT_ASSERT(!rt_hw_mmu_map_init(&mmu_info, (void *)HW_KERNEL_DELAY_MAP_START,
+              HW_KERNEL_DELAY_MAP_SIZE, (rt_size_t *)g_mmu_table, 0));
 
     rt_page_init(init_page_region);
     /* map kernel space, then can read/write this area directly. */
