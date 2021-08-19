@@ -1,11 +1,8 @@
 /*
  * File      : board.h
- * This file is part of RT-Thread RTOS
- * COPYRIGHT (C) 2013, RT-Thread Development Team
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
- * The license and distribution terms for this file may be
- * found in the file LICENSE in this distribution or at
- * http://www.rt-thread.org/license/LICENSE
+ * SPDX-License-Identifier: Apache-2.0
  *
  * Change Logs:
  * Date           Author       Notes
@@ -37,22 +34,23 @@ extern unsigned char __bss_end;
 #define __REG16(x)  (*((volatile unsigned short *)(x)))
 
 /* UART PL011 */
-#define PL011_UARTDR                0x000
-#define PL011_UARTFR                0x018
-#define PL011_UARTFR_TXFF_BIT       5
-#define PL011_UART0_BASE            0x09000000
-#define PL011_UART0_SIZE            0x00001000
+#define PL011_UARTDR                (0x000)
+#define PL011_UARTFR                (0x018)
+#define PL011_UARTFR_TXFF_BIT       (5)
+#define PL011_UART0_BASE            (0x09000000)
+#define PL011_UART0_SIZE            (0x00001000)
+#define PL011_UART0_IRQNUM          (33)
 
 /* GIC PL390 DIST and CPU */
-#define GIC_PL390_DISTRIBUTOR_PPTR  0x08000000
-#define GIC_PL390_CONTROLLER_PPTR   0x08010000
+#define GIC_PL390_DISTRIBUTOR_PPTR  (0x08000000)
+#define GIC_PL390_CONTROLLER_PPTR   (0x08010000)
 
-#define MAX_HANDLERS     96
-#define GIC_IRQ_START   0 
+#define MAX_HANDLERS     (96)
+#define GIC_IRQ_START   (0)
 /* number of interrupts on board */
-#define ARM_GIC_NR_IRQS     96
+#define ARM_GIC_NR_IRQS     (96)
 /* only one GIC available */
-#define ARM_GIC_MAX_NR      1
+#define ARM_GIC_MAX_NR      (1)
 
 /* the basic constants and interfaces needed by gic */
 rt_inline rt_uint64_t platform_get_gic_dist_base(void)

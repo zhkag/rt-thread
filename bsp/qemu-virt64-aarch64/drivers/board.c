@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2018, RT-Thread Development Team
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -19,7 +19,6 @@
 #include <lwp_arch.h>
 #endif
 #include "board.h"
-
 
 #ifdef RT_USING_USERSPACE
 struct mem_desc platform_mem_desc[] = {
@@ -48,7 +47,6 @@ void idle_wfi(void)
  */
 
 rt_mmu_info mmu_info;
-
 
 extern size_t MMUTable[];
 
