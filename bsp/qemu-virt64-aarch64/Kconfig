@@ -22,12 +22,12 @@ config SOC_VIRT64_AARCH64
     bool
     select ARCH_ARMV8
     select ARCH_CPU_64BIT
-    select RT_USING_CACHE
     select ARCH_ARM_MMU
+    select RT_USING_CACHE
     select RT_USING_COMPONENTS_INIT
     select RT_USING_USER_MAIN
-    select BSP_USING_GIC
     select RT_USING_GIC
+    select BSP_USING_GIC
     select BSP_USING_GIC390
     default y
 
