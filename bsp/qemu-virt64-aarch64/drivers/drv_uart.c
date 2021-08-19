@@ -131,7 +131,7 @@ static const struct rt_uart_ops _uart_ops =
 static struct hw_uart_device _uart0_device =
 {
     PL011_UART0_BASE,
-    33,
+    PL011_UART0_IRQNUM,
 };
 static struct rt_serial_device _serial0;
 #endif
@@ -142,7 +142,7 @@ int rt_hw_uart_init(void)
     struct serial_configure config = RT_SERIAL_CONFIG_DEFAULT;
 
 #ifdef RT_USING_UART0
-    _uart0_device.hw_base = (rt_size_t)rt_ioremap((void*)_uart0_device.hw_base, 0x1000);
+    _uart0_device.hw_base = (rt_size_t)rt_ioremap((void*)_uart0_device.hw_base, PL011_UART0_SIZE);
     uart = &_uart0_device;
 
     _serial0.ops    = &_uart_ops;
