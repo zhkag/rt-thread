@@ -95,7 +95,7 @@ __start:
 .L__clean_bss_loop:
     cbz     w2, .L__jump_to_entry
     str     xzr, [x1], #8
-    sub     w2, w2, #1
+    sub     w2, w2, #8
     cbnz    w2, .L__clean_bss_loop
 
 .L__jump_to_entry:          /* jump to C code, should not return */        
