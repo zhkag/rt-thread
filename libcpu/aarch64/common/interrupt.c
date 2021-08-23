@@ -25,8 +25,8 @@ rt_ubase_t rt_thread_switch_interrupt_flag = 0;
 #endif
 
 const unsigned int VECTOR_BASE = 0x00;
-extern void rt_cpu_vector_set_base(unsigned int addr);
-extern int system_vectors;
+extern void rt_cpu_vector_set_base(void *addr);
+extern void *system_vectors;
 
 #ifdef RT_USING_SMP
 #define rt_interrupt_nest rt_cpu_self()->irq_nest
@@ -47,7 +47,7 @@ static void default_isr_handler(int vector, void *param)
 
 void rt_hw_vector_init(void)
 {
-    rt_cpu_vector_set_base((unsigned long)&system_vectors);
+    rt_cpu_vector_set_base(&system_vectors);
 }
 
 /**
