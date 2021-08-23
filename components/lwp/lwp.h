@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2020, RT-Thread Development Team
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -96,7 +96,7 @@ struct rt_lwp
     struct rt_wqueue wait_queue; /*for console */
 
     struct lwp_avl_struct *address_search_head; /* for addressed object fast rearch */
-	char working_directory[DFS_PATH_MAX];
+    char working_directory[DFS_PATH_MAX];
 #ifdef RT_USING_GDBSERVER
     int debug;
     uint32_t bak_first_ins;
