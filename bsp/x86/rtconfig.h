@@ -243,7 +243,6 @@
 
 /* miscellaneous packages */
 
-
 /* samples: kernel and components samples */
 
 

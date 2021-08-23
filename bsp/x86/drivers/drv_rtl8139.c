@@ -72,12 +72,25 @@ static rt_uint8_t rx_cache_send_buf[RX_MSG_SIZE] = {0};     /* buf for rx packet
 static rt_uint8_t rx_cache_recv_buf[RX_MSG_SIZE] = {0};     /* buf for rx packet, get size and data from mq */
 static rt_uint8_t tx_cache_pbuf[TX_CACHE_BUF_SIZE] = {0};   /* buf for tx packet, get data from pbuf payload */
 
+/* rx config */
+static const rt_uint32_t rtl8139_rx_config = RX_CFG_RCV_32K | RX_NO_WRAP |
+    (RX_FIFO_THRESH << RX_CFG_FIFO_SHIFT) |
+    (RX_DMA_BURST << RX_CFG_DMA_SHIFT);
+
+/* tx config */
+static const rt_uint32_t rtl8139_tx_config = TX_IFG96 | (TX_DMA_BURST << TX_DMA_SHIFT) |
+    (TX_RETRY << TX_RETRY_SHIFT);
+
+/* intr mask, 1: receive, 0: ignore */
+static const rt_uint16_t rtl8139_intr_mask = PCI_ERR | PCS_TIMEOUT | RX_UNDERRUN | RX_OVERFLOW | RX_FIFO_OVER |
+    TX_ERR | TX_OK | RX_ERR | RX_OK;
+
 static int rtl8139_next_desc(int current_desc)
 {
     return (current_desc == NUM_TX_DESC - 1) ? 0 : (current_desc + 1);
 }
 
-int rtl8139_transmit(struct eth_device_rtl8139 *dev, rt_uint8_t *buf, rt_size_t len)
+static int rtl8139_transmit(struct eth_device_rtl8139 *dev, rt_uint8_t *buf, rt_size_t len)
 {
     rt_uint32_t entry;
     rt_uint32_t length = len;
@@ -112,7 +125,7 @@ int rtl8139_transmit(struct eth_device_rtl8139 *dev, rt_uint8_t *buf, rt_size_t 
         */
         rt_hw_dsb();
 
-        outl(dev->iobase + TX_STATUS0 + (entry * 4), dev->tx_flags | ETH_MAX(length, (rt_uint32_t )ETH_ZLEN));
+        outl(dev->iobase + TX_STATUS0 + (entry * 4), dev->tx_flags | ETH_MAX(length, (rt_uint32_t)ETH_ZLEN));
         inl(dev->iobase + TX_STATUS0 + (entry * 4)); // flush
 
         dev->current_tx = rtl8139_next_desc(dev->current_tx);
@@ -130,8 +143,6 @@ int rtl8139_transmit(struct eth_device_rtl8139 *dev, rt_uint8_t *buf, rt_size_t 
 /* Initialize the Rx and Tx rings, along with various 'dev' bits. */
 static void rtl8139_init_ring(struct eth_device_rtl8139 *dev)
 {
-    int i;
-
     dev->current_rx = 0;
     dev->current_tx = 0;
     dev->dirty_tx = 0;
@@ -139,7 +150,8 @@ static void rtl8139_init_ring(struct eth_device_rtl8139 *dev)
     /* set free counts */
     dev->tx_free_counts = NUM_TX_DESC;
 
-    for (i = 0; i < NUM_TX_DESC; i++)
+    int i = 0;
+    for (; i < NUM_TX_DESC; i++)
     {
         dev->tx_buffer[i] = (unsigned char *)&dev->tx_buffers[i * TX_BUF_SIZE];
     }
@@ -244,8 +256,8 @@ static void rtl8139_hardware_start(struct eth_device_rtl8139 *dev)
     outb(dev->iobase + CFG9346, CFG9346_LOCK);
 
     /* init Tx buffer DMA addresses */
-    int i;
-    for (i = 0; i < NUM_TX_DESC; i++)
+    int i = 0;
+    for (; i < NUM_TX_DESC; i++)
     {
         outl(dev->iobase + TX_ADDR0 + (i * 4), dev->tx_buffer_dma + (dev->tx_buffer[i] - dev->tx_buffers));
         /* flush */
@@ -275,10 +287,9 @@ static int rtl8139_tx_interrupt(struct eth_device_rtl8139 *dev)
     while (dev->tx_free_counts < NUM_TX_DESC)
     {
         int entry = dev->dirty_tx;
-        int tx_status;
 
         /* read tx status */
-        tx_status = inl(dev->iobase + TX_STATUS0 + (entry * 4));
+        int tx_status = inl(dev->iobase + TX_STATUS0 + (entry * 4));
 
         /* no tx intr, exit */
         if (!(tx_status & (TX_STAT_OK | TX_UNDERRUN | TX_ABORTED)))
@@ -387,7 +398,7 @@ static void rtl8139_rx_error(rt_uint32_t rx_status, struct eth_device_rtl8139 *d
     if (!(rx_status & RX_STATUS_OK))
     {
         /* frame error */
-        if (rx_status & (RX_BAD_SYMBOL | RX_BAD_Align))
+        if (rx_status & (RX_BAD_SYMBOL | RX_BAD_ALIGN))
         {
             dev->stats.rx_frame_errors++;
         }
@@ -494,19 +505,19 @@ static int rtl8139_rx_interrupt(struct eth_device_rtl8139 *dev)
                 if (rx_status & RX_CRC_ERR)
                 {
                     dev->stats.rx_crc_errors++;
-                    goto keep_pkt;
+                    JUMP_TO(keep_pkt);
                 }
 
                 if (rx_status & RX_RUNT)
                 {
                     dev->stats.rx_length_errors++;
-                    goto keep_pkt;
+                    JUMP_TO(keep_pkt);
                 }
             }
             /* rx error handle */
             rtl8139_rx_error(rx_status, dev);
             received = -1;
-            goto out;
+            JUMP_TO(out);
         }
 
 keep_pkt:
@@ -566,7 +577,7 @@ static void rt_hw_rtl8139_isr(int vector, void *param)
     {
         /* clear intr mask, don't receive intr forever */
         outw(dev->iobase + INTR_MASK, 0);
-        goto out;
+        JUMP_TO(out);
     }
 
     /* Acknowledge all of the current interrupt sources ASAP, but
@@ -599,7 +610,9 @@ static void rt_hw_rtl8139_isr(int vector, void *param)
         rtl8139_tx_interrupt(dev);
 
         if (status & TX_ERR)
+        {
             outw(dev->iobase + INTR_STATUS, TX_ERR);
+        }
     }
 out:
     rt_spin_unlock(&dev->lock);
@@ -721,12 +734,12 @@ static int rtl8139_init_board(struct eth_device_rtl8139 *dev)
     }
 
     rt_uint32_t version = inl(dev->iobase + TX_CONFIG) & HW_REVID_MASK;
-    int i;
-    for (i = 0; i < CHIP_INFO_NR; i++)
+    int i = 0;
+    for (; i < CHIP_INFO_NR; i++)
     {
         if (version == rtl_chip_info[i].version) {
             dev->chipset = i;
-            goto chip_match;
+            JUMP_TO(chip_match);
         }
     }
 
@@ -775,8 +788,8 @@ static int rtl8139_init_hw(struct eth_device_rtl8139 *dev)
     }
 
     /* get MAC from pci config */
-    int i;
-    for (i = 0; i < ETH_ALEN; i++) {
+    int i = 0;
+    for (; i < ETH_ALEN; i++) {
         dev->dev_addr[i] = inb(dev->iobase + MAC0 + i);
     }
     dbg_log(DBG_INFO, "MAC addr: %x:%x:%x:%x:%x:%x\n", dev->dev_addr[0], dev->dev_addr[1],
@@ -815,7 +828,7 @@ static struct pbuf *rtl8139_rx(rt_device_t device)
     err = rt_mq_recv_interruptible(dev->rx_mqueue, rx_cache_recv_buf, RX_MSG_SIZE, 0);
     if (err != RT_EOK)
     {
-        goto end;
+        return pbuf;
     }
     /* get recv len from rx cache, 0~3: recv len, 3-n: frame data */
     recv_len = *(int *)rx_cache_recv_buf;
@@ -824,7 +837,6 @@ static struct pbuf *rtl8139_rx(rt_device_t device)
         pbuf = pbuf_alloc(PBUF_LINK, recv_len, PBUF_RAM);
         rt_memcpy(pbuf->payload, (char *)rx_cache_recv_buf + 4, recv_len);
     }
-end:
     return pbuf;
 }
 

@@ -61,6 +61,8 @@
 #define TX_DMA_BURST    6   /* Maximum PCI burst, '6' is 1024 */
 #define TX_RETRY    8   /* 0-15.  retries = 16 + (TX_RETRY * 16) */
 
+#define JUMP_TO(label)  goto label
+
 enum
 {
     HAS_MII_XCVR = 0x010000,
@@ -96,7 +98,7 @@ enum rtl8139_registers
     CONFIG0     = 0x51,
     CONFIG1     = 0x52,
     TIMER_INT   = 0x54,
-    MEDIA_STATUS= 0x58,
+    MEDIA_STATUS = 0x58,
     CONFIG3     = 0x59,
     CONFIG4     = 0x5A,  /* absent on RTL-8139A */
     HLT_CTL     = 0x5B,
@@ -106,13 +108,13 @@ enum rtl8139_registers
     BASIC_MODE_STATUS   = 0x64,
     NWAY_ADVERT = 0x66,
     NWAY_LPAR   = 0x68,
-    NWAY_EXPANSION  = 0x6A,
+    NWAY_EXPANSION = 0x6A,
     /* Undocumented registers, but required for proper operation. */
     FIFOTMS     = 0x70,  /* FIFO Control and test. */
     CSCR        = 0x74,  /* Chip Status and Configuration Register. */
     PARA78      = 0x78,
     FLASH_REG   = 0xD4, /* Communication with Flash ROM, four bytes. */
-    PARA7c      = 0x7c,  /* Magic transceiver parameter register. */
+    PARA7C      = 0x7c,  /* Magic transceiver parameter register. */
     CONFIG5     = 0xD8,  /* absent on RTL-8139A */
 };
 
@@ -120,7 +122,7 @@ enum clear_bit_masks
 {
     MULTI_INTR_CLEAR    = 0xF000,
     CHIP_CMD_CLEAR  = 0xE2,
-    CONFIG1_CLEAR   = (1 <<7 ) | (1 << 6) | (1 << 3) | (1 << 2) | (1 << 1),
+    CONFIG1_CLEAR   = (1 << 7) | (1 << 6) | (1 << 3) | (1 << 2) | (1 << 1),
 };
 
 enum chip_cmd_bits
@@ -165,7 +167,7 @@ enum rx_status_bits
     RX_RUNT         = 0x0010,
     RX_TOO_LONG     = 0x0008,
     RX_CRC_ERR      = 0x0004,
-    RX_BAD_Align    = 0x0002,
+    RX_BAD_ALIGN    = 0x0002,
     RX_STATUS_OK    = 0x0001,
 };
 
@@ -236,13 +238,13 @@ enum config4_bits
 /* Bits in Config5 */
 enum config5_bits
 {
-    Cfg5_PME_STS    = (1 << 0), /* 1    = PCI reset resets PME_Status */
-    Cfg5_LANWake    = (1 << 1), /* 1    = enable LANWake signal */
-    Cfg5_LDPS       = (1 << 2), /* 0    = save power when link is down */
-    Cfg5_FIFOAddrPtr= (1 << 3), /* Realtek internal SRAM testing */
-    Cfg5_UWF        = (1 << 4), /* 1 = accept unicast wakeup frame */
-    Cfg5_MWF        = (1 << 5), /* 1 = accept multicast wakeup frame */
-    Cfg5_BWF        = (1 << 6), /* 1 = accept broadcast wakeup frame */
+    CFG5_PME_STS    = (1 << 0), /* 1    = PCI reset resets PME_Status */
+    CFG5_LAN_WAKE   = (1 << 1), /* 1    = enable LANWake signal */
+    CFG5_LDPS       = (1 << 2), /* 0    = save power when link is down */
+    CFG5_FIFO_ADDR_PTR = (1 << 3), /* Realtek internal SRAM testing */
+    CFG5_UWF        = (1 << 4), /* 1 = accept unicast wakeup frame */
+    CFG5_MWF        = (1 << 5), /* 1 = accept multicast wakeup frame */
+    CFG5_BWF        = (1 << 6), /* 1 = accept broadcast wakeup frame */
 };
 
 enum rx_config_bits
@@ -360,19 +362,6 @@ struct rtl8139_status
     rt_ubase_t packets;
     rt_ubase_t bytes;
 };
-
-/* rx config */
-static const rt_uint32_t rtl8139_rx_config = RX_CFG_RCV_32K | RX_NO_WRAP |
-    (RX_FIFO_THRESH << RX_CFG_FIFO_SHIFT) |
-    (RX_DMA_BURST << RX_CFG_DMA_SHIFT);
-
-/* tx config */
-static const rt_uint32_t rtl8139_tx_config = TX_IFG96 | (TX_DMA_BURST << TX_DMA_SHIFT) |
-    (TX_RETRY << TX_RETRY_SHIFT);
-
-/* intr mask, 1: receive, 0: ignore */
-static const rt_uint16_t rtl8139_intr_mask = PCI_ERR | PCS_TIMEOUT | RX_UNDERRUN | RX_OVERFLOW | RX_FIFO_OVER |
-    TX_ERR | TX_OK | RX_ERR | RX_OK;
 
 struct net_device_status
 {
