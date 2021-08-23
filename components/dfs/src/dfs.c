@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2018, RT-Thread Development Team
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -447,7 +447,7 @@ static int fd_get_fd_index_form_fdt(struct dfs_fdtable *fdt, struct dfs_fd *file
 {
     int fd = -1;
 
-    if (file == RT_NULL) 
+    if (file == RT_NULL)
     {
         return -1;
     }
@@ -458,8 +458,8 @@ static int fd_get_fd_index_form_fdt(struct dfs_fdtable *fdt, struct dfs_fd *file
     {
         if(fdt->fds[index] == file)
         {
-            fd = index; 
-            break; 
+            fd = index;
+            break;
         }
     }
 
@@ -565,7 +565,9 @@ char *dfs_normalize_path(const char *directory, const char *filename)
 
 #ifdef DFS_USING_WORKDIR
     if (directory == NULL) /* shall use working directory */
-        directory = &working_directory[0];
+    {
+    	directory = lwp_dir_get();
+    }
 #else
     if ((directory == NULL) && (filename[0] != '/'))
     {
@@ -707,7 +709,7 @@ struct dfs_fdtable *dfs_fdtable_get_pid(int pid)
     struct rt_lwp *lwp = RT_NULL;
     struct dfs_fdtable *fdt = RT_NULL;
 
-    lwp = lwp_from_pid(pid); 
+    lwp = lwp_from_pid(pid);
     if (lwp)
     {
         fdt = &lwp->fdt;
@@ -715,13 +717,50 @@ struct dfs_fdtable *dfs_fdtable_get_pid(int pid)
 
     return fdt;
 }
-#endif 
+#endif
 
 struct dfs_fdtable *dfs_fdtable_get_global(void)
 {
     return &_fdtab;
 }
+void lwp_dir_set(char *buf)
+{    
+	if(strlen(buf) >= DFS_PATH_MAX)
+	{
+		rt_kprintf("buf too long!\n");
+	    return ;
+	}
 
+#ifdef RT_USING_LWP
+	struct rt_lwp *lwp;
+
+    lwp = (struct rt_lwp *)rt_thread_self()->lwp;
+    if (lwp)
+        strncpy(lwp->working_directory, buf, DFS_PATH_MAX);
+    else
+        strncpy(working_directory, buf, DFS_PATH_MAX);
+#else
+    strncpy(working_directory, buf, DFS_PATH_MAX);
+#endif
+	return ;	
+}
+
+char *lwp_dir_get(void)
+{
+	char *dir_buf;
+#ifdef RT_USING_LWP
+    struct rt_lwp *lwp;
+
+    lwp = (struct rt_lwp *)rt_thread_self()->lwp;
+    if (lwp)
+        dir_buf = &lwp->working_directory[0];
+    else
+        dir_buf = &working_directory[0];
+#else
+    dir_buf =  &working_directory[0];
+#endif
+	return dir_buf;
+}
 #ifdef RT_USING_FINSH
 #include <finsh.h>
 int list_fd(void)
@@ -781,7 +820,7 @@ static int lsofp(int pid)
     else
     {
         fd_table = dfs_fdtable_get_pid(pid);
-        if (!fd_table) 
+        if (!fd_table)
         {
             rt_kprintf("PID %s is not a applet(lwp)\n", pid);
             return -1;
@@ -849,7 +888,7 @@ int lsof(int argc, char *argv[])
         struct rt_list_node *node, *list;
         struct lwp_avl_struct *pids = lwp_get_pid_ary();
 
-        lsofp(-1); 
+        lsofp(-1);
 
         for (int index = 0; index < RT_LWP_MAX_NR; index++)
         {
@@ -860,7 +899,7 @@ int lsof(int argc, char *argv[])
                 list = &lwp->t_grp;
                 for (node = list->next; node != list; node = node->next)
                 {
-                    lsofp(lwp_to_pid(lwp)); 
+                    lsofp(lwp_to_pid(lwp));
                 }
             }
         }
@@ -870,14 +909,14 @@ int lsof(int argc, char *argv[])
         if (argv[1][0] == '-' && argv[1][1] == 'p')
         {
             int pid = atoi(argv[2]);
-            lsofp(pid); 
+            lsofp(pid);
         }
     }
 
     return 0;
 }
-MSH_CMD_EXPORT(lsof, list open files); 
-#endif /* RT_USING_LWP */ 
+MSH_CMD_EXPORT(lsof, list open files);
+#endif /* RT_USING_LWP */
 
 /*
  * If no argument is specified, display the mount history;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2018, RT-Thread Development Team
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -851,7 +851,7 @@ int chdir(const char *path)
     closedir(d);
 
     /* copy full path to working directory */
-    strncpy(working_directory, fullpath, DFS_PATH_MAX);
+    lwp_dir_set(fullpath);
     /* release normalize directory path name */
     rt_free(fullpath);
 
@@ -895,10 +895,16 @@ int access(const char *path, int amode)
  * @return the returned current directory.
  */
 char *getcwd(char *buf, size_t size)
-{
+{	
+	char *dir_buf;
 #ifdef DFS_USING_WORKDIR
     dfs_lock();
-    strncpy(buf, working_directory, size);
+    dir_buf = lwp_dir_get();
+	if(dir_buf[0] != '/')
+	{
+		dir_buf = &working_directory[0];	
+	}
+	strncpy(buf, dir_buf, size);
     dfs_unlock();
 #else
     rt_kprintf(NO_WORKING_DIR);
