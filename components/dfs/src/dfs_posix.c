@@ -895,16 +895,16 @@ int access(const char *path, int amode)
  * @return the returned current directory.
  */
 char *getcwd(char *buf, size_t size)
-{	
-	char *dir_buf;
+{
+    char *dir_buf;
 #ifdef DFS_USING_WORKDIR
     dfs_lock();
     dir_buf = lwp_dir_get();
-	if(dir_buf[0] != '/')
-	{
-		dir_buf = &working_directory[0];	
-	}
-	strncpy(buf, dir_buf, size);
+    if(dir_buf[0] != '/')
+    {
+        dir_buf = &working_directory[0];
+    }
+    strncpy(buf, dir_buf, size);
     dfs_unlock();
 #else
     rt_kprintf(NO_WORKING_DIR);
