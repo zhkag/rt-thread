@@ -747,7 +747,7 @@ void lwp_dir_set(char *buf)
 
 char *lwp_dir_get(void)
 {
-	char *dir_buf = RT_NULL;
+    char *dir_buf = RT_NULL;
 #ifdef RT_USING_LWP
     struct rt_lwp *lwp;
 
