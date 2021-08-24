@@ -736,11 +736,11 @@ void lwp_dir_set(char *buf)
 
     lwp = (struct rt_lwp *)rt_thread_self()->lwp;
     if (lwp)
-        strncpy(lwp->working_directory, buf, DFS_PATH_MAX);
+        rt_strncpy(lwp->working_directory, buf, DFS_PATH_MAX);
     else
-        strncpy(working_directory, buf, DFS_PATH_MAX);
+        rt_strncpy(working_directory, buf, DFS_PATH_MAX);
 #else
-    strncpy(working_directory, buf, DFS_PATH_MAX);
+    rt_strncpy(working_directory, buf, DFS_PATH_MAX);
 #endif
     return ;
 }

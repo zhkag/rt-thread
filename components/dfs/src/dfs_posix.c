@@ -900,11 +900,11 @@ char *getcwd(char *buf, size_t size)
 #ifdef DFS_USING_WORKDIR
     dfs_lock();
     dir_buf = lwp_dir_get();
-    if(dir_buf[0] != '/')
-    {
-        dir_buf = &working_directory[0];
-    }
-    strncpy(buf, dir_buf, size);
+	if(dir_buf[0] != '/')
+	{
+		dir_buf = &working_directory[0];	
+	}
+	rt_strncpy(buf, dir_buf, size);
     dfs_unlock();
 #else
     rt_kprintf(NO_WORKING_DIR);
