@@ -117,8 +117,6 @@ void fd_init(struct dfs_fd *fd);
 
 struct dfs_fdtable *dfs_fdtable_get(void);
 struct dfs_fdtable *dfs_fdtable_get_global(void);
-void lwp_dir_set(char *buf);
-char *lwp_dir_get(void);
 
 #ifdef __cplusplus
 }

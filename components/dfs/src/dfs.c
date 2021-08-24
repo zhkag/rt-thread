@@ -14,6 +14,7 @@
 #include <dfs_fs.h>
 #include <dfs_file.h>
 #include "dfs_private.h"
+#include "lwp_dir.h"
 #ifdef RT_USING_LWP
 #include <lwp.h>
 #endif
@@ -723,44 +724,7 @@ struct dfs_fdtable *dfs_fdtable_get_global(void)
 {
     return &_fdtab;
 }
-void lwp_dir_set(char *buf)
-{
-    if(strlen(buf) >= DFS_PATH_MAX)
-    {
-        rt_kprintf("buf too long!\n");
-        return ;
-    }
 
-#ifdef RT_USING_LWP
-    struct rt_lwp *lwp;
-
-    lwp = (struct rt_lwp *)rt_thread_self()->lwp;
-    if (lwp)
-        rt_strncpy(lwp->working_directory, buf, DFS_PATH_MAX);
-    else
-        rt_strncpy(working_directory, buf, DFS_PATH_MAX);
-#else
-    rt_strncpy(working_directory, buf, DFS_PATH_MAX);
-#endif
-    return ;
-}
-
-char *lwp_dir_get(void)
-{
-    char *dir_buf = RT_NULL;
-#ifdef RT_USING_LWP
-    struct rt_lwp *lwp;
-
-    lwp = (struct rt_lwp *)rt_thread_self()->lwp;
-    if (lwp)
-        dir_buf = &lwp->working_directory[0];
-    else
-        dir_buf = &working_directory[0];
-#else
-    dir_buf =  &working_directory[0];
-#endif
-    return dir_buf;
-}
 #ifdef RT_USING_FINSH
 #include <finsh.h>
 int list_fd(void)

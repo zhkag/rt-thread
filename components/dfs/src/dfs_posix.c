@@ -12,7 +12,7 @@
 #include <dfs.h>
 #include <dfs_posix.h>
 #include "dfs_private.h"
-
+#include "lwp_dir.h"
 /**
  * @addtogroup FsPosixApi
  */
