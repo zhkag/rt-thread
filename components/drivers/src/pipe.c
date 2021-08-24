@@ -17,6 +17,49 @@
 #include <dfs_posix.h>
 #include <dfs_poll.h>
 
+#define PIPE_ARY_SIZE 1000
+static void *pipe_res[PIPE_ARY_SIZE];
+static int pipe_noused = 0;
+static void **pipe_free = RT_NULL;
+static int pipeno_get(void)
+{
+    rt_base_t level;
+
+    void **cur;
+
+    level = rt_hw_interrupt_disable();
+    if (pipe_free)
+    {
+        cur = pipe_free;
+        pipe_free = (void **)*pipe_free;
+        rt_hw_interrupt_enable(level);
+        return cur - pipe_res;
+    }
+    else if (pipe_noused < PIPE_ARY_SIZE)
+    {
+        cur = &pipe_res[pipe_noused++];
+        rt_hw_interrupt_enable(level);
+        return cur - pipe_res;
+    }
+    rt_hw_interrupt_enable(level);
+    return -1;
+}
+
+static void pipeno_put(int no)
+{
+    rt_base_t level;
+    void **cur;
+
+    if (no >= 0 && no < PIPE_ARY_SIZE)
+    {
+        level = rt_hw_interrupt_disable();
+        cur = &pipe_res[no];
+        *cur = (void *)pipe_free;
+        pipe_free = cur;
+        rt_hw_interrupt_enable(level);
+    }
+}
+
 static int pipe_fops_open(struct dfs_fd *fd)
 {
     int rc = 0;
@@ -399,6 +442,9 @@ rt_pipe_t *rt_pipe_create(const char *name, int bufsz)
 
     rt_memset(pipe, 0, sizeof(rt_pipe_t));
     pipe->is_named = RT_TRUE; /* initialize as a named pipe */
+#ifdef RT_USING_POSIX
+    pipe->pipeno = -1;
+#endif
     rt_mutex_init(&pipe->lock, name, RT_IPC_FLAG_FIFO);
     rt_wqueue_init(&pipe->reader_queue);
     rt_wqueue_init(&pipe->writer_queue);
@@ -424,6 +470,10 @@ rt_pipe_t *rt_pipe_create(const char *name, int bufsz)
 
     if (rt_device_register(&pipe->parent, name, RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_REMOVABLE) != 0)
     {
+        rt_mutex_detach(&pipe->lock);
+#ifdef RT_USING_POSIX
+        pipeno_put(pipe->pipeno);
+#endif
         rt_free(pipe);
         return RT_NULL;
     }
@@ -449,6 +499,9 @@ int rt_pipe_delete(const char *name)
             pipe = (rt_pipe_t *)device;
 
             rt_mutex_detach(&pipe->lock);
+#ifdef RT_USING_POSIX
+            pipeno_put(pipe->pipeno);
+#endif
             rt_device_unregister(device);
 
             /* close fifo ringbuffer */
@@ -478,17 +531,24 @@ int pipe(int fildes[2])
     rt_pipe_t *pipe;
     char dname[8];
     char dev_name[32];
-    static int pipeno = 0;
+    int pipeno = 0;
 
-    rt_snprintf(dname, sizeof(dname), "pipe%d", pipeno++);
+    pipeno = pipeno_get();
+    if (pipeno == -1)
+    {
+        return -1;
+    }
+    rt_snprintf(dname, sizeof(dname), "pipe%d", pipeno);
 
     pipe = rt_pipe_create(dname, PIPE_BUFSZ);
     if (pipe == RT_NULL)
     {
+        pipeno_put(pipeno);
         return -1;
     }
 
     pipe->is_named = RT_FALSE; /* unamed pipe */
+    pipe->pipeno = pipeno;
     rt_snprintf(dev_name, sizeof(dev_name), "/dev/%s", dname);
     fildes[0] = open(dev_name, O_RDONLY, 0);
     if (fildes[0] < 0)
