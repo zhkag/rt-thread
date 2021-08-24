@@ -143,7 +143,7 @@ void rt_hw_mmu_unmap(rt_mmu_info *mmu_info,void *v_addr,rt_size_t size);
 void *rt_hw_mmu_v2p(rt_mmu_info *mmu_info,void *v_addr);
 
 /* used in kernel mmaped area */
-#define rt_hw_phy2vir(p) ((p) + KERNEL_VADDR_START)
-#define rt_hw_vir2phy(v) ((v) - KERNEL_VADDR_START)
+#define rt_hw_phy2vir(p) ((rt_ubase_t)(p) + KERNEL_VADDR_START)
+#define rt_hw_vir2phy(v) ((rt_ubase_t)(v) - KERNEL_VADDR_START)
 
 #endif

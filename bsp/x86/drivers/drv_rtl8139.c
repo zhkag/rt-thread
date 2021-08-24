@@ -72,7 +72,6 @@ static rt_uint8_t rx_cache_send_buf[RX_MSG_SIZE] = {0};     /* buf for rx packet
 static rt_uint8_t rx_cache_recv_buf[RX_MSG_SIZE] = {0};     /* buf for rx packet, get size and data from mq */
 static rt_uint8_t tx_cache_pbuf[TX_CACHE_BUF_SIZE] = {0};   /* buf for tx packet, get data from pbuf payload */
 
-
 /* rx config */
 static const rt_uint32_t rtl8139_rx_config = RX_CFG_RCV_32K | RX_NO_WRAP |
     (RX_FIFO_THRESH << RX_CFG_FIFO_SHIFT) |
@@ -91,7 +90,7 @@ static int rtl8139_next_desc(int current_desc)
     return (current_desc == NUM_TX_DESC - 1) ? 0 : (current_desc + 1);
 }
 
-int rtl8139_transmit(struct eth_device_rtl8139 *dev, rt_uint8_t *buf, rt_size_t len)
+static int rtl8139_transmit(struct eth_device_rtl8139 *dev, rt_uint8_t *buf, rt_size_t len)
 {
     rt_uint32_t entry;
     rt_uint32_t length = len;
@@ -829,7 +828,7 @@ static struct pbuf *rtl8139_rx(rt_device_t device)
     err = rt_mq_recv_interruptible(dev->rx_mqueue, rx_cache_recv_buf, RX_MSG_SIZE, 0);
     if (err != RT_EOK)
     {
-        JUMP_TO(end);
+        return pbuf;
     }
     /* get recv len from rx cache, 0~3: recv len, 3-n: frame data */
     recv_len = *(int *)rx_cache_recv_buf;
@@ -838,7 +837,6 @@ static struct pbuf *rtl8139_rx(rt_device_t device)
         pbuf = pbuf_alloc(PBUF_LINK, recv_len, PBUF_RAM);
         rt_memcpy(pbuf->payload, (char *)rx_cache_recv_buf + 4, recv_len);
     }
-end:
     return pbuf;
 }
 

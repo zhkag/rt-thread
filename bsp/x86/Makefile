@@ -21,7 +21,9 @@ QEMU_WINDOW ?= n
 
 # config netcard ? (y/n)
 QEMU_NETCARD ?= y
-QEMU_NETCARD_NAME ?=rtl8139
+
+# netcard name: rtl8139/pcnet
+QEMU_NETCARD_NAME ?=pcnet
 
 # netcard type: tap/user
 QEMU_NET_MODE ?=user
