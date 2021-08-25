@@ -16,49 +16,28 @@
 #include <dfs_file.h>
 #include <dfs_posix.h>
 #include <dfs_poll.h>
+#include <resource_id.h>
 
-#define PIPE_ARY_SIZE 1000
-static void *pipe_res[PIPE_ARY_SIZE];
-static int pipe_noused = 0;
-static void **pipe_free = RT_NULL;
-static int pipeno_get(void)
+/* check RT_UNAMED_PIPE_NUMBER */
+
+#ifndef RT_UNAMED_PIPE_NUMBER
+#define RT_UNAMED_PIPE_NUMBER 64
+#endif
+
+#define BITS(x) _BITS(x)
+#define _BITS(x) (sizeof(#x) - 1)
+
+struct check_rt_unamed_pipe_number
 {
-    rt_base_t level;
+    /* -4 for "pipe" prefix */
+    /* -1 for '\0' postfix */
+    char _check[RT_NAME_MAX - 4 - 1 - BITS(RT_UNAMED_PIPE_NUMBER)];
+};
 
-    void **cur;
+/* check end */
 
-    level = rt_hw_interrupt_disable();
-    if (pipe_free)
-    {
-        cur = pipe_free;
-        pipe_free = (void **)*pipe_free;
-        rt_hw_interrupt_enable(level);
-        return cur - pipe_res;
-    }
-    else if (pipe_noused < PIPE_ARY_SIZE)
-    {
-        cur = &pipe_res[pipe_noused++];
-        rt_hw_interrupt_enable(level);
-        return cur - pipe_res;
-    }
-    rt_hw_interrupt_enable(level);
-    return -1;
-}
-
-static void pipeno_put(int no)
-{
-    rt_base_t level;
-    void **cur;
-
-    if (no >= 0 && no < PIPE_ARY_SIZE)
-    {
-        level = rt_hw_interrupt_disable();
-        cur = &pipe_res[no];
-        *cur = (void *)pipe_free;
-        pipe_free = cur;
-        rt_hw_interrupt_enable(level);
-    }
-}
+static void *resoure_id[RT_UNAMED_PIPE_NUMBER];
+static resource_id_t id_mgr = RESOURCE_ID_INIT(RT_UNAMED_PIPE_NUMBER, resoure_id);
 
 static int pipe_fops_open(struct dfs_fd *fd)
 {
@@ -472,7 +451,7 @@ rt_pipe_t *rt_pipe_create(const char *name, int bufsz)
     {
         rt_mutex_detach(&pipe->lock);
 #ifdef RT_USING_POSIX
-        pipeno_put(pipe->pipeno);
+        resource_id_put(&id_mgr, pipe->pipeno);
 #endif
         rt_free(pipe);
         return RT_NULL;
@@ -500,7 +479,7 @@ int rt_pipe_delete(const char *name)
 
             rt_mutex_detach(&pipe->lock);
 #ifdef RT_USING_POSIX
-            pipeno_put(pipe->pipeno);
+            resource_id_put(&id_mgr, pipe->pipeno);
 #endif
             rt_device_unregister(device);
 
@@ -533,7 +512,7 @@ int pipe(int fildes[2])
     char dev_name[32];
     int pipeno = 0;
 
-    pipeno = pipeno_get();
+    pipeno = resource_id_get(&id_mgr);
     if (pipeno == -1)
     {
         return -1;
@@ -543,7 +522,7 @@ int pipe(int fildes[2])
     pipe = rt_pipe_create(dname, PIPE_BUFSZ);
     if (pipe == RT_NULL)
     {
-        pipeno_put(pipeno);
+        resource_id_put(&id_mgr, pipeno);
         return -1;
     }
 

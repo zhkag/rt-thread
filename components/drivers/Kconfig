@@ -4,6 +4,10 @@ config RT_USING_DEVICE_IPC
     bool "Using device drivers IPC"
     default y
 
+config RT_UNAMED_PIPE_NUMBER
+    int "The number of unamed pipe"
+    default 64
+
 if RT_USING_DEVICE_IPC
     config RT_PIPE_BUFSZ
         int "Set pipe buffer size"
