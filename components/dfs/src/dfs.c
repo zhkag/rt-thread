@@ -14,7 +14,7 @@
 #include <dfs_fs.h>
 #include <dfs_file.h>
 #include "dfs_private.h"
-#include "lwp_dir.h"
+
 #ifdef RT_USING_LWP
 #include <lwp.h>
 #endif
@@ -567,7 +567,7 @@ char *dfs_normalize_path(const char *directory, const char *filename)
 #ifdef DFS_USING_WORKDIR
     if (directory == NULL) /* shall use working directory */
     {
-        directory = lwp_dir_get();
+        directory = lwp_getcwd();
     }
 #else
     if ((directory == NULL) && (filename[0] != '/'))

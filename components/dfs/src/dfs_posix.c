@@ -7,12 +7,17 @@
  * Date           Author       Notes
  * 2009-05-27     Yi.qiu       The first version
  * 2018-02-07     Bernard      Change the 3rd parameter of open/fcntl/ioctl to '...'
+ * 2021-08-26     linzhenxing  add setcwd and modify getcwd\chdir
  */
 
 #include <dfs.h>
 #include <dfs_posix.h>
 #include "dfs_private.h"
-#include "lwp_dir.h"
+
+#ifdef RT_USING_LWP
+#include <lwp.h>
+#endif
+
 /**
  * @addtogroup FsPosixApi
  */
@@ -815,7 +820,9 @@ int chdir(const char *path)
     if (path == NULL)
     {
         dfs_lock();
+#ifdef DFS_USING_WORKDIR
         rt_kprintf("%s\n", working_directory);
+#endif
         dfs_unlock();
 
         return 0;
@@ -851,7 +858,7 @@ int chdir(const char *path)
     closedir(d);
 
     /* copy full path to working directory */
-    lwp_dir_set(fullpath);
+    lwp_setcwd(fullpath);
     /* release normalize directory path name */
     rt_free(fullpath);
 
@@ -884,6 +891,27 @@ int access(const char *path, int amode)
     /* ignore R_OK,W_OK,X_OK condition */
     return 0;
 }
+/**
+ * this function is a POSIX compliant version, which will set current
+ * working directory.
+ *
+ * @param buf the current directory.
+ *
+ * @return null.
+ */
+void setcwd(char *buf)
+{
+#ifdef DFS_USING_WORKDIR
+    dfs_lock();
+    lwp_setcwd(buf);
+    dfs_unlock();
+#else
+    rt_kprintf(NO_WORKING_DIR);
+#endif
+
+    return ;
+}
+RTM_EXPORT(setcwd);
 
 /**
  * this function is a POSIX compliant version, which will return current
@@ -899,7 +927,7 @@ char *getcwd(char *buf, size_t size)
     char *dir_buf = RT_NULL;
 #ifdef DFS_USING_WORKDIR
     dfs_lock();
-    dir_buf = lwp_dir_get();
+    dir_buf = lwp_getcwd();
     if(dir_buf[0] != '/')
     {
         dir_buf = &working_directory[0];
