@@ -25,6 +25,9 @@ struct rt_pipe_device
 {
     struct rt_device parent;
     rt_bool_t is_named;
+#ifdef RT_USING_POSIX
+    int pipeno; /* for unamed pipe */
+#endif
 
     /* ring buffer in pipe device */
     struct rt_ringbuffer *fifo;

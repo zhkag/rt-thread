@@ -16,6 +16,28 @@
 #include <dfs_file.h>
 #include <dfs_posix.h>
 #include <dfs_poll.h>
+#include <resource_id.h>
+
+/* check RT_UNAMED_PIPE_NUMBER */
+
+#ifndef RT_UNAMED_PIPE_NUMBER
+#define RT_UNAMED_PIPE_NUMBER 64
+#endif
+
+#define BITS(x) _BITS(x)
+#define _BITS(x) (sizeof(#x) - 1)
+
+struct check_rt_unamed_pipe_number
+{
+    /* -4 for "pipe" prefix */
+    /* -1 for '\0' postfix */
+    char _check[RT_NAME_MAX - 4 - 1 - BITS(RT_UNAMED_PIPE_NUMBER)];
+};
+
+/* check end */
+
+static void *resoure_id[RT_UNAMED_PIPE_NUMBER];
+static resource_id_t id_mgr = RESOURCE_ID_INIT(RT_UNAMED_PIPE_NUMBER, resoure_id);
 
 static int pipe_fops_open(struct dfs_fd *fd)
 {
@@ -399,6 +421,9 @@ rt_pipe_t *rt_pipe_create(const char *name, int bufsz)
 
     rt_memset(pipe, 0, sizeof(rt_pipe_t));
     pipe->is_named = RT_TRUE; /* initialize as a named pipe */
+#ifdef RT_USING_POSIX
+    pipe->pipeno = -1;
+#endif
     rt_mutex_init(&pipe->lock, name, RT_IPC_FLAG_FIFO);
     rt_wqueue_init(&pipe->reader_queue);
     rt_wqueue_init(&pipe->writer_queue);
@@ -424,6 +449,10 @@ rt_pipe_t *rt_pipe_create(const char *name, int bufsz)
 
     if (rt_device_register(&pipe->parent, name, RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_REMOVABLE) != 0)
     {
+        rt_mutex_detach(&pipe->lock);
+#ifdef RT_USING_POSIX
+        resource_id_put(&id_mgr, pipe->pipeno);
+#endif
         rt_free(pipe);
         return RT_NULL;
     }
@@ -449,6 +478,9 @@ int rt_pipe_delete(const char *name)
             pipe = (rt_pipe_t *)device;
 
             rt_mutex_detach(&pipe->lock);
+#ifdef RT_USING_POSIX
+            resource_id_put(&id_mgr, pipe->pipeno);
+#endif
             rt_device_unregister(device);
 
             /* close fifo ringbuffer */
@@ -478,17 +510,24 @@ int pipe(int fildes[2])
     rt_pipe_t *pipe;
     char dname[8];
     char dev_name[32];
-    static int pipeno = 0;
+    int pipeno = 0;
 
-    rt_snprintf(dname, sizeof(dname), "pipe%d", pipeno++);
+    pipeno = resource_id_get(&id_mgr);
+    if (pipeno == -1)
+    {
+        return -1;
+    }
+    rt_snprintf(dname, sizeof(dname), "pipe%d", pipeno);
 
     pipe = rt_pipe_create(dname, PIPE_BUFSZ);
     if (pipe == RT_NULL)
     {
+        resource_id_put(&id_mgr, pipeno);
         return -1;
     }
 
     pipe->is_named = RT_FALSE; /* unamed pipe */
+    pipe->pipeno = pipeno;
     rt_snprintf(dev_name, sizeof(dev_name), "/dev/%s", dname);
     fildes[0] = open(dev_name, O_RDONLY, 0);
     if (fildes[0] < 0)
