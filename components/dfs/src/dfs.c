@@ -570,7 +570,7 @@ char *dfs_normalize_path(const char *directory, const char *filename)
 #ifdef RT_USING_LWP
         directory = lwp_getcwd();
 #else
-		directory = &working_directory[0];
+        directory = &working_directory[0];
 #endif
     }
 #else

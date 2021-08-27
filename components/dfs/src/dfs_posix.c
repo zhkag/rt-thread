@@ -860,7 +860,7 @@ int chdir(const char *path)
     /* copy full path to working directory */
     lwp_setcwd(fullpath);
 #else
-	rt_strncpy(working_directory, fullpath, DFS_PATH_MAX);
+    rt_strncpy(working_directory, fullpath, DFS_PATH_MAX);
 #endif
     /* release normalize directory path name */
     rt_free(fullpath);
@@ -909,7 +909,7 @@ void setcwd(char *buf)
 #ifdef RT_USING_LWP
     lwp_setcwd(buf);
 #else
-	rt_strncpy(working_directory, buf, DFS_PATH_MAX);
+    rt_strncpy(working_directory, buf, DFS_PATH_MAX);
 #endif
     dfs_unlock();
 #else
@@ -942,7 +942,7 @@ char *getcwd(char *buf, size_t size)
     }
     rt_strncpy(buf, dir_buf, size);
 #else
-	dir_buf = &working_directory[0];
+    dir_buf = &working_directory[0];
 #endif
     dfs_unlock();
 #else
