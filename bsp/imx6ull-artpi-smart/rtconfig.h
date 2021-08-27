@@ -108,6 +108,7 @@
 /* Device Drivers */
 
 #define RT_USING_DEVICE_IPC
+#define RT_UNAMED_PIPE_NUMBER 64
 #define RT_PIPE_BUFSZ 512
 #define RT_USING_SYSTEM_WORKQUEUE
 #define RT_SYSTEM_WORKQUEUE_STACKSIZE 2048
@@ -317,7 +318,7 @@
 /* Select LCD Driver */
 
 #define BSP_USING_LCD
-#define BSP_LCD_WIDTH 1000
+#define BSP_LCD_WIDTH 1024
 #define BSP_LCD_HEIGHT 600
 
 /* Select SDHC Driver */
