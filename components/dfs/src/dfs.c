@@ -567,7 +567,11 @@ char *dfs_normalize_path(const char *directory, const char *filename)
 #ifdef DFS_USING_WORKDIR
     if (directory == NULL) /* shall use working directory */
     {
+#ifdef RT_USING_LWP
         directory = lwp_getcwd();
+#else
+		directory = &working_directory[0];
+#endif
     }
 #else
     if ((directory == NULL) && (filename[0] != '/'))
