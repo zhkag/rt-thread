@@ -8,6 +8,7 @@
  * 2006-03-12     Bernard      first version
  * 2018-11-02     heyuanjie    fix complie error in iar
  * 2021-02-03     lizhirui     add 64-bit arch support and riscv64 arch support
+ * 2021-08-26     linzhenxing  add lwp_setcwd\lwp_getcwd
  */
 
 #include <rthw.h>
@@ -39,10 +40,56 @@
 #endif
 
 static const char elf_magic[] = {0x7f, 'E', 'L', 'F'};
+#ifdef DFS_USING_WORKDIR
+extern char working_directory[];
+#endif
 
 extern void lwp_user_entry(void *args, const void *text, void *ustack, void *k_stack);
 extern int libc_stdio_get_console(void);
 int load_ldso(struct rt_lwp *lwp, char *exec_name, char *const argv[], char *const envp[]);
+
+void lwp_setcwd(char *buf)
+{
+    if(strlen(buf) >= DFS_PATH_MAX)
+    {
+        rt_kprintf("buf too long!\n");
+        return ;
+    }
+
+#ifdef RT_USING_LWP
+    struct rt_lwp *lwp;
+
+    lwp = (struct rt_lwp *)rt_thread_self()->lwp;
+    if (lwp)
+        rt_strncpy(lwp->working_directory, buf, DFS_PATH_MAX);
+    else
+        rt_strncpy(working_directory, buf, DFS_PATH_MAX);
+#else
+#ifdef DFS_USING_WORKDIR
+    rt_strncpy(working_directory, buf, DFS_PATH_MAX);
+#endif
+#endif
+    return ;
+}
+
+char *lwp_getcwd(void)
+{
+    char *dir_buf = RT_NULL;
+#ifdef RT_USING_LWP
+    struct rt_lwp *lwp;
+
+    lwp = (struct rt_lwp *)rt_thread_self()->lwp;
+    if (lwp)
+        dir_buf = &lwp->working_directory[0];
+    else
+        dir_buf = &working_directory[0];
+#else
+#ifdef DFS_USING_WORKDIR
+    dir_buf = &working_directory[0];
+#endif
+#endif
+    return dir_buf;
+}
 
 /**
  * RT-Thread light-weight process

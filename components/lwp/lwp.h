@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2020, RT-Thread Development Team
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -8,6 +8,7 @@
  * 2018-06-29     heyuanjie    first version
  * 2019-10-12     Jesven       Add MMU and userspace support
  * 2020-10-08     Bernard      Architecture and code cleanup
+ * 2021-08-26     linzhenxing  add lwp_setcwd\lwp_getcwd
  */
 
 /*
@@ -96,6 +97,7 @@ struct rt_lwp
     struct rt_wqueue wait_queue; /*for console */
 
     struct lwp_avl_struct *address_search_head; /* for addressed object fast rearch */
+    char working_directory[DFS_PATH_MAX];
 #ifdef RT_USING_GDBSERVER
     int debug;
     uint32_t bak_first_ins;
@@ -110,7 +112,8 @@ enum lwp_exit_request_type
     LWP_EXIT_REQUEST_TRIGGERED,
     LWP_EXIT_REQUEST_IN_PROCESS,
 };
-
+void lwp_setcwd(char *buf);
+char *lwp_getcwd(void);
 void lwp_request_thread_exit(rt_thread_t thread_to_exit);
 int  lwp_check_exit_request(void);
 void lwp_terminate(struct rt_lwp *lwp);
