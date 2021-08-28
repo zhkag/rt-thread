@@ -80,7 +80,16 @@ char *lwp_getcwd(void)
 
     lwp = (struct rt_lwp *)rt_thread_self()->lwp;
     if (lwp)
-        dir_buf = &lwp->working_directory[0];
+    {
+        if(lwp->working_directory[0] != '/')
+        {
+            dir_buf = &working_directory[0];
+        }
+        else
+        {
+            dir_buf = &lwp->working_directory[0];
+        }
+    }
     else
         dir_buf = &working_directory[0];
 #else
