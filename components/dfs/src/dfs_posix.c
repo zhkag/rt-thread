@@ -936,10 +936,6 @@ char *getcwd(char *buf, size_t size)
     dfs_lock();
 #ifdef RT_USING_LWP
     dir_buf = lwp_getcwd();
-    if(dir_buf[0] != '/')
-    {
-        dir_buf = &working_directory[0];
-    }
     rt_strncpy(buf, dir_buf, size);
 #else
     dir_buf = &working_directory[0];
