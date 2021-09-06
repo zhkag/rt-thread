@@ -36,7 +36,7 @@ static rt_err_t imx6ull_elcd_init(rt_device_t device)
     RT_ASSERT(device != RT_NULL);
 
     elcd_dev = (struct imx6ull_lcd_bus *)device;
-
+    ELCDIF_Reset(elcd_dev->config->ELCDIF);
     pll_config.loopDivider = 32;
     pll_config.postDivider = 1;
     pll_config.numerator   = 0;
@@ -56,11 +56,23 @@ static rt_err_t imx6ull_elcd_init(rt_device_t device)
                                kELCDIF_HsyncActiveLow      |
                                kELCDIF_DriveDataOnRisingClkEdge;
 
-    lcd_config.panelWidth    = LCD_WIDTH;
-    lcd_config.panelHeight   = LCD_HEIGHT;
-    lcd_config.pixelFormat   = kELCDIF_PixelFormatRGB565;
-    lcd_config.dataBus       = kELCDIF_DataBus24Bit;
+    switch(elcd_dev->info.pixel_format)
+    {
+        case RTGRAPHIC_PIXEL_FORMAT_RGB888:
+            lcd_config.pixelFormat = kELCDIF_PixelFormatRGB888;
+            break;
+        case RTGRAPHIC_PIXEL_FORMAT_RGB565:
+            lcd_config.pixelFormat = kELCDIF_PixelFormatRGB565;
+            break;
+        default:
+            LOG_E("not support this pixel_format %d\n",elcd_dev->info.pixel_format);
+            return RT_ERROR;
+    }
+
+    lcd_config.panelWidth    = elcd_dev->info.width;
+    lcd_config.panelHeight   = elcd_dev->info.height;
     lcd_config.bufferAddr    = (uint32_t)elcd_dev->fb_phy;
+    lcd_config.dataBus       = kELCDIF_DataBus24Bit;
 
     ELCDIF_RgbModeInit(elcd_dev->config->ELCDIF, &lcd_config);
     ELCDIF_RgbModeStart(elcd_dev->config->ELCDIF);
@@ -177,7 +189,7 @@ int rt_hw_elcd_init(void)
 
     _lcd_obj.info.width          = LCD_WIDTH;
     _lcd_obj.info.height         = LCD_HEIGHT;
-    _lcd_obj.info.pixel_format   = RTGRAPHIC_PIXEL_FORMAT_RGB565;
+    _lcd_obj.info.pixel_format   = RTGRAPHIC_PIXEL_FORMAT_RGB888;
     _lcd_obj.info.bits_per_pixel = LCD_BITS_PER_PIXEL;
     _lcd_obj.info.framebuffer    = (void *)_lcd_obj.fb_virt;
 

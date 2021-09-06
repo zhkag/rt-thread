@@ -547,7 +547,7 @@ static int imx6ul_eth_init(void)
         phy_link_tid = rt_thread_create(link_detect,
                                 phy_detect_thread_entry,
                                 &_imx6ul_eth_device[idx],
-                                512,
+                                4096,
                                 RT_THREAD_PRIORITY_MAX - 2,
                                 2);
         if (phy_link_tid != RT_NULL)
