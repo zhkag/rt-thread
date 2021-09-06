@@ -33,7 +33,7 @@
 #define LCD_HBP                     140
 #define LCD_HFP                     160
 
-#define LCD_BITS_PER_PIXEL          16
+#define LCD_BITS_PER_PIXEL          32
 #define LCD_BUF_SIZE                (LCD_WIDTH * LCD_HEIGHT * LCD_BITS_PER_PIXEL / 8)
 
 #define IMX6ULL_LCD_BL_PIN          GET_PIN(1, 8)

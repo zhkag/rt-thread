@@ -11,24 +11,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <rtdevice.h>
-#include "drv_pin.h"
-
-#define LED_PIN     GET_PIN(5, 3)
-
 int main(void)
 {
-    rt_pin_mode(LED_PIN, PIN_MODE_OUTPUT);
-
     printf("hello rt-smart\n");
-
-    for(;;)
-    {
-        rt_pin_write(LED_PIN, PIN_HIGH);
-        rt_thread_mdelay(500);
-        rt_pin_write(LED_PIN, PIN_LOW);
-        rt_thread_mdelay(500);
-    }
     return 0;
 }
 
