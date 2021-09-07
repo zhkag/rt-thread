@@ -103,6 +103,11 @@ config ARCH_ARM_CORTEX_A9
     bool
     select ARCH_ARM_CORTEX_A
 
+config ARCH_ARM_SECURE_MODE
+    bool "Running in secure mode [ARM Cortex-A]"
+    default n
+    depends on ARCH_ARM_CORTEX_A
+
 config RT_BACKTRACE_FUNCTION_NAME
     bool "To show function name when backtrace."
     default n
