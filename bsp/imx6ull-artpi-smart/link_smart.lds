@@ -1,60 +1,97 @@
-OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
-OUTPUT_ARCH(arm)
+/*
+ * File      : link.lds
+ * COPYRIGHT (C) 2017, RT-Thread Development Team
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Change Logs:
+ * 2017-5-30     bernard       first version
+ */
+
+/* _EL1_STACK_SIZE = DEFINED(_EL1_STACK_SIZE) ? _EL1_STACK_SIZE : 0x20000; */
+
 SECTIONS
 {
-    /*. = 0x80001000; */
     . = 0xc0001000;
-
-    __text_start = .;
+    . = ALIGN(4096);
     .text :
     {
+        KEEP(*(.text.entrypoint))       /* The entry point */
         *(.vectors)
-        *(.text)
-        *(.text.*)
+        *(.text)                        /* remaining code */
+        *(.text.*)                      /* remaining code */
 
-        /* section information for utest */
-        . = ALIGN(4);
-        __rt_utest_tc_tab_start = .;
-        KEEP(*(UtestTcTab))
-        __rt_utest_tc_tab_end = .;
+        *(.rodata)                      /* read-only data (constants) */
+        *(.rodata*)
+        *(.glue_7)
+        *(.glue_7t)
+        *(.gnu.linkonce.t*)
 
+        
         /* section information for finsh shell */
-        . = ALIGN(4);
+        . = ALIGN(16);
         __fsymtab_start = .;
         KEEP(*(FSymTab))
         __fsymtab_end = .;
-        . = ALIGN(4);
+        . = ALIGN(16);
         __vsymtab_start = .;
         KEEP(*(VSymTab))
         __vsymtab_end = .;
-        . = ALIGN(4);
+        . = ALIGN(16);
 
-        /* section information for modules */
-        . = ALIGN(4);
-        __rtmsymtab_start = .;
-        KEEP(*(RTMSymTab))
-        __rtmsymtab_end = .;
-
-        /* section information for initialization */
-        . = ALIGN(4);
+        /* section information for initial. */
+        . = ALIGN(16);
         __rt_init_start = .;
         KEEP(*(SORT(.rti_fn*)))
         __rt_init_end = .;
-    } =0
-    __text_end = .;
+        . = ALIGN(16);
 
-    .ARM.exidx   :
-    {
+        . = ALIGN(16);
+        _etext = .;
+    }
+
+    .ARM.exidx : {
         __exidx_start = .;
         *(.ARM.exidx* .gnu.linkonce.armexidx.*)
         __exidx_end = .;
     }
 
-    __rodata_start = .;
-    .rodata   : { *(.rodata) *(.rodata.*) }
-    __rodata_end = .;
+    .eh_frame_hdr :
+    {
+         *(.eh_frame_hdr)
+         *(.eh_frame_entry)
+    }
+    .eh_frame : ONLY_IF_RO { KEEP (*(.eh_frame)) }
 
-    . = ALIGN(4);
+    . = ALIGN(16);
+    .data :
+    {
+     *(.data)
+     *(.data.*)
+
+     *(.data1)
+     *(.data1.*)
+
+     . = ALIGN(16);
+     _gp = ABSOLUTE(.);     /* Base of small data */
+
+     *(.sdata)
+     *(.sdata.*)
+    }
+
+    . = ALIGN(16);
     .ctors :
     {
         PROVIDE(__ctors_start__ = .);
@@ -71,35 +108,19 @@ SECTIONS
         PROVIDE(__dtors_end__ = .);
     }
 
-    . = ALIGN(8);
-    __data_start = .;
-    .data :
+    . = ALIGN(16);
+    .bss :
     {
-        *(.data)
-        *(.data.*)
+        PROVIDE(__bss_start = .);
+        *(.bss)
+        *(.bss.*)
+        *(.dynbss)
+        
+        *(COMMON)
+        PROVIDE(__bss_end = .);
     }
-    __data_end = .;
-
-    . = ALIGN(8);
-    __bss_start = .;
-    .bss       :
-    {
-    *(.bss)
-    *(.bss.*)
-    *(COMMON)
-    . = ALIGN(4);
-    }
-    . = ALIGN(4);
-    __bss_end = .;
-
-    /* Stabs debugging sections.  */
-    .stab 0 : { *(.stab) }
-    .stabstr 0 : { *(.stabstr) }
-    .stab.excl 0 : { *(.stab.excl) }
-    .stab.exclstr 0 : { *(.stab.exclstr) }
-    .stab.index 0 : { *(.stab.index) }
-    .stab.indexstr 0 : { *(.stab.indexstr) }
-    .comment 0 : { *(.comment) }
-
     _end = .;
+
 }
+
+__bss_size = (__bss_end - __bss_start)>>3;

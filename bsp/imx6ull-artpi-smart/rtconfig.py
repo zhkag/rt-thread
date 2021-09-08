@@ -23,7 +23,7 @@ if PLATFORM == 'gcc':
     STRIP   = PREFIX + 'strip'
     CFPFLAGS = ' -msoft-float'
     AFPFLAGS = ' -mfloat-abi=softfp -mfpu=vfpv3-d16'
-    DEVICE   = ' -march=armv7-a -mtune=cortex-a7 -ftree-vectorize -ffast-math'
+    DEVICE   = ' -march=armv7-a -mtune=cortex-a7 -ftree-vectorize -ffast-math -funwind-tables -fno-strict-aliasing'
 
     CXXFLAGS= DEVICE + CFPFLAGS + ' -Wall'
     CFLAGS  = DEVICE + CFPFLAGS + ' -Wall -std=gnu99'
