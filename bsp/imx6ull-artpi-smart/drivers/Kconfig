@@ -173,4 +173,13 @@ menu "Select ENET Driver"
         default n
 endmenu
 
+menu "Select Wifi Driver"
+    config RT_USING_WIFI_RW007
+        bool "Enable wifi RW007"
+        select BSP_USING_SPI2
+        select PKG_USING_RW007
+        select RT_USING_WIFI
+        default n
+endmenu
+
 endmenu
