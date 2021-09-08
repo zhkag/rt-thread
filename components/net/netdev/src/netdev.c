@@ -732,6 +732,14 @@ static void netdev_auto_change_default(struct netdev *netdev)
 {
     struct netdev *new_netdev = RT_NULL;
 
+    if (netdev->flags & NETDEV_FLAG_LINK_UP)
+    {
+        if (!(netdev_default->flags & NETDEV_FLAG_LINK_UP))
+        {
+            netdev_set_default(netdev);
+        }
+        return;
+    }
     if (rt_memcmp(netdev, netdev_default, sizeof(struct netdev)) == 0)
     {
         new_netdev = netdev_get_first_by_flags(NETDEV_FLAG_LINK_UP);
@@ -805,12 +813,12 @@ void netdev_low_level_set_link_status(struct netdev *netdev, rt_bool_t is_up)
 
             /* set network interface device flags to internet down */
             netdev->flags &= ~NETDEV_FLAG_INTERNET_UP;
+        }
 
 #ifdef NETDEV_USING_AUTO_DEFAULT
             /* change to the first link_up network interface device automatically */
             netdev_auto_change_default(netdev);
 #endif /* NETDEV_USING_AUTO_DEFAULT */
-        }
 
         /* execute link status change callback function */
         if (netdev->status_callback)
