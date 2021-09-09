@@ -60,6 +60,10 @@ int wifi_spi_device_init(void)
     rw007_version_get(sn_version);
     rt_kprintf("rw007 ver: [%s]\n\n", sn_version);
 
+#ifdef RW007_DAFAULT_SSID
+    rt_wlan_connect(RW007_DAFAULT_SSID, RW007_DAFAULT_PASSWARD);
+#endif
+
     return 0;
 }
 INIT_APP_EXPORT(wifi_spi_device_init);
