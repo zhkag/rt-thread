@@ -7,8 +7,8 @@
 #include <board.h>
 #include <spi_wifi_rw007.h>
 
-#ifndef PKG_USING_RW007_V201
-#error "please select rw007 v2.0.1 version."
+#ifndef PKG_USING_RW007_LATEST_VERSION
+#error "please select rw007 latest version."
 #endif
 
 #ifdef RW007_USING_STM32_DRIVERS
