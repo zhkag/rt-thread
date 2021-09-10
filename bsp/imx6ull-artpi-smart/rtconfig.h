@@ -57,6 +57,7 @@
 #define PV_OFFSET 0xc0000000
 #define ARCH_ARM_CORTEX_A
 #define ARCH_ARM_CORTEX_A7
+#define ARCH_ARM_SECURE_MODE
 #define RT_BACKTRACE_FUNCTION_NAME
 
 /* RT-Thread Components */
@@ -286,7 +287,6 @@
 
 
 /* miscellaneous packages */
-
 
 /* samples: kernel and components samples */
 
