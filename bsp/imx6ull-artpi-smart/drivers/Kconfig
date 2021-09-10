@@ -180,6 +180,14 @@ menu "Select Wifi Driver"
         select PKG_USING_RW007
         select RT_USING_WIFI
         default n
+    if RT_USING_WIFI_RW007
+        config RW007_DAFAULT_SSID
+            string "default ssid"
+            default "rt-thread"
+        config RW007_DAFAULT_PASSWARD
+            string "default passward"
+            default "12345678"
+    endif
 endmenu
 
 endmenu
