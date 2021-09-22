@@ -135,7 +135,9 @@ extern "C" {
 #undef ELOG_LVL_INFO
 #undef ELOG_LVL_DEBUG
 #undef ELOG_LVL_VERBOSE
+#if !defined(RT_USING_MLIB)
 #define assert                         ASSERT
+#endif
 #define log_e                          LOG_E
 #define log_w                          LOG_W
 #define log_i                          LOG_I

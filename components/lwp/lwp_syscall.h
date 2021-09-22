@@ -15,7 +15,11 @@
 #include <rtthread.h>
 #include <dfs_posix.h>
 #include <dfs_poll.h>
+#if defined(RT_USING_MLIB)
+#include <time.h>
+#else
 #include <sys/time.h>
+#endif
 #include <sys/types.h>
 
 #ifdef __cplusplus
