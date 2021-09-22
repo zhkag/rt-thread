@@ -6,13 +6,12 @@ src = Glob('*.c')
 cwd = GetCurrentDir()
 group = []
 
-if rtconfig.PLATFORM == 'gcc' and GetDepend('RT_USING_MUSL'):
-    if GetDepend('RT_USING_MLIB') == False:
+if rtconfig.PLATFORM == 'gcc' and GetDepend('RT_USING_MUSL') and not GetDepend('RT_USING_MLIB'):
         CPPDEFINES = ['__STDC_ISO_10646__=201206L', '_STDC_PREDEF_H']
         LIBS       = ['c', 'gcc']
 
         if os.path.exists(os.path.join(cwd, 'libc', 'lib', 'libc.a')):
-            CFLAGS     = '-nostdinc'
+            CFLAGS     = ' -nostdinc'
             CPPPATH    = [cwd, cwd + '/libc/include']
             LIBPATH    = [cwd + '/libc/lib']
 
