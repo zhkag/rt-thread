@@ -10,8 +10,6 @@
  */
 
 #include <rtthread.h>
-//#include <pthread.h>
-
 #include "clock_time.h"
 
 static struct timeval _timevalue;

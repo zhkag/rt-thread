@@ -36,9 +36,8 @@
 #include "lwp_arch.h"
 #endif
 
-#if defined(RT_USING_MLIB)
 #include <locale.h>
-#endif
+
 
 #ifdef __cplusplus
 extern "C" {

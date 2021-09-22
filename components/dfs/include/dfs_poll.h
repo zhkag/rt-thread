@@ -13,11 +13,8 @@
 #include <rtthread.h>
 
 #ifdef RT_USING_POSIX
-#if defined(RT_USING_MLIB)
-#include <time.h>
-#else
 #include <sys/time.h> /* for struct timeval */
-#endif
+
 #if !defined(POLLIN) && !defined(POLLOUT)
 #define POLLIN          (0x01)
 #define POLLRDNORM      (0x01)

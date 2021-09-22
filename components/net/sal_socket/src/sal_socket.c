@@ -11,11 +11,7 @@
 
 #include <rtthread.h>
 #include <rthw.h>
-#if defined(RT_USING_MLIB)
-#include <time.h>
-#else 
 #include <sys/time.h>
-#endif
 #include <sal_socket.h>
 #include <sal_netdb.h>
 #ifdef SAL_USING_TLS
