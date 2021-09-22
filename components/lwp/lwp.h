@@ -36,6 +36,8 @@
 #include "lwp_arch.h"
 #endif
 
+#include <locale.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

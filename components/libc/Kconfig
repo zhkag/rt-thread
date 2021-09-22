@@ -19,6 +19,12 @@ if RT_USING_LIBC && RT_USING_LWP
 
     endchoice
 endif
+            
+if RT_USING_MUSL
+    config RT_USING_MLIB
+    bool "Use libc: mlib"
+    default n 
+endif
 
 config RT_USING_PTHREADS
     bool "Enable pthreads APIs"

@@ -10,8 +10,6 @@
  */
 
 #include <rtthread.h>
-#include <pthread.h>
-
 #include "clock_time.h"
 
 static struct timeval _timevalue;
@@ -48,7 +46,7 @@ int clock_time_to_tick(const struct timespec *time)
     RT_ASSERT(time != RT_NULL);
 
     tick = RT_WAITING_FOREVER;
-    if (time != NULL)
+    if (time != RT_NULL)
     {
         /* get current tp */
         clock_gettime(CLOCK_REALTIME, &tp);

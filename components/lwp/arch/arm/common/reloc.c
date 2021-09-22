@@ -1,7 +1,7 @@
 #include <rtthread.h>
 #include <stdint.h>
 #include <string.h>
-#include <elf.h>
+#include <lwp_elf.h>
 #ifdef RT_USING_USERSPACE
 #include <mmu.h>
 #include <page.h>
