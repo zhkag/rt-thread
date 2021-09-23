@@ -122,11 +122,16 @@ RTM_EXPORT(_rt_errno);
 
 #ifdef RT_USING_MUSL
 #if !defined(RT_USING_MLIB)
-int *___errno_location(void)
+int *__errno_location(void)
 {
     return _rt_errno();
 }
 #endif
+int *___errno_location(void)
+{
+    return _rt_errno();
+}
+
 #endif
 
 /**
