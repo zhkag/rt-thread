@@ -819,9 +819,11 @@ int sys_unlink(const char *pathname)
     ret = unlink(kname);
 
     kmem_put(kname);
-    return ret;
+    return (ret < 0 ? GET_ERRNO() : ret);
 #else
-    return unlink(pathname);
+    int ret = 0;
+    ret = unlink(pathname);
+    return (ret < 0 ? GET_ERRNO() : ret);
 #endif
 }
 
@@ -928,7 +930,9 @@ int sys_exec(char *filename, int argc, char **argv, char **envp)
 
 int sys_kill(int pid, int sig)
 {
-    return lwp_kill(pid, sig);
+    int ret = 0;
+    ret = lwp_kill(pid, sig);
+    return (ret < 0 ? GET_ERRNO() : ret);
 }
 
 int sys_getpid(void)
@@ -2303,7 +2307,9 @@ int sys_log(const char* log, int size)
 
 int sys_stat(const char *file, struct stat *buf)
 {
-    return stat(file, buf);
+    int ret = 0;
+    ret = stat(file, buf);
+    return (ret < 0 ? GET_ERRNO() : ret);
 }
 
 int sys_notimpl(void)
