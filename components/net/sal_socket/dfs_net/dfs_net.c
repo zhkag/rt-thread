@@ -36,11 +36,16 @@ static int dfs_net_ioctl(struct dfs_fd* file, int cmd, void* args)
 {
     int ret;
     int socket = (int)(size_t)file->fnode->data;
+    int errno_temp;
 
     ret = sal_ioctlsocket(socket, cmd, args);
     if (ret < 0)
     {
-        ret = rt_get_errno();
+        errno_temp = rt_get_errno();
+        if(errno_temp > 0)
+        {
+            ret = -errno_temp;
+        }
     }
     return ret;
 }
@@ -49,11 +54,16 @@ static int dfs_net_read(struct dfs_fd* file, void *buf, size_t count)
 {
     int ret;
     int socket = (int)(size_t)file->fnode->data;
+    int errno_temp;
 
     ret = sal_recvfrom(socket, buf, count, 0, NULL, NULL);
     if (ret < 0)
     {
-        ret = rt_get_errno();
+        errno_temp = rt_get_errno();
+        if(errno_temp > 0)
+        {
+            ret = -errno_temp;
+        }
     }
     return ret;
 }
@@ -62,15 +72,19 @@ static int dfs_net_write(struct dfs_fd *file, const void *buf, size_t count)
 {
     int ret;
     int socket = (int)(size_t)file->fnode->data;
-
+    int errno_temp;
+    
     ret = sal_sendto(socket, buf, count, 0, NULL, 0);
     if (ret < 0)
     {
-        ret = rt_get_errno();
+        errno_temp = rt_get_errno();
+        if(errno_temp > 0)
+        {
+            ret = -errno_temp;
+        }
     }
     return ret;
 }
-
 static int dfs_net_close(struct dfs_fd* file)
 {
     int socket;

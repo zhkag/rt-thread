@@ -60,8 +60,7 @@
 #define ALLOC_KERNEL_STACK_SIZE 5120
 
 #define SET_ERRNO(no) rt_set_errno(-(no))
-#define GET_ERRNO() rt_get_errno()
-
+#define GET_ERRNO() ((rt_get_errno() > 0) ? (-rt_get_errno()) : rt_get_errno())
 struct musl_sockaddr
 {
     uint16_t sa_family;
