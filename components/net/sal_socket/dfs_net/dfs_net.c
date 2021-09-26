@@ -41,6 +41,7 @@ static int dfs_net_ioctl(struct dfs_fd* file, int cmd, void* args)
     if (ret < 0)
     {
         ret = rt_get_errno();
+        return (ret > 0) ? (-ret) : ret;
     }
     return ret;
 }
@@ -54,6 +55,7 @@ static int dfs_net_read(struct dfs_fd* file, void *buf, size_t count)
     if (ret < 0)
     {
         ret = rt_get_errno();
+        return (ret > 0) ? (-ret) : ret;
     }
     return ret;
 }
@@ -62,15 +64,15 @@ static int dfs_net_write(struct dfs_fd *file, const void *buf, size_t count)
 {
     int ret;
     int socket = (int)(size_t)file->fnode->data;
-
+    
     ret = sal_sendto(socket, buf, count, 0, NULL, 0);
     if (ret < 0)
     {
         ret = rt_get_errno();
+        return (ret > 0) ? (-ret) : ret;
     }
     return ret;
 }
-
 static int dfs_net_close(struct dfs_fd* file)
 {
     int socket;
