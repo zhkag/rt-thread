@@ -78,7 +78,7 @@ int rt_hw_mmu_map_init(rt_mmu_info *mmu_info,void *v_address,rt_size_t size,rt_s
     for(l1_off = va_s;l1_off <= va_e;l1_off++)
     {
         size_t v = vtable[l1_off];
-        
+
         if(v)
         {
             rt_hw_interrupt_enable(level);
@@ -209,7 +209,7 @@ static rt_size_t find_vaddr(rt_mmu_info *mmu_info,rt_size_t pages)
     return 0;
 }
 
-//check whether the range of virtual address are free 
+//check whether the range of virtual address are free
 static int check_vaddr(rt_mmu_info *mmu_info,void *va,rt_size_t pages)
 {
     rt_size_t loop_va = __UMASKVALUE((rt_size_t)va,PAGE_OFFSET_MASK);
@@ -379,13 +379,13 @@ static int __rt_hw_mmu_map(rt_mmu_info *mmu_info,void *v_addr,void *p_addr,rt_si
                 return -1;
             }
         }
-        
+
         RT_ASSERT(!PTE_USED(*(mmu_l3 + l3_off)));
         ref_cnt = mmu_l3 + __SIZE(VPN0_BIT);
         (*ref_cnt)++;
         *(mmu_l3 + l3_off) = COMBINEPTE((rt_size_t)loop_pa,PAGE_DEFAULT_ATTR_LEAF);
         rt_hw_cpu_dcache_clean(mmu_l3 + l3_off,sizeof(*(mmu_l3 + l3_off)));
-        
+
         loop_va += PAGE_SIZE;
         loop_pa += PAGE_SIZE;
     }
@@ -519,7 +519,7 @@ void *_rt_hw_mmu_map_auto(rt_mmu_info *mmu_info,void *v_addr,rt_size_t size,rt_s
     if(v_addr)
     {
         vaddr = __UMASKVALUE((rt_size_t)v_addr,PAGE_OFFSET_MASK);
-        
+
         if(check_vaddr(mmu_info,(void *)vaddr,pages) != 0)
         {
             return 0;
@@ -581,7 +581,7 @@ void *rt_hw_mmu_map_auto(rt_mmu_info *mmu_info,void *v_addr,rt_size_t size,rt_si
 void rt_hw_mmu_unmap(rt_mmu_info *mmu_info,void *v_addr,rt_size_t size)
 {
     rt_base_t level;
-    
+
     level = rt_hw_interrupt_disable();
     _rt_hw_mmu_unmap(mmu_info,v_addr,size);
     rt_hw_interrupt_enable(level);
@@ -603,12 +603,12 @@ void *_rt_hw_mmu_v2p(rt_mmu_info *mmu_info,void *v_addr)
     }
 
     mmu_l1 = ((rt_size_t *)mmu_info -> vtable) + l1_off;
-    
+
     if(PTE_USED(*mmu_l1))
     {
         RT_ASSERT(!PAGE_IS_LEAF(*mmu_l1));
         mmu_l2 = (rt_size_t *)PPN_TO_VPN(GET_PADDR(*mmu_l1),mmu_info -> pv_off);
-        
+
         if(PTE_USED(*(mmu_l2 + l2_off)))
         {
             RT_ASSERT(!PAGE_IS_LEAF(*(mmu_l2 + l2_off)));

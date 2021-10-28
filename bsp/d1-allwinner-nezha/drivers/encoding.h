@@ -103,6 +103,14 @@
 #define SIP_STIP    MIP_STIP /* timer interrupt */
 #define SIP_SEIP    MIP_SEIP /* ext interrupt */
 
+#define RISCV_XLEN    64
+
+#define SCAUSE_INTERRUPT    (1UL << (RISCV_XLEN - 1))
+
+#define SCAUSE_S_SOFTWARE_INTR  1
+#define SCAUSE_S_TIMER_INTR     5
+#define SCAUSE_S_EXTERNAL_INTR  9
+
 #define PRV_U 0
 #define PRV_S 1
 #define PRV_H 2

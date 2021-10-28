@@ -17,23 +17,23 @@
 #define UART_DEFAULT_BAUDRATE               115200
 #define SUNXI_UART_ADDR            0x02500000
 
-#define SUNXI_UART_RBR (0x00) 		/* receive buffer register */
-#define SUNXI_UART_THR (0x00) 		/* transmit holding register */
-#define SUNXI_UART_DLL (0x00) 		/* divisor latch low register */
-#define SUNXI_UART_DLH (0x04) 		/* diviso latch high register */
-#define SUNXI_UART_IER (0x04) 		/* interrupt enable register */
-#define SUNXI_UART_IIR (0x08) 		/* interrupt identity register */
-#define SUNXI_UART_FCR (0x08) 		/* FIFO control register */
-#define SUNXI_UART_LCR (0x0c) 		/* line control register */
-#define SUNXI_UART_MCR (0x10) 		/* modem control register */
-#define SUNXI_UART_LSR (0x14) 		/* line status register */
-#define SUNXI_UART_MSR (0x18) 		/* modem status register */
-#define SUNXI_UART_SCH (0x1c) 		/* scratch register */
-#define SUNXI_UART_USR (0x7c) 		/* status register */
-#define SUNXI_UART_TFL (0x80) 		/* transmit FIFO level */
-#define SUNXI_UART_RFL (0x84) 		/* RFL */
-#define SUNXI_UART_HALT (0xa4) 		/* halt tx register */
-#define SUNXI_UART_RS485 (0xc0)		/* RS485 control and status register */
+#define SUNXI_UART_RBR (0x00)       /* receive buffer register */
+#define SUNXI_UART_THR (0x00)       /* transmit holding register */
+#define SUNXI_UART_DLL (0x00)       /* divisor latch low register */
+#define SUNXI_UART_DLH (0x04)       /* diviso latch high register */
+#define SUNXI_UART_IER (0x04)       /* interrupt enable register */
+#define SUNXI_UART_IIR (0x08)       /* interrupt identity register */
+#define SUNXI_UART_FCR (0x08)       /* FIFO control register */
+#define SUNXI_UART_LCR (0x0c)       /* line control register */
+#define SUNXI_UART_MCR (0x10)       /* modem control register */
+#define SUNXI_UART_LSR (0x14)       /* line status register */
+#define SUNXI_UART_MSR (0x18)       /* modem status register */
+#define SUNXI_UART_SCH (0x1c)       /* scratch register */
+#define SUNXI_UART_USR (0x7c)       /* status register */
+#define SUNXI_UART_TFL (0x80)       /* transmit FIFO level */
+#define SUNXI_UART_RFL (0x84)       /* RFL */
+#define SUNXI_UART_HALT (0xa4)      /* halt tx register */
+#define SUNXI_UART_RS485 (0xc0)     /* RS485 control and status register */
 
 #define BIT(x) (1 << x)
 
@@ -176,7 +176,7 @@ int rt_hw_uart_init(void)
                               RT_DEVICE_FLAG_STREAM | RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,
                               uart);
     }
-    
+
     return 0;
 }
 
