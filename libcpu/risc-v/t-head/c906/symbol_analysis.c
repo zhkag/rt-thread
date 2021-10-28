@@ -56,7 +56,7 @@ os_symtab_item *find_symbol_table(rt_size_t symbol_table_addr,rt_size_t symbol_n
 
             left++;
         }
-    }    
+    }
 
     left--;
 
@@ -107,7 +107,7 @@ void print_symbol_info(rt_size_t address,rt_bool_t function)
     os_symtab_item *general_symbol = find_symbol_table(symtab_header -> general_symbol_table_offset,symtab_header -> general_symbol_table_num,address);
     const char *dot = "";
     rt_bool_t valid = RT_FALSE;
-    
+
     if(function)
     {
         while(function_symbol != RT_NULL)
@@ -119,7 +119,7 @@ void print_symbol_info(rt_size_t address,rt_bool_t function)
                 dot = ",";
                 valid = RT_TRUE;
             }
-            
+
             if(((rt_size_t)(function_symbol + 1)) >= (((rt_size_t)&_osdebug_start) + symtab_header -> function_table_offset + symtab_header -> function_table_num * sizeof(os_symtab_item)))
             {
                 break;
@@ -129,7 +129,7 @@ void print_symbol_info(rt_size_t address,rt_bool_t function)
             {
                 function_symbol++;
             }
-            
+
             break;
         }
 
@@ -141,7 +141,7 @@ void print_symbol_info(rt_size_t address,rt_bool_t function)
                 print_symbol(general_symbol,address);
                 dot = ",";
                 valid = RT_TRUE;
-                
+
                 if(((rt_size_t)(general_symbol + 1)) >= (((rt_size_t)&_osdebug_start) + symtab_header -> general_symbol_table_offset + symtab_header -> general_symbol_table_num * sizeof(os_symtab_item)))
                 {
                     break;
@@ -164,7 +164,7 @@ void print_symbol_info(rt_size_t address,rt_bool_t function)
                     dot = ",";
                     valid = RT_TRUE;
                 }
-                
+
                 if(((rt_size_t)(object_symbol + 1)) >= (((rt_size_t)&_osdebug_start) + symtab_header -> object_table_offset + symtab_header -> object_table_num * sizeof(os_symtab_item)))
                 {
                     break;
@@ -190,7 +190,7 @@ void print_symbol_info(rt_size_t address,rt_bool_t function)
                 dot = ",";
                 valid = RT_TRUE;
             }
-            
+
             if(((rt_size_t)(object_symbol + 1)) >= (((rt_size_t)&_osdebug_start) + symtab_header -> object_table_offset + symtab_header -> object_table_num * sizeof(os_symtab_item)))
             {
                 break;
@@ -212,7 +212,7 @@ void print_symbol_info(rt_size_t address,rt_bool_t function)
                 print_symbol(general_symbol,address);
                 dot = ",";
                 valid = RT_TRUE;
-                
+
                 if(((rt_size_t)(general_symbol + 1)) >= (((rt_size_t)&_osdebug_start) + symtab_header -> general_symbol_table_offset + symtab_header -> general_symbol_table_num * sizeof(os_symtab_item)))
                 {
                     break;
@@ -235,7 +235,7 @@ void print_symbol_info(rt_size_t address,rt_bool_t function)
                     dot = ",";
                     valid = RT_TRUE;
                 }
-                
+
                 if(((rt_size_t)(function_symbol + 1)) >= (((rt_size_t)&_osdebug_start) + symtab_header -> function_table_offset + symtab_header -> function_table_num * sizeof(os_symtab_item)))
                 {
                     break;
@@ -245,7 +245,7 @@ void print_symbol_info(rt_size_t address,rt_bool_t function)
                 {
                     function_symbol++;
                 }
-                
+
                 break;
             }
         }

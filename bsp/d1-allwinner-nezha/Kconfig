@@ -30,7 +30,7 @@ config RT_USING_USERSPACE
     bool
     default y
 
-source "driver/Kconfig"
+source "drivers/Kconfig"
 source "libraries/Kconfig"
 
 config __STACKSIZE__

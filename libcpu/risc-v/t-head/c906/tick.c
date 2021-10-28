@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2018, RT-Thread Development Team
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -13,6 +13,9 @@
 
 #include <encoding.h>
 #include "sbi.h"
+
+/* 100 ticks per second */
+#define TICK_CYCLE (4000 * 65)
 
 static volatile uint64_t time_elapsed = 0;
 static volatile unsigned long tick_cycles = 0;
@@ -28,7 +31,7 @@ static uint64_t get_ticks()
 int tick_isr(void)
 {
     // uint64_t core_id = current_coreid();
-    int tick_cycles = 40000;
+    int tick_cycles = TICK_CYCLE;
     // clint->mtimecmp[core_id] += tick_cycles;
     rt_tick_increase();
     sbi_set_timer(get_ticks() + tick_cycles);
@@ -48,7 +51,7 @@ int rt_hw_tick_init(void)
 
     /* calculate the tick cycles */
     // tick_cycles = interval * sysctl_clock_get_freq(SYSCTL_CLOCK_CPU) / CLINT_CLOCK_DIV / 1000ULL - 1;
-    tick_cycles = 40000;
+    tick_cycles = TICK_CYCLE;
     /* Set timer */
     sbi_set_timer(get_ticks() + tick_cycles);
 

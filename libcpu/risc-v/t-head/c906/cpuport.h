@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2018, RT-Thread Development Team
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -37,6 +37,8 @@ rt_inline void rt_hw_isb()
 {
     asm volatile("fence.i":::"memory");
 }
+
+int rt_hw_cpu_id(void);
 
 #endif
 
