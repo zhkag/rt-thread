@@ -10,12 +10,13 @@ from building import *
 TARGET = 'rtthread.' + rtconfig.TARGET_EXT
 
 content = ""
+TRACE_CONFIG = ''
 with open("rtconfig.h") as f:
-	for line in f.readlines():
-		if line.find("RT_BACKTRACE_FUNCTION_NAME") != -1:
-			for token in line.split(" "):
-				if re.match(r'RT_BACKTRACE_FUNCTION_NAME$', token, flags=0):
-					TRACE_CONFIG = " -mpoke-function-name"
+    for line in f.readlines():
+        if line.find("RT_BACKTRACE_FUNCTION_NAME") != -1:
+            for token in line.split(" "):
+                if re.match(r'RT_BACKTRACE_FUNCTION_NAME$', token, flags=0):
+                    TRACE_CONFIG = " -mpoke-function-name"
 
 DefaultEnvironment(tools=[])
 env = Environment(tools = ['mingw'],
