@@ -45,6 +45,20 @@ int libc_system_init(void)
 }
 INIT_COMPONENT_EXPORT(libc_system_init);
 
+#ifdef RT_USING_MUSL
+#if !defined(RT_USING_MLIB)
+int *__errno_location(void)
+{
+    return _rt_errno();
+}
+#endif
+int *___errno_location(void)
+{
+    return _rt_errno();
+}
+
+#endif
+
 int env_set(int argc, char** argv)
 {
     switch (argc)

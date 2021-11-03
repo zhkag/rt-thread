@@ -120,20 +120,6 @@ int *_rt_errno(void)
 }
 RTM_EXPORT(_rt_errno);
 
-#ifdef RT_USING_MUSL
-#if !defined(RT_USING_MLIB)
-int *__errno_location(void)
-{
-    return _rt_errno();
-}
-#endif
-int *___errno_location(void)
-{
-    return _rt_errno();
-}
-
-#endif
-
 /**
  * This function will set the content of memory to specified value
  *
