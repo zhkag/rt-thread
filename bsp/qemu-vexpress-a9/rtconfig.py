@@ -52,7 +52,7 @@ if PLATFORM == 'gcc':
 
     CXXFLAGS= DEVICE + CFPFLAGS + ' -Wall'
     CFLAGS  = DEVICE + CFPFLAGS + ' -Wall -std=gnu99'
-    AFLAGS  = ' -c' + AFPFLAGS + ' -x assembler-with-cpp'
+    AFLAGS  = DEVICE + ' -c' + AFPFLAGS + ' -x assembler-with-cpp'
     LFLAGS  = DEVICE + ' -Wl,--gc-sections,-Map=rtthread.map,-cref,-u,system_vectors -T link.lds' + ' -lsupc++ -lgcc'
     CPATH   = ''
     LPATH   = ''
