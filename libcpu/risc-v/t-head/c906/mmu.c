@@ -14,15 +14,13 @@
 #include "page.h"
 #include <stdlib.h>
 #include <string.h>
+#include <cache.h>
 
 #include "riscv.h"
 #include "riscv_mmu.h"
 #include "mmu.h"
 
 void *current_mmu_table = RT_NULL;
-void rt_hw_cpu_icache_invalidate_all();
-void rt_hw_cpu_dcache_flush_all();
-void rt_hw_cpu_dcache_clean(void *addr,rt_size_t size);
 
 static void rt_hw_cpu_tlb_invalidate()
 {
@@ -41,7 +39,7 @@ void switch_mmu(void *mmu_table)
     current_mmu_table = mmu_table;
     RT_ASSERT(__CHECKALIGN(mmu_table,PAGE_OFFSET_BIT));
     mmu_set_pagetable((rt_ubase_t)mmu_table);
-    rt_hw_cpu_dcache_flush_all();
+    rt_hw_cpu_dcache_clean_all();
     rt_hw_cpu_icache_invalidate_all();
 }
 
