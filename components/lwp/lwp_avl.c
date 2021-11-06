@@ -207,3 +207,22 @@ int lwp_avl_traversal(struct lwp_avl_struct *ptree, int (*fun)(struct lwp_avl_st
     }
     return ret;
 }
+
+#ifndef ARCH_ARM_MMU
+struct lwp_avl_struct* lwp_map_find_first(struct lwp_avl_struct* ptree)
+{
+    if (ptree == AVL_EMPTY)
+    {
+        return (struct lwp_avl_struct *)0;
+    }
+    while (1)
+    {
+        if (!ptree->avl_left)
+        {
+            break;
+        }
+        ptree = ptree->avl_left;
+    }
+    return ptree;
+}
+#endif /* ARCH_ARM_MMU */

@@ -12,7 +12,7 @@
 
 #include <lwp.h>
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
 
 #define USER_HEAP_VADDR   0x300000000UL
 #define USER_HEAP_VEND 0xffffffffffff0000UL

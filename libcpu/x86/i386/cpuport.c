@@ -82,7 +82,7 @@ void rt_hw_context_switch_to(rt_ubase_t to)
 {
     rt_thread_t to_thread = rt_thread_sp_to_thread((void *)to);
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     /**
      * update kernel esp0 as to thread's kernel stack, to make sure process can't
      * get the correct kernel stack from tss esp0 when interrupt occur in user mode.
@@ -90,7 +90,7 @@ void rt_hw_context_switch_to(rt_ubase_t to)
     rt_ubase_t stacktop = (rt_ubase_t)(to_thread->stack_addr + to_thread->stack_size);
     rt_hw_tss_set_kstacktop(stacktop);
     lwp_mmu_switch(to_thread);  /* switch mmu before switch context */
-#endif /* RT_USING_USERSPACE */
+#endif /* ARCH_ARM_MMU */
     rt_hw_context_switch_to_real(to);
 }
 
@@ -103,7 +103,7 @@ void rt_hw_context_switch(rt_ubase_t from, rt_ubase_t to)
     lwp_user_setting_save(from_thread);
 #endif /* RT_USING_LWP */
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     /**
      * update kernel esp0 as to thread's kernel stack, to make sure process can't
      * get the correct kernel stack from tss esp0 when interrupt occur in user mode.
@@ -111,7 +111,7 @@ void rt_hw_context_switch(rt_ubase_t from, rt_ubase_t to)
     rt_ubase_t stacktop = (rt_ubase_t)(to_thread->stack_addr + to_thread->stack_size);
     rt_hw_tss_set_kstacktop(stacktop);
     lwp_mmu_switch(to_thread);  /* switch mmu before switch context */
-#endif /* RT_USING_USERSPACE */
+#endif /* ARCH_ARM_MMU */
 
     rt_hw_context_switch_real(from, to);
 

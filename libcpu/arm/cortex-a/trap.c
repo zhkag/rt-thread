@@ -163,7 +163,7 @@ void rt_hw_show_register(struct rt_hw_exp_stack *regs)
     rt_kprintf("fp :0x%08x ip :0x%08x\n", regs->fp, regs->ip);
     rt_kprintf("sp :0x%08x lr :0x%08x pc :0x%08x\n", regs->sp, regs->lr, regs->pc);
     rt_kprintf("cpsr:0x%08x\n", regs->cpsr);
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     {
         uint32_t v;
         asm volatile ("MRC p15, 0, %0, c5, c0, 0":"=r"(v));

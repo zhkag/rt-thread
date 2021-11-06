@@ -12,7 +12,7 @@
 #include <rthw.h>
 #include <rtthread.h>
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
 
 #include <page.h>
 #include <mmu.h>

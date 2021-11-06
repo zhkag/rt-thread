@@ -10,14 +10,14 @@
 #include <rtthread.h>
 #include <rthw.h>
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
 #include <mmu.h>
 #include <lwp_mm_area.h>
 #endif
 
 #include <ioremap.h>
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
 static struct lwp_avl_struct *k_map_area;
 extern rt_mmu_info mmu_info;
 
@@ -105,7 +105,7 @@ void *rt_ioremap_cached(void *paddr, size_t size)
 
 void rt_iounmap(volatile void *vaddr)
 {
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     rt_base_t level;
     struct lwp_avl_struct *ma_avl_node;
 

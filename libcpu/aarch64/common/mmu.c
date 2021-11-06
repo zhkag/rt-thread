@@ -15,7 +15,7 @@
 #include "cp15.h"
 #include "mmu.h"
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
 #include "page.h"
 #endif
 
@@ -548,7 +548,7 @@ static size_t find_vaddr(rt_mmu_info *mmu_info, int pages)
     return 0;
 }
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
 static int check_vaddr(rt_mmu_info *mmu_info, void *va, int pages)
 {
     size_t loop_va;
@@ -627,7 +627,7 @@ static void rt_hw_cpu_tlb_invalidate(void)
     __asm__ volatile("tlbi vmalle1\n dsb sy\n isb sy\n");
 }
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
 void *_rt_hw_mmu_map(rt_mmu_info *mmu_info, void *v_addr, void* p_addr, size_t size, size_t attr)
 {
     size_t pa_s, pa_e;
@@ -698,7 +698,7 @@ void *_rt_hw_mmu_map(rt_mmu_info *mmu_info, void* p_addr, size_t size, size_t at
 }
 #endif
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
 static int __rt_hw_mmu_map_auto(rt_mmu_info *mmu_info, void* v_addr, size_t npages, size_t attr)
 {
     size_t loop_va = (size_t)v_addr & ~ARCH_PAGE_MASK;
@@ -794,7 +794,7 @@ void _rt_hw_mmu_unmap(rt_mmu_info *mmu_info, void* v_addr, size_t size)
     rt_hw_cpu_tlb_invalidate();
 }
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
 void *rt_hw_mmu_map(rt_mmu_info *mmu_info, void *v_addr, void* p_addr, size_t size, size_t attr)
 {
     void *ret;
@@ -887,7 +887,7 @@ void *rt_hw_mmu_v2p(rt_mmu_info *mmu_info, void* v_addr)
     return ret;
 }
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
 void rt_hw_mmu_setup_early(unsigned long *tbl0, unsigned long *tbl1, unsigned long size, unsigned long pv_off)
 {
     int ret;

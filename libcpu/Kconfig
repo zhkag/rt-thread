@@ -55,20 +55,15 @@ config ARCH_ARM_MMU
     select RT_USING_CACHE
     depends on ARCH_ARM
 
-config RT_USING_USERSPACE
-    bool "Isolated user space"
-    default n
-    depends on ARCH_ARM_MMU
-
 config KERNEL_VADDR_START
     hex "The virtural address of kernel start"
     default 0xc0000000
-    depends on RT_USING_USERSPACE
+    depends on ARCH_ARM_MMU
 
 config PV_OFFSET
     hex "The offset of kernel physical address and virtural address"
     default 0
-    depends on RT_USING_USERSPACE
+    depends on ARCH_ARM_MMU
 
 config RT_IOREMAP_LATE
     bool "Support to create IO mapping in the kernel address space after system initlalization."

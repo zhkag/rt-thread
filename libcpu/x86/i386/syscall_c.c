@@ -17,7 +17,7 @@
 //#define DBG_LEVEL DBG_INFO
 #include <rtdbg.h>
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
 
 #include <stdint.h>
 #include <mmu.h>
@@ -91,4 +91,4 @@ void rt_hw_syscall_dispath(struct rt_hw_stack_frame *frame)
     LOG_I("\033[36msyscall deal ok,ret = 0x%p\n\033[37m",frame->eax);
 }
 
-#endif /* RT_USING_USERSPACE */
+#endif /* ARCH_ARM_MMU */

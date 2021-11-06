@@ -17,7 +17,7 @@
 #include <board.h>
 
 #include <lwp.h>
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
 #include <lwp_user_mm.h>
 #include <lwp_arch.h>
 #endif
@@ -36,7 +36,7 @@
 #define SYSCALL_NET(f)      ((void *)sys_notimpl)
 #endif
 
-#if defined(RT_USING_DFS) && defined(RT_USING_USERSPACE)
+#if defined(RT_USING_DFS) && defined(ARCH_ARM_MMU)
 #define SYSCALL_USPACE(f)   ((void *)(f))
 #else
 #define SYSCALL_USPACE(f)   ((void *)sys_notimpl)
@@ -57,8 +57,6 @@
 #include <lwp_console.h>
 #include "lwp_ipc_internal.h"
 
-#define ALLOC_KERNEL_STACK_SIZE 5120
-
 #define SET_ERRNO(no) rt_set_errno(-(no))
 #define GET_ERRNO() ((rt_get_errno() > 0) ? (-rt_get_errno()) : rt_get_errno())
 struct musl_sockaddr
@@ -67,10 +65,17 @@ struct musl_sockaddr
     char     sa_data[14];
 };
 
-extern void lwp_user_thread_entry(void *args, const void *text, void *ustack, void *user_stack);
-
+int sys_dup(int oldfd);
+int sys_dup2(int oldfd, int new);
 void lwp_cleanup(struct rt_thread *tid);
-#ifdef RT_USING_USERSPACE
+
+#ifdef ARCH_ARM_MMU
+#define ALLOC_KERNEL_STACK_SIZE 5120
+
+extern void lwp_user_thread_entry(void *args, const void *text, void *ustack, void *user_stack);
+int sys_futex(int *uaddr, int op, int val, void *timeout, void *uaddr2, int val3);
+int sys_pmutex(void *umutex, int op, void *arg);
+int sys_cacheflush(void *addr, int len, int cache);
 static void *kmem_get(size_t size)
 {
     return rt_malloc(size);
@@ -80,9 +85,14 @@ static void kmem_put(void *kptr)
 {
     rt_free(kptr);
 }
-#endif
+#else
+#define ALLOC_KERNEL_STACK_SIZE 1536
+#define ALLOC_KERNEL_STACK_SIZE_MIN 1024
+#define ALLOC_KERNEL_STACK_SIZE_MAX 4096
 
-int sys_futex(int *uaddr, int op, int val, void *timeout, void *uaddr2, int val3);
+extern void lwp_user_entry(void *args, const void *text, void *data, void *user_stack);
+extern void set_user_context(void *stack);
+#endif /* ARCH_ARM_MMU */
 
 /* The same socket option is defined differently in the user interfaces and the
  * implementation. The options should be converted in the kernel. */
@@ -352,7 +362,12 @@ static void lwp_user_thread(void *parameter)
     user_stack = (rt_size_t)tid->user_stack + tid->user_stack_size;
     user_stack &= ~7; //align 8
 
+#ifdef ARCH_ARM_MMU
     lwp_user_thread_entry(parameter, tid->user_entry, (void *)user_stack, tid->stack_addr + tid->stack_size);
+#else
+    set_user_context((void*)user_stack);
+    lwp_user_entry(parameter, tid->user_entry, ((struct rt_lwp *)tid->lwp)->data_entry, (void*)user_stack);
+#endif /* ARCH_ARM_MMU */
 }
 
 /* thread/process */
@@ -368,6 +383,7 @@ void sys_exit(int value)
     lwp = (struct rt_lwp *)tid->lwp;
 
     level = rt_hw_interrupt_disable();
+#ifdef ARCH_ARM_MMU
     if (tid->clear_child_tid)
     {
         int t = 0;
@@ -377,11 +393,25 @@ void sys_exit(int value)
         lwp_put_to_user(clear_child_tid, &t, sizeof t);
         sys_futex(tid->clear_child_tid, FUTEX_WAKE, 1, RT_NULL, RT_NULL, 0);
     }
+#endif /* ARCH_ARM_MMU */
     main_thread = rt_list_entry(lwp->t_grp.prev, struct rt_thread, sibling);
     if (main_thread == tid)
     {
         lwp_terminate(lwp);
+#ifdef ARCH_ARM_MMU
         lwp_wait_subthread_exit();
+#else
+        rt_thread_t sub_thread;
+        rt_list_t *list;
+
+        /* delete all subthread */
+        while ((list = tid->sibling.prev) != &lwp->t_grp)
+        {
+            sub_thread = rt_list_entry(list, struct rt_thread, sibling);
+            rt_list_remove(&sub_thread->sibling);
+            rt_thread_delete(sub_thread);
+        }
+#endif /* ARCH_ARM_MMU */
         lwp->lwp_ret = value;
     }
 
@@ -401,7 +431,7 @@ void sys_exit_group(int status)
 /* syscall: "read" ret: "ssize_t" args: "int" "void *" "size_t" */
 ssize_t sys_read(int fd, void *buf, size_t nbyte)
 {
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     void *kmem = RT_NULL;
     ssize_t ret = -1;
 
@@ -430,6 +460,10 @@ ssize_t sys_read(int fd, void *buf, size_t nbyte)
     kmem_put(kmem);
     return (ret < 0 ? GET_ERRNO() : ret);
 #else
+    if (!lwp_user_accessable((void *)buf, nbyte))
+    {
+        return -EFAULT;
+    }
     ssize_t ret = read(fd, buf, nbyte);
     return (ret < 0 ? GET_ERRNO() : ret);
 #endif
@@ -438,7 +472,7 @@ ssize_t sys_read(int fd, void *buf, size_t nbyte)
 /* syscall: "write" ret: "ssize_t" args: "int" "const void *" "size_t" */
 ssize_t sys_write(int fd, const void *buf, size_t nbyte)
 {
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     void *kmem = RT_NULL;
     ssize_t ret = -1;
 
@@ -464,6 +498,10 @@ ssize_t sys_write(int fd, const void *buf, size_t nbyte)
     kmem_put(kmem);
     return (ret < 0 ? GET_ERRNO() : ret);
 #else
+    if (!lwp_user_accessable((void *)buf, nbyte))
+    {
+        return -EFAULT;
+    }
     ssize_t ret = write(fd, buf, nbyte);
     return (ret < 0 ? GET_ERRNO() : ret);
 #endif
@@ -479,7 +517,7 @@ off_t sys_lseek(int fd, off_t offset, int whence)
 /* syscall: "open" ret: "int" args: "const char *" "int" "..." */
 int sys_open(const char *name, int flag, ...)
 {
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     int ret = -1;
     rt_size_t len = 0;
     char *kname = RT_NULL;
@@ -507,6 +545,10 @@ int sys_open(const char *name, int flag, ...)
     kmem_put(kname);
     return (ret < 0 ? GET_ERRNO() : ret);
 #else
+    if (!lwp_user_accessable((void *)name, 1))
+    {
+        return -EFAULT;
+    }
     int ret = open(name, flag, 0);
     return (ret < 0 ? GET_ERRNO() : ret);
 #endif
@@ -528,7 +570,7 @@ int sys_ioctl(int fd, unsigned long cmd, void* data)
 
 int sys_fstat(int file, struct stat *buf)
 {
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     int ret = -1;
     struct stat statbuff;
 
@@ -551,11 +593,15 @@ int sys_fstat(int file, struct stat *buf)
         return (ret < 0 ? GET_ERRNO() : ret);
     }
 #else
+    if (!lwp_user_accessable((void *)buf, sizeof(struct stat)))
+    {
+        return -EFAULT;
+    }
     int ret = fstat(file, buf);
     return (ret < 0 ? GET_ERRNO() : ret);
 #endif
 }
-
+#ifdef ARCH_ARM_MMU
 /* DFS and lwip definitions */
 #define IMPL_POLLIN     (0x01)
 
@@ -647,12 +693,13 @@ static void dfs2musl_events(short *events)
 
     *events = result_e;
 }
+#endif /* ARCH_ARM_MMU */
 
 int sys_poll(struct pollfd *fds, nfds_t nfds, int timeout)
 {
     int ret = -1;
+#ifdef ARCH_ARM_MMU
     int i = 0;
-#ifdef RT_USING_USERSPACE
     struct pollfd *kfds = RT_NULL;
 
     if (!lwp_user_accessable((void *)fds, nfds * sizeof *fds))
@@ -683,29 +730,20 @@ int sys_poll(struct pollfd *fds, nfds_t nfds, int timeout)
     }
 
     kmem_put(kfds);
-    return ret;
 #else
-    for (i = 0; i < nfds; i++)
+    if (!lwp_user_accessable((void *)fds, nfds * sizeof *fds))
     {
-        musl2dfs_events(&fds->events);
+        return -EFAULT;
     }
     ret = poll(fds, nfds, timeout);
-    if (ret > 0)
-    {
-        for (i = 0; i < nfds; i++)
-        {
-            dfs2musl_events(&fds->revents);
-        }
-    }
-
+#endif /* ARCH_ARM_MMU */
     return ret;
-#endif
 }
 
 int sys_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout)
 {
-#ifdef RT_USING_USERSPACE
     int ret = -1;
+#ifdef ARCH_ARM_MMU
     fd_set *kreadfds = RT_NULL, *kwritefds = RT_NULL, *kexceptfds = RT_NULL;
 
     if (readfds)
@@ -782,7 +820,18 @@ quit:
     }
     return (ret < 0 ? GET_ERRNO() : ret);
 #else
-    int ret;
+    if (!lwp_user_accessable((void *)readfds, sizeof *readfds))
+    {
+        return -EFAULT;
+    }
+    if (!lwp_user_accessable((void *)writefds, sizeof *writefds))
+    {
+        return -EFAULT;
+    }
+    if (!lwp_user_accessable((void *)exceptfds, sizeof *exceptfds))
+    {
+        return -EFAULT;
+    }
     ret = select(nfds, readfds, writefds, exceptfds, timeout);
     return (ret < 0 ? GET_ERRNO() : ret);
 #endif
@@ -790,7 +839,7 @@ quit:
 
 int sys_unlink(const char *pathname)
 {
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     int ret = -1;
     rt_size_t len = 0;
     char *kname = RT_NULL;
@@ -830,7 +879,7 @@ int sys_unlink(const char *pathname)
 int sys_nanosleep(const struct timespec *rqtp, struct timespec *rmtp)
 {
     rt_tick_t tick;
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     struct timespec rqtp_k;
     struct timespec rmtp_k;
 
@@ -863,11 +912,21 @@ int sys_nanosleep(const struct timespec *rqtp, struct timespec *rmtp)
 #else
     dbg_log(DBG_LOG, "sys_nanosleep\n");
 
+    if (!lwp_user_accessable((void *)rqtp, sizeof *rqtp))
+    {
+        return -EFAULT;
+    }
+
     tick = rqtp->tv_sec * RT_TICK_PER_SECOND + ((uint64_t)rqtp->tv_nsec * RT_TICK_PER_SECOND) / 1000000000;
     rt_thread_delay(tick);
 
     if (rmtp)
     {
+        if (!lwp_user_accessable((void *)rmtp, sizeof *rmtp))
+        {
+            return -EFAULT;
+        }
+
         tick = rt_tick_get() - tick;
         /* get the passed time */
         rmtp->tv_sec = tick / RT_TICK_PER_SECOND;
@@ -881,9 +940,9 @@ int sys_nanosleep(const struct timespec *rqtp, struct timespec *rmtp)
 /* syscall: "gettimeofday" ret: "int" args: "struct timeval *" "struct timezone *" */
 int sys_gettimeofday(struct timeval *tp, struct timezone *tzp)
 {
+#ifdef ARCH_ARM_MMU
     struct timeval t_k;
 
-#ifdef RT_USING_USERSPACE
     if (tp)
     {
         if (!lwp_user_accessable((void *)tp, sizeof *tp))
@@ -899,6 +958,10 @@ int sys_gettimeofday(struct timeval *tp, struct timezone *tzp)
 #else
     if (tp)
     {
+        if (!lwp_user_accessable((void *)tp, sizeof *tp))
+        {
+            return -EFAULT;
+        }
         tp->tv_sec = rt_tick_get() / RT_TICK_PER_SECOND;
         tp->tv_usec = (rt_tick_get() % RT_TICK_PER_SECOND) * (1000000 / RT_TICK_PER_SECOND);
     }
@@ -1026,7 +1089,7 @@ rt_err_t sys_mutex_release(rt_mutex_t mutex)
     return rt_mutex_release(mutex);
 }
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
 /* memory allocation */
 extern rt_base_t lwp_brk(void *addr);
 rt_base_t sys_brk(void *addr)
@@ -1076,6 +1139,10 @@ rt_err_t sys_event_recv(rt_event_t   event,
                        rt_int32_t   timeout,
                        rt_uint32_t *recved)
 {
+    if (!lwp_user_accessable((void *)recved, sizeof(rt_uint32_t *)))
+    {
+        return -EFAULT;
+    }
     return rt_event_recv(event, set, opt, timeout, recved);
 }
 
@@ -1109,6 +1176,10 @@ rt_err_t sys_mb_send_wait(rt_mailbox_t mb,
 
 rt_err_t sys_mb_recv(rt_mailbox_t mb, rt_uint32_t *value, rt_int32_t timeout)
 {
+    if (!lwp_user_accessable((void *)value, sizeof(rt_uint32_t *)))
+    {
+        return -EFAULT;
+    }
     return rt_mb_recv(mb, (rt_ubase_t *)value, timeout);
 }
 
@@ -1133,11 +1204,19 @@ rt_err_t sys_mq_delete(rt_mq_t mq)
 
 rt_err_t sys_mq_send(rt_mq_t mq, void *buffer, rt_size_t size)
 {
+    if (!lwp_user_accessable((void *)buffer, size))
+    {
+        return -EFAULT;
+    }
     return rt_mq_send(mq, buffer, size);
 }
 
 rt_err_t sys_mq_urgent(rt_mq_t mq, void *buffer, rt_size_t size)
 {
+    if (!lwp_user_accessable((void *)buffer, size))
+    {
+        return -EFAULT;
+    }
     return rt_mq_urgent(mq, buffer, size);
 }
 
@@ -1146,6 +1225,10 @@ rt_err_t sys_mq_recv(rt_mq_t    mq,
                     rt_size_t  size,
                     rt_int32_t timeout)
 {
+    if (!lwp_user_accessable((void *)buffer, size))
+    {
+        return -EFAULT;
+    }
     return rt_mq_recv(mq, buffer, size, timeout);
 }
 
@@ -1199,11 +1282,9 @@ rt_thread_t sys_thread_create(void *arg[])
 
     lwp = rt_thread_self()->lwp;
     lwp_ref_inc(lwp);
-#ifdef RT_USING_USERSPACE
+
+#ifdef ARCH_ARM_MMU
     user_stack  = lwp_map_user(lwp, 0, (size_t)arg[3], 0);
-#else
-    user_stack  = (void *)RT_KERNEL_MALLOC((uint32_t)arg[3]);
-#endif
     if (!user_stack)
     {
         goto fail;
@@ -1227,6 +1308,41 @@ rt_thread_t sys_thread_create(void *arg[])
     thread->user_entry = (void (*)(void *))arg[1];
     thread->user_stack = (void *)user_stack;
     thread->user_stack_size = (rt_size_t)arg[3];
+#else
+    rt_uint32_t kstack_size = (rt_uint32_t)arg[7];
+    if (kstack_size < ALLOC_KERNEL_STACK_SIZE_MIN)
+    {
+        /* When kstack size is 0, the default size of the kernel stack is used */
+        kstack_size = kstack_size ? ALLOC_KERNEL_STACK_SIZE_MIN : ALLOC_KERNEL_STACK_SIZE;
+    }
+    else if (kstack_size > ALLOC_KERNEL_STACK_SIZE_MAX)
+    {
+        kstack_size = ALLOC_KERNEL_STACK_SIZE_MAX;
+    }
+
+    user_stack  = (void *)arg[3];
+    if ((!user_stack) || ((rt_uint32_t)arg[6] == RT_NULL))
+    {
+        goto fail;
+    }
+
+    if ((tid = lwp_tid_get()) == 0)
+    {
+        goto fail;
+    }
+
+    thread = rt_thread_create((const char *)arg[0], lwp_user_thread, (void *)arg[2], kstack_size, (rt_uint8_t)(size_t)arg[5], (rt_uint32_t)arg[6]);
+    if (!thread)
+    {
+        goto fail;
+    }
+    thread->cleanup = lwp_cleanup;
+    thread->user_entry = (void (*)(void *))arg[1];
+    thread->user_stack = (void *)user_stack;
+    thread->user_stack_size = (uint32_t)arg[4];
+    rt_memset(thread->user_stack, '#', thread->user_stack_size);
+#endif /* ARCH_ARM_MMU */
+
     thread->lwp = (void*)lwp;
     thread->tid = tid;
     lwp_tid_set_thread(tid, thread);
@@ -1239,19 +1355,13 @@ rt_thread_t sys_thread_create(void *arg[])
 
 fail:
     lwp_tid_put(tid);
-#ifndef RT_USING_USERSPACE
-    if (user_stack)
-    {
-        RT_KERNEL_FREE(user_stack);
-    }
-#endif
     if (lwp)
     {
         lwp_ref_dec(lwp);
     }
     return RT_NULL;
 }
-
+#ifdef ARCH_ARM_MMU
 #define CLONE_VM    0x00000100
 #define CLONE_FS    0x00000200
 #define CLONE_FILES 0x00000400
@@ -1410,7 +1520,7 @@ static int _copy_process(struct rt_lwp *dest_lwp, struct rt_lwp *src_lwp)
 
 static void lwp_struct_copy(struct rt_lwp *dst, struct rt_lwp *src)
 {
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     dst->end_heap = src->end_heap;
 #endif
     dst->lwp_type = src->lwp_type;
@@ -2161,7 +2271,7 @@ int sys_execve(const char *path, char *const argv[], char *const envp[])
 
         rt_pages_free(page, 0);
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
         _swap_lwp_data(lwp, new_lwp, rt_mmu_info, mmu_info);
         _swap_lwp_data(lwp, new_lwp, struct lwp_avl_struct *, map_area);
         _swap_lwp_data(lwp, new_lwp, size_t, end_heap);
@@ -2205,10 +2315,31 @@ quit:
     }
     return (ret < 0 ? GET_ERRNO() : ret);
 }
+#endif /* ARCH_ARM_MMU */
 
 rt_err_t sys_thread_delete(rt_thread_t thread)
 {
+#ifdef ARCH_ARM_MMU
     return rt_thread_delete(thread);
+#else
+    rt_err_t ret = 0;
+
+    if(thread->type != RT_Object_Class_Thread)
+    {
+        ret = -EINVAL;
+        goto __exit;
+    }
+
+    ret = rt_thread_delete(thread);
+
+    if (rt_thread_self() == thread)
+    {
+        rt_schedule();
+    }
+
+__exit:
+    return ret;
+#endif
 }
 
 rt_err_t sys_thread_startup(rt_thread_t thread)
@@ -2326,7 +2457,7 @@ void sys_hw_interrupt_enable(uint32_t level)
     rt_hw_interrupt_enable(level);
 }
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
 int sys_shmget(size_t key, size_t size, int create)
 {
     return lwp_shmget(key, size, create);
@@ -2345,6 +2476,34 @@ void* sys_shmat(int id, void* shm_vaddr)
 int sys_shmdt(void* shm_vaddr)
 {
     return lwp_shmdt(shm_vaddr);
+}
+#elif defined RT_LWP_USING_SHM
+void *sys_shm_alloc(int size)
+{
+    if (size < 0)
+    {
+        return RT_NULL;
+    }
+    return lwp_shm_alloc((rt_size_t)size);
+}
+
+void *sys_shm_retain(void *mem)
+{
+    if (!lwp_user_accessable(mem, sizeof (void *)))
+    {
+        return RT_NULL;
+    }
+    return lwp_shm_retain(mem);
+}
+
+int sys_shm_free(void *mem)
+{
+    if (!lwp_user_accessable(mem, sizeof (void *)))
+    {
+        return -EFAULT;
+    }
+    lwp_shm_free(mem);
+    return 0;
 }
 #endif
 
@@ -2619,13 +2778,13 @@ int sys_recvfrom(int socket, void *mem, size_t len, int flags,
       struct musl_sockaddr *from, socklen_t *fromlen)
 {
     int flgs = 0;
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     int ret = -1;
     void *kmem = RT_NULL;
 #endif
 
     flgs = netflags_muslc_2_lwip(flags);
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     if (!len)
     {
         return -EINVAL;
@@ -2697,13 +2856,13 @@ int sys_sendto(int socket, const void *dataptr, size_t size, int flags,
     const struct musl_sockaddr *to, socklen_t tolen)
 {
     int flgs = 0;
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     int ret = -1;
     void *kmem = RT_NULL;
 #endif
 
     flgs = netflags_muslc_2_lwip(flags);
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     if (!size)
     {
         return -EINVAL;
@@ -2866,6 +3025,7 @@ int sys_sigaction(int sig, const struct k_sigaction *act,
     }
 
     ret = lwp_sigaction(sig, pkact, pkoact, sigsetsize);
+#ifdef ARCH_ARM_MMU
     if (ret == 0 && oact)
     {
         lwp_put_to_user(&oact->handler, &pkoact->__sa_handler._sa_handler, sizeof(void (*)(int)));
@@ -2873,6 +3033,7 @@ int sys_sigaction(int sig, const struct k_sigaction *act,
         lwp_put_to_user(&oact->flags, &pkoact->sa_flags, sizeof(int));
         lwp_put_to_user(&oact->restorer, &pkoact->sa_restorer, sizeof(void (*)(void)));
     }
+#endif /* ARCH_ARM_MMU */
 out:
     return (ret < 0 ? GET_ERRNO() : ret);
 }
@@ -2880,8 +3041,10 @@ out:
 int sys_sigprocmask(int how, const sigset_t *sigset, sigset_t *oset, size_t size)
 {
     int ret = -1;
-    lwp_sigset_t newset, *pnewset = RT_NULL;
-    lwp_sigset_t oldset, *poldset = RT_NULL;
+    lwp_sigset_t *pnewset = RT_NULL, *poldset = RT_NULL;
+#ifdef ARCH_ARM_MMU
+    lwp_sigset_t newset, oldset;
+#endif /* ARCH_ARM_MMU*/
 
     if (!size)
     {
@@ -2897,22 +3060,39 @@ int sys_sigprocmask(int how, const sigset_t *sigset, sigset_t *oset, size_t size
     }
     if (oset)
     {
+#ifdef ARCH_ARM_MMU
         if (!lwp_user_accessable((void *)oset, size))
         {
             return -EFAULT;
         }
         poldset = &oldset;
+#else
+        if (!lwp_user_accessable((void *)oset, size))
+        {
+            return -EFAULT;
+        }
+        poldset = (lwp_sigset_t *)oset;
+#endif
     }
     if (sigset)
     {
+#ifdef ARCH_ARM_MMU
         if (!lwp_user_accessable((void *)sigset, size))
         {
             return -EFAULT;
         }
         lwp_get_from_user(&newset, (void *)sigset, size);
         pnewset = &newset;
+#else
+        if (!lwp_user_accessable((void *)sigset, size))
+        {
+            return -EFAULT;
+        }
+        pnewset = (lwp_sigset_t *)sigset;
+#endif /* ARCH_ARM_MMU */
     }
     ret = lwp_sigprocmask(how, pnewset, poldset);
+#ifdef ARCH_ARM_MMU
     if (ret < 0)
     {
         return ret;
@@ -2921,11 +3101,13 @@ int sys_sigprocmask(int how, const sigset_t *sigset, sigset_t *oset, size_t size
     {
         lwp_put_to_user(oset, poldset, size);
     }
+#endif /* ARCH_ARM_MMU */
     return (ret < 0 ? -EFAULT: ret);
 }
 
 int sys_tkill(int tid, int sig)
 {
+#ifdef ARCH_ARM_MMU
     rt_base_t level;
     rt_thread_t thread;
     int ret;
@@ -2935,13 +3117,18 @@ int sys_tkill(int tid, int sig)
     ret =  lwp_thread_kill(thread, sig);
     rt_hw_interrupt_enable(level);
     return ret;
+#else
+    return lwp_thread_kill((rt_thread_t)tid, sig);
+#endif
 }
 
 int sys_thread_sigprocmask(int how, const lwp_sigset_t *sigset, lwp_sigset_t *oset, size_t size)
 {
     int ret = -1;
-    lwp_sigset_t newset, *pnewset = RT_NULL;
-    lwp_sigset_t oldset, *poldset = RT_NULL;
+    lwp_sigset_t *pnewset = RT_NULL, *poldset = RT_NULL;
+#ifdef ARCH_ARM_MMU
+    lwp_sigset_t newset, oldset;
+#endif /* ARCH_ARM_MMU */
 
     if (!size)
     {
@@ -2957,19 +3144,23 @@ int sys_thread_sigprocmask(int how, const lwp_sigset_t *sigset, lwp_sigset_t *os
     }
     if (oset)
     {
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
         if (!lwp_user_accessable((void *)oset, size))
         {
             return -EFAULT;
         }
         poldset = &oldset;
 #else
+        if (!lwp_user_accessable((void *)oset, size))
+        {
+            return -EFAULT;
+        }
         poldset = oset;
 #endif
     }
     if (sigset)
     {
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
         if (!lwp_user_accessable((void *)sigset, size))
         {
             return -EFAULT;
@@ -2977,7 +3168,11 @@ int sys_thread_sigprocmask(int how, const lwp_sigset_t *sigset, lwp_sigset_t *os
         lwp_get_from_user(&newset, (void *)sigset, sizeof(lwp_sigset_t));
         pnewset = &newset;
 #else
-        pnewset = sigset;
+        if (!lwp_user_accessable((void *)sigset, size))
+        {
+            return -EFAULT;
+        }
+        pnewset = (lwp_sigset_t *)sigset;
 #endif
     }
     ret = lwp_thread_sigprocmask(how, pnewset, poldset);
@@ -2985,7 +3180,7 @@ int sys_thread_sigprocmask(int how, const lwp_sigset_t *sigset, lwp_sigset_t *os
     {
         return ret;
     }
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     if (oset)
     {
         lwp_put_to_user(oset, poldset, sizeof(lwp_sigset_t));
@@ -2994,20 +3189,47 @@ int sys_thread_sigprocmask(int how, const lwp_sigset_t *sigset, lwp_sigset_t *os
     return (ret < 0 ? -EFAULT: ret);
 }
 
+#ifndef ARCH_ARM_MMU
+int sys_lwp_sighandler_set(int sig, lwp_sighandler_t func)
+{
+    if (!lwp_user_accessable((void *)func, sizeof(lwp_sighandler_t)))
+    {
+        return -EFAULT;
+    }
+
+    lwp_sighandler_set(sig, func);
+    return 0;
+}
+
+int sys_thread_sighandler_set(int sig, lwp_sighandler_t func)
+{
+    if (!lwp_user_accessable((void *)func, sizeof(lwp_sighandler_t)))
+    {
+        return -EFAULT;
+    }
+
+    lwp_thread_sighandler_set(sig, func);
+    return 0;
+}
+#endif /* not defined ARCH_ARM_MMU */
+
 int32_t sys_waitpid(int32_t pid, int *status, int options)
 {
     int ret = -1;
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     if (!lwp_user_accessable((void *)status, sizeof(int)))
     {
         return -EFAULT;
-        ret = -1;
     }
     else
     {
         ret = waitpid(pid, status, options);
     }
 #else
+    if (!lwp_user_accessable((void *)status, sizeof(int)))
+    {
+        return -EFAULT;
+    }
     ret = waitpid(pid, status, options);
 #endif
     return ret;
@@ -3038,11 +3260,11 @@ int sys_getaddrinfo(const char *nodename,
     char *k_nodename = NULL;
     char *k_servname = NULL;
     struct addrinfo *k_hints = NULL;
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     int err;
 #endif
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     if (!lwp_user_accessable((void *)res, sizeof(*res)))
     {
         SET_ERRNO(EFAULT);
@@ -3051,7 +3273,7 @@ int sys_getaddrinfo(const char *nodename,
 #endif
     if (nodename)
     {
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
         lwp_user_strlen(nodename, &err);
         if (err)
         {
@@ -3068,7 +3290,7 @@ int sys_getaddrinfo(const char *nodename,
     }
     if (servname)
     {
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
         lwp_user_strlen(servname, &err);
         if (err)
         {
@@ -3086,7 +3308,7 @@ int sys_getaddrinfo(const char *nodename,
 
     if (hints)
     {
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
         if (!lwp_user_accessable((void *)hints, sizeof(*hints)))
         {
             SET_ERRNO(EFAULT);
@@ -3161,7 +3383,7 @@ int sys_gethostbyname2_r(const char *name, int af, struct hostent *ret,
     char *k_name  = NULL;
     int a_err = 0;
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     if (!lwp_user_accessable((void *)err, sizeof(*err)))
     {
         SET_ERRNO(EFAULT);
@@ -3259,12 +3481,11 @@ __exit:
 
 char *sys_getcwd(char *buf, size_t size)
 {
-#ifdef RT_USING_USERSPACE
     if (!lwp_user_accessable((void *)buf, size))
     {
         return RT_NULL;
     }
-#endif
+
     getcwd(buf, size);
 
     return (char *)strlen(buf);
@@ -3272,7 +3493,7 @@ char *sys_getcwd(char *buf, size_t size)
 
 int sys_chdir(const char *path)
 {
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     int err = 0;
 
     lwp_user_strlen(path, &err);
@@ -3290,7 +3511,7 @@ int sys_chdir(const char *path)
 
 int sys_mkdir(const char *path, mode_t mode)
 {
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     int err = 0;
 
     lwp_user_strlen(path, &err);
@@ -3308,7 +3529,7 @@ int sys_mkdir(const char *path, mode_t mode)
 
 int sys_rmdir(const char *path)
 {
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     int err = 0;
 
     lwp_user_strlen(path, &err);
@@ -3324,7 +3545,9 @@ int sys_rmdir(const char *path)
 #endif
 }
 
+#ifdef RT_USING_MUSL
 typedef uint64_t ino_t;
+#endif
 struct libc_dirent {
     ino_t d_ino;
     off_t d_off;
@@ -3340,12 +3563,10 @@ int sys_getdents(int fd, struct libc_dirent *dirp, size_t nbytes)
     size_t rtt_nbytes = 0;
     struct dirent *rtt_dirp;
 
-#ifdef RT_USING_USERSPACE
     if (!lwp_user_accessable((void *)dirp, sizeof(struct libc_dirent)))
     {
         return -EFAULT;
     }
-#endif
 
     if (cnt == 0)
     {
@@ -3381,7 +3602,7 @@ rt_err_t sys_get_errno(void)
 {
     return rt_get_errno();
 }
-
+#ifdef ARCH_ARM_MMU
 int sys_set_thread_area(void *p)
 {
     rt_thread_t thread;
@@ -3397,16 +3618,16 @@ int sys_set_tid_address(int *tidptr)
 {
     rt_thread_t thread;
 
-#ifdef RT_USING_USERSPACE
     if (!lwp_user_accessable((void *)tidptr, sizeof(int)))
     {
         return -EFAULT;
     }
-#endif
+
     thread = rt_thread_self();
     thread->clear_child_tid = tidptr;
     return thread->tid;
 }
+#endif /* ARCH_ARM_MMU */
 
 int sys_gettid(void)
 {
@@ -3416,7 +3637,7 @@ int sys_gettid(void)
 int sys_access(const char *filename, int mode)
 {
     int ret = 0;
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     rt_size_t len = 0;
     char *kname = RT_NULL;
     int a_err = 0;
@@ -3474,7 +3695,7 @@ int sys_clock_settime(clockid_t clk, const struct timespec *ts)
         return -ENODEV;
     }
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     size_t size = sizeof(struct timespec);
     struct timespec *kts = NULL;
 
@@ -3494,6 +3715,10 @@ int sys_clock_settime(clockid_t clk, const struct timespec *ts)
 
     kmem_put(kts);
 #else
+    if (!lwp_user_accessable((void *)ts, sizeof(struct timespec)))
+    {
+        return -EFAULT;
+    }
     now = ts->tv_sec;
 #endif
     return rt_device_control(device, RT_DEVICE_CTRL_RTC_SET_TIME, &now);
@@ -3512,7 +3737,7 @@ int sys_clock_gettime(clockid_t clk, struct timespec *ts)
     }
     ret = rt_device_control(device, RT_DEVICE_CTRL_RTC_GET_TIME, &now);
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     size_t size = sizeof(struct timespec);
     struct timespec *kts = NULL;
 
@@ -3533,6 +3758,10 @@ int sys_clock_gettime(clockid_t clk, struct timespec *ts)
 
     kmem_put(kts);
 #else
+    if (!lwp_user_accessable((void *)ts, sizeof(struct timespec)))
+    {
+        return -EFAULT;
+    }
     ts->tv_sec = now;
     ts->tv_nsec = 0;
 #endif
@@ -3541,7 +3770,7 @@ int sys_clock_gettime(clockid_t clk, struct timespec *ts)
 
 int sys_clock_getres(clockid_t clk, struct timespec *ts)
 {
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     struct timespec kts;
     size_t size = sizeof(struct timespec);
 
@@ -3554,22 +3783,21 @@ int sys_clock_getres(clockid_t clk, struct timespec *ts)
     kts.tv_nsec = 0;
     lwp_put_to_user(ts, &kts, size);
 #else
+    if (!lwp_user_accessable((void *)ts, sizeof(struct timespec)))
+    {
+        return -EFAULT;
+    }
+
     ts->tv_sec = 1;
     ts->tv_nsec = 0;
 #endif
     return 0;
 }
 
-int sys_futex(int *uaddr, int op, int val, void *timeout, void *uaddr2, int val3);
-int sys_pmutex(void *umutex, int op, void *arg);
-
-int sys_dup(int oldfd);
-int sys_dup2(int oldfd, int new);
-
 int sys_rename(const char *oldpath, const char *newpath)
 {
     int ret = -1;
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     int err;
 
     lwp_user_strlen(oldpath, &err);
@@ -3647,8 +3875,6 @@ int sys_setrlimit(unsigned int resource, struct rlimit *rlim)
     return -ENOSYS;
 }
 
-int sys_cacheflush(void *addr, int len, int cache);
-
 const static void* func_table[] =
 {
     (void *)sys_exit,            /* 01 */
@@ -3706,12 +3932,19 @@ const static void* func_table[] =
     SYSCALL_USPACE(sys_brk),
     SYSCALL_USPACE(sys_mmap2),
     SYSCALL_USPACE(sys_munmap),
-
+#ifdef ARCH_ARM_MMU
     SYSCALL_USPACE(sys_shmget), /* 55 */
     SYSCALL_USPACE(sys_shmrm),
     SYSCALL_USPACE(sys_shmat),
     SYSCALL_USPACE(sys_shmdt),
-
+#else
+#ifdef RT_LWP_USING_SHM
+    (void *)sys_shm_alloc,      /* 55 */
+    (void *)sys_shm_free,
+    (void *)sys_shm_retain,
+    (void *)sys_notimpl,
+#endif /* RT_LWP_USING_SHM */
+#endif /* ARCH_ARM_MMU */
     (void *)sys_device_init,
     (void *)sys_device_register, /* 60 */
     (void *)sys_device_control,
@@ -3772,9 +4005,15 @@ const static void* func_table[] =
     (void *)sys_sigprocmask,
     (void *)sys_tkill,             /* 105 */
     (void *)sys_thread_sigprocmask,
+#ifdef ARCH_ARM_MMU
     (void *)sys_cacheflush,
     (void *)sys_notimpl,
     (void *)sys_notimpl,
+#else
+    (void *)sys_notimpl,
+    (void *)sys_lwp_sighandler_set,
+    (void *)sys_thread_sighandler_set,
+#endif
     (void *)sys_waitpid,          /* 110 */
 
     (void *)sys_timer_create,
@@ -3789,22 +4028,27 @@ const static void* func_table[] =
     (void *)sys_rmdir,          /* 120 */
     (void *)sys_getdents,
     (void *)sys_get_errno,
+#ifdef ARCH_ARM_MMU
     (void *)sys_set_thread_area,
     (void *)sys_set_tid_address,
+#else
+    (void *)sys_notimpl,
+    (void *)sys_notimpl,
+#endif
     (void *)sys_access,         /* 125 */
     (void *)sys_pipe,
     (void *)sys_clock_settime,
     (void *)sys_clock_gettime,
     (void *)sys_clock_getres,
-    (void *)sys_clone,           /* 130 */
-    (void *)sys_futex,
-    (void *)sys_pmutex,
+    SYSCALL_USPACE(sys_clone),           /* 130 */
+    SYSCALL_USPACE(sys_futex),
+    SYSCALL_USPACE(sys_pmutex),
     (void *)sys_dup,
     (void *)sys_dup2,
     (void *)sys_rename,         /* 135 */
-    (void *)sys_fork,
-    (void *)sys_execve,
-    (void *)sys_vfork,
+    SYSCALL_USPACE(sys_fork),
+    SYSCALL_USPACE(sys_execve),
+    SYSCALL_USPACE(sys_vfork),
     (void *)sys_gettid,
     (void *)sys_prlimit64,      /* 140 */
     (void *)sys_getrlimit,

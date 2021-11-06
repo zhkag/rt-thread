@@ -27,16 +27,19 @@
 #include "lwp_ipc.h"
 #include "lwp_signal.h"
 #include "lwp_syscall.h"
+#include "lwp_avl.h"
+#include "lwp_arch.h"
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
 #include "lwp_shm.h"
 
 #include "mmu.h"
 #include "page.h"
-#include "lwp_arch.h"
 #endif
 
+#ifdef RT_USING_MUSL
 #include <locale.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,11 +52,13 @@ extern "C" {
 
 #define LWP_ARG_MAX         8
 
+#ifdef RT_USING_MUSL
 typedef int32_t pid_t;
+#endif /* RT_USING_MUSL */
 
 struct rt_lwp
 {
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     rt_mmu_info mmu_info;
     struct lwp_avl_struct *map_area;
     size_t end_heap;
@@ -74,12 +79,10 @@ struct rt_lwp
     uint32_t text_size;
     void *data_entry;
     uint32_t data_size;
-#ifndef RT_USING_USERSPACE
-    size_t load_off;
-#endif
 
     int ref;
     void *args;
+    uint32_t args_length;
     pid_t pid;
     rt_list_t t_grp;
     struct dfs_fdtable fdt;
@@ -91,6 +94,12 @@ struct rt_lwp
     int signal_mask_bak;
     rt_uint32_t signal_in_process;
     lwp_sighandler_t signal_handler[_LWP_NSIG];
+
+#ifndef ARCH_ARM_MMU
+#ifdef ARCH_ARM_MPU
+    struct rt_mpu_info mpu_info;
+#endif
+#endif /* ARCH_ARM_MMU */
 
     struct lwp_avl_struct *object_root;
     struct rt_mutex object_mutex;
@@ -132,13 +141,13 @@ void lwp_tid_set_thread(int tid, rt_thread_t thread);
 
 size_t lwp_user_strlen(const char *s, int *err);
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
 void lwp_mmu_switch(struct rt_thread *thread);
 #endif
 void lwp_user_setting_save(rt_thread_t thread);
 void lwp_user_setting_restore(rt_thread_t thread);
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
 struct __pthread {
     /* Part 1 -- these fields may be external or
      *      * internal (accessed via asm) ABI. Do not change. */

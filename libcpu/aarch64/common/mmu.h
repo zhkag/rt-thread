@@ -123,7 +123,7 @@ void rt_hw_mmu_setup(struct mem_desc *mdesc, int desc_nr);
 int rt_hw_mmu_map_init(rt_mmu_info *mmu_info, void* v_address, size_t size, size_t *vtable, size_t pv_off);
 int rt_hw_mmu_ioremap_init(rt_mmu_info *mmu_info, void* v_address, size_t size);
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
 void *rt_hw_mmu_map(rt_mmu_info *mmu_info, void *v_addr, void* p_addr, size_t size, size_t attr);
 void *rt_hw_mmu_map_auto(rt_mmu_info *mmu_info, void *v_addr, size_t size, size_t attr);
 #else

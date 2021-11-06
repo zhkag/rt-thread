@@ -14,7 +14,7 @@
 #include <rthw.h>
 #include <board.h>
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
 
 #include "page.h"
 #include "mmu.h"
@@ -486,4 +486,4 @@ void rt_page_init(rt_region_t reg)
     rt_pages_alloc(0);
 }
 
-#endif /* RT_USING_USERSPACE */
+#endif /* ARCH_ARM_MMU */

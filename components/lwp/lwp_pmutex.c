@@ -10,7 +10,7 @@
 
 #include <rtthread.h>
 #include <lwp.h>
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
 #include <lwp_user_mm.h>
 #endif
 #include "clock_time.h"

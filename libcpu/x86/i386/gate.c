@@ -146,10 +146,10 @@ void rt_hw_gate_init(void)
     gate_set(IDT_OFF2PTR(idt, IRQ_INTR_BASE+14), rt_hw_intr_entry0x2e, KERNEL_CODE_SEL, DA_386_INTR_GATE, DA_GATE_DPL0);
     gate_set(IDT_OFF2PTR(idt, IRQ_INTR_BASE+15), rt_hw_intr_entry0x2f, KERNEL_CODE_SEL, DA_386_INTR_GATE, DA_GATE_DPL0);
     /* 系统调用处理中断 */
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     extern void hw_syscall_entry(void);
     gate_set(IDT_OFF2PTR(idt, SYSCALL_INTR_BASE), hw_syscall_entry, KERNEL_CODE_SEL, DA_386_INTR_GATE, DA_GATE_DPL3);
-#endif /* RT_USING_USERSPACE */
+#endif /* ARCH_ARM_MMU */
 
     extern void load_new_idt(rt_ubase_t size, rt_ubase_t idtr);
     load_new_idt(IDT_LIMIT, IDT_VADDR);

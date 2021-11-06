@@ -17,7 +17,7 @@
 #include <rthw.h>
 #include <stddef.h>
 
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
 
 #include <mmu.h>
 #include <page.h>

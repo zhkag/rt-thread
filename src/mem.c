@@ -632,17 +632,16 @@ void rt_memory_info(rt_uint32_t *total,
 
 #ifdef RT_USING_LWP
 #include <lwp.h>
-#else
+#endif
 #ifndef ARCH_PAGE_SIZE
 #define ARCH_PAGE_SIZE  0
-#endif
 
 #endif
 
 void list_mem(void)
 {
     size_t total_pages = 0, free_pages = 0;
-#ifdef RT_USING_USERSPACE
+#ifdef ARCH_ARM_MMU
     rt_page_get_info(&total_pages, &free_pages);
 #endif
 
