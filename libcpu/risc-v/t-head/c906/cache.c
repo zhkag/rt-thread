@@ -124,14 +124,14 @@ void rt_hw_cpu_dcache_ops(int ops,void *addr,int size)
 
 void rt_hw_cpu_dcache_clean_all(void)
 {
-    /* asm volatile("dcache.ciall\n":::"memory"); */
-    asm volatile(".long 0x0030000b\n":::"memory");
+    /* asm volatile("dcache.call\n":::"memory"); */
+    asm volatile(".long 0x0010000b\n":::"memory");
 }
 
 void rt_hw_cpu_dcache_invalidate_all(void)
 {
-    /* asm volatile("dcache.iall\n":::"memory"); */
-    asm volatile(".long 0x0020000b\n":::"memory");
+    /* asm volatile("dcache.ciall\n":::"memory"); */
+    asm volatile(".long 0x0030000b\n":::"memory");
 }
 
 void rt_hw_cpu_icache_invalidate_all(void)
