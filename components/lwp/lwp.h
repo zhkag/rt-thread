@@ -27,16 +27,22 @@
 #include "lwp_ipc.h"
 #include "lwp_signal.h"
 #include "lwp_syscall.h"
+#include "lwp_avl.h"
 
 #ifdef RT_USING_USERSPACE
 #include "lwp_shm.h"
 
 #include "mmu.h"
 #include "page.h"
-#include "lwp_arch.h"
+#else
+#include "lwp_mpu.h"
 #endif
+#include "lwp_arch.h"
 
+#ifdef RT_USING_MUSL
 #include <locale.h>
+typedef int32_t pid_t;
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,16 +55,17 @@ extern "C" {
 
 #define LWP_ARG_MAX         8
 
-typedef int32_t pid_t;
-
 struct rt_lwp
 {
 #ifdef RT_USING_USERSPACE
     rt_mmu_info mmu_info;
     struct lwp_avl_struct *map_area;
     size_t end_heap;
+#else
+#ifdef ARCH_MM_MPU
+    struct rt_mpu_info mpu_info;
+#endif /* ARCH_MM_MPU */
 #endif
-
     uint8_t lwp_type;
     uint8_t reserv[3];
 
@@ -74,12 +81,10 @@ struct rt_lwp
     uint32_t text_size;
     void *data_entry;
     uint32_t data_size;
-#ifndef RT_USING_USERSPACE
-    size_t load_off;
-#endif
 
     int ref;
     void *args;
+    uint32_t args_length;
     pid_t pid;
     rt_list_t t_grp;
     struct dfs_fdtable fdt;

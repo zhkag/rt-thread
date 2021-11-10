@@ -36,6 +36,10 @@ config ARCH_ARM_MPU
     bool
     depends on ARCH_ARM
 
+config ARCH_MM_MPU
+    bool
+    depends on ARCH_ARM_MPU
+
 config ARCH_ARM_CORTEX_M4
     bool
     select ARCH_ARM_CORTEX_M

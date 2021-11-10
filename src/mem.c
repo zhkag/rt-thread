@@ -632,10 +632,9 @@ void rt_memory_info(rt_uint32_t *total,
 
 #ifdef RT_USING_LWP
 #include <lwp.h>
-#else
+#endif
 #ifndef ARCH_PAGE_SIZE
 #define ARCH_PAGE_SIZE  0
-#endif
 
 #endif
 

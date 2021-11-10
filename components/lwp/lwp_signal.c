@@ -286,6 +286,13 @@ lwp_sighandler_t lwp_sighandler_get(int sig)
     }
     level = rt_hw_interrupt_disable();
     thread = rt_thread_self();
+#ifndef ARCH_ARM_MMU
+    if (thread->signal_in_process)
+    {
+        func = thread->signal_handler[sig - 1];
+        goto out;
+    }
+#endif
     lwp = (struct rt_lwp*)thread->lwp;
 
     func = lwp->signal_handler[sig - 1];
@@ -323,6 +330,19 @@ void lwp_sighandler_set(int sig, lwp_sighandler_t func)
     ((struct rt_lwp*)rt_thread_self()->lwp)->signal_handler[sig - 1] = func;
     rt_hw_interrupt_enable(level);
 }
+
+#ifndef ARCH_ARM_MMU
+void lwp_thread_sighandler_set(int sig, lwp_sighandler_t func)
+{
+    rt_base_t level;
+
+    if (sig == 0 || sig > _LWP_NSIG)
+        return;
+    level = rt_hw_interrupt_disable();
+    rt_thread_self()->signal_handler[sig - 1] = func;
+    rt_hw_interrupt_enable(level);
+}
+#endif
 
 int lwp_sigaction(int sig, const struct lwp_sigaction *act,
              struct lwp_sigaction *oact, size_t sigsetsize)

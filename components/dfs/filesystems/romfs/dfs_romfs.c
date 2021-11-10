@@ -34,7 +34,28 @@ int dfs_romfs_unmount(struct dfs_filesystem *fs)
 
 int dfs_romfs_ioctl(struct dfs_fd *file, int cmd, void *args)
 {
-    return -EIO;
+    int ret = RT_EOK;
+    struct romfs_dirent *dirent;
+
+    dirent = (struct romfs_dirent *)file->fnode->data;
+    RT_ASSERT(dirent != NULL);
+
+    switch (cmd)
+    {
+    case RT_FIOGETADDR:
+        {
+            *(rt_uint32_t*)args = (rt_uint32_t)dirent->data;
+            break;
+        }
+    case RT_FIOFTRUNCATE:
+        {
+            break;
+        }
+    default:
+        ret = -RT_EINVAL;
+        break;
+    }
+    return ret;
 }
 
 rt_inline int check_dirent(struct romfs_dirent *dirent)

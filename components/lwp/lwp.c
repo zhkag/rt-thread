@@ -23,7 +23,6 @@
 #endif
 
 #include "lwp.h"
-#include "lwp_arch.h"
 
 #define DBG_TAG "LWP"
 #define DBG_LVL DBG_WARNING
@@ -113,7 +112,18 @@ uint32_t *lwp_get_kernel_sp(void)
 #ifdef RT_USING_USERSPACE
     return (uint32_t *)rt_thread_self()->sp;
 #else
-    return (uint32_t *)rt_thread_self()->kernel_sp;
+    uint32_t* kernel_sp;
+    extern rt_uint32_t rt_interrupt_from_thread;
+    extern rt_uint32_t rt_thread_switch_interrupt_flag;
+    if (rt_thread_switch_interrupt_flag)
+    {
+        kernel_sp = (uint32_t *)((rt_thread_t)rt_container_of(rt_interrupt_from_thread, struct rt_thread, sp))->kernel_sp;
+    }
+    else
+    {
+        kernel_sp = (uint32_t *)rt_thread_self()->kernel_sp;
+    }
+    return kernel_sp;
 #endif
 }
 
@@ -217,13 +227,17 @@ struct process_aux *lwp_argscopy(struct rt_lwp *lwp, int argc, char **argv, char
 #else
 static struct process_aux *lwp_argscopy(struct rt_lwp *lwp, int argc, char **argv, char **envp)
 {
+#ifdef ARCH_ARM_MMU
     int size = sizeof(int) * 5; /* store argc, argv, envp, aux, NULL */
+    struct process_aux *aux;
+#else
+    int size = sizeof(int) * 4; /* store argc, argv, envp, NULL */
+#endif /* ARCH_ARM_MMU */
     int *args;
     char *str;
     char **new_argve;
     int i;
     int len;
-    struct process_aux *aux;
 
     for (i = 0; i < argc; i++)
     {
@@ -242,6 +256,7 @@ static struct process_aux *lwp_argscopy(struct rt_lwp *lwp, int argc, char **arg
         }
     }
 
+#ifdef ARCH_ARM_MMU
     /* for aux */
     size += sizeof(struct process_aux);
 
@@ -253,6 +268,14 @@ static struct process_aux *lwp_argscopy(struct rt_lwp *lwp, int argc, char **arg
 
     /* argc, argv[], 0, envp[], 0 */
     str = (char *)((size_t)args + (argc + 2 + i + 1 + AUX_ARRAY_ITEMS_NR * 2 + 1) * sizeof(int));
+#else
+    args = (int *)rt_malloc(size);
+    if (args == RT_NULL)
+    {
+        return RT_NULL;
+    }
+    str = (char*)((int)args + (argc + 2 + i + 1) * sizeof(int));
+#endif /* ARCH_ARM_MMU */
 
     new_argve = (char **)&args[1];
     args[0] = argc;
@@ -281,7 +304,7 @@ static struct process_aux *lwp_argscopy(struct rt_lwp *lwp, int argc, char **arg
         }
         new_argve[i] = 0;
     }
-
+#ifdef ARCH_ARM_MMU
     /* aux */
     aux = (struct process_aux *)(new_argve + i);
     aux->item[0].key = AT_EXECFN;
@@ -292,9 +315,16 @@ static struct process_aux *lwp_argscopy(struct rt_lwp *lwp, int argc, char **arg
     lwp->args = args;
 
     return aux;
+#else
+    lwp->args = args;
+    lwp->args_length = size;
+
+    return (struct process_aux *)(new_argve + i);
+#endif /* ARCH_ARM_MMU */
 }
 #endif
 
+#ifdef ARCH_ARM_MMU
 #define check_off(voff, vlen)           \
     do                                  \
     {                                   \
@@ -475,9 +505,7 @@ static int load_elf(int fd, int len, struct rt_lwp *lwp, uint8_t *load_addr, str
     struct map_range user_area[2] = {{NULL, 0}, {NULL, 0}}; /* 0 is text, 1 is data */
     void *pa, *va;
     void *va_self;
-#endif
 
-#ifdef RT_USING_USERSPACE
     rt_mmu_info *m_info = &lwp->mmu_info;
 #endif
 
@@ -924,6 +952,7 @@ _exit:
     }
     return result;
 }
+#endif /* ARCH_ARM_MMU */
 
 int lwp_load(const char *filename, struct rt_lwp *lwp, uint8_t *load_addr, size_t addr_size, struct process_aux *aux);
 
@@ -994,13 +1023,6 @@ void lwp_cleanup(struct rt_thread *tid)
 
     LOG_I("cleanup thread: %s, stack_addr: %08X", tid->name, tid->stack_addr);
 
-#ifndef RT_USING_USERSPACE
-    if (tid->user_stack != RT_NULL)
-    {
-        rt_free(tid->user_stack);
-    }
-#endif
-
     level = rt_hw_interrupt_disable();
     lwp = (struct rt_lwp *)tid->lwp;
 
@@ -1054,7 +1076,11 @@ static void lwp_thread_entry(void *parameter)
     }
 #endif
 
+#ifdef ARCH_ARM_MMU
     lwp_user_entry(lwp->args, lwp->text_entry, (void *)USER_STACK_VEND, tid->stack_addr + tid->stack_size);
+#else
+    lwp_user_entry(lwp->args, lwp->text_entry, lwp->data_entry, (void *)((uint32_t)lwp->data_entry + lwp->data_size));
+#endif /* ARCH_ARM_MMU */
 }
 
 struct rt_lwp *lwp_self(void)
@@ -1127,24 +1153,37 @@ pid_t lwp_execve(char *filename, int argc, char **argv, char **envp)
     }
 
     result = lwp_load(filename, lwp, RT_NULL, 0, aux);
+#ifdef ARCH_ARM_MMU
     if (result == 1)
     {
         /* dynmaic */
         lwp_unmap_user(lwp, (void *)(USER_VADDR_TOP - ARCH_PAGE_SIZE));
         result = load_ldso(lwp, filename, argv, envp);
     }
+#endif /* ARCH_ARM_MMU */
     if (result == RT_EOK)
     {
         rt_thread_t thread = RT_NULL;
+        rt_uint32_t priority = 25, tick = 200;
 
         lwp_copy_stdio_fdt(lwp);
 
         /* obtain the base name */
         thread_name = strrchr(filename, '/');
         thread_name = thread_name ? thread_name + 1 : filename;
-
+#ifndef ARCH_ARM_MMU
+        struct lwp_app_head *app_head = lwp->text_entry;
+        if (app_head->priority)
+        {
+            priority = app_head->priority;
+        }
+        if (app_head->tick)
+        {
+            tick = app_head->tick;
+        }
+#endif /* not defined ARCH_ARM_MMU */
         thread = rt_thread_create(thread_name, lwp_thread_entry, RT_NULL,
-                LWP_TASK_STACK_SIZE, 25, 200);
+                LWP_TASK_STACK_SIZE, priority, tick);
         if (thread != RT_NULL)
         {
             struct rt_lwp *self_lwp;
@@ -1163,6 +1202,18 @@ pid_t lwp_execve(char *filename, int argc, char **argv, char **envp)
                 lwp->parent = self_lwp;
             }
             thread->lwp = lwp;
+#ifndef ARCH_ARM_MMU
+            struct lwp_app_head *app_head = (struct lwp_app_head*)lwp->text_entry;
+            thread->user_stack = app_head->stack_offset ?
+                              (void *)(app_head->stack_offset -
+                                       app_head->data_offset +
+                                       (uint32_t)lwp->data_entry) : RT_NULL;
+            thread->user_stack_size = app_head->stack_size;
+            /* init data area */
+            rt_memset(lwp->data_entry, 0, lwp->data_size);
+            /* init user stack */
+            rt_memset(thread->user_stack, '#', thread->user_stack_size);
+#endif /* not defined ARCH_ARM_MMU */
             rt_list_insert_after(&lwp->t_grp, &thread->sibling);
 
 #ifdef RT_USING_GDBSERVER
@@ -1201,6 +1252,7 @@ pid_t exec(char *filename, int argc, char **argv)
 }
 #endif
 
+#ifdef ARCH_ARM_MMU
 void lwp_user_setting_save(rt_thread_t thread)
 {
     if (thread)
@@ -1240,3 +1292,4 @@ void lwp_user_setting_restore(rt_thread_t thread)
     }
 #endif
 }
+#endif /* ARCH_ARM_MMU */

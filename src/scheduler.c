@@ -33,6 +33,10 @@
 #include <rtthread.h>
 #include <rthw.h>
 
+#ifdef RT_USING_LWP
+#include <lwp.h>
+#endif /* RT_USING_LWP */
+
 rt_list_t rt_thread_priority_table[RT_THREAD_PRIORITY_MAX];
 rt_uint32_t rt_thread_ready_priority_group;
 #if RT_THREAD_PRIORITY_MAX > 32
@@ -81,6 +85,19 @@ rt_scheduler_switch_sethook(void (*hook)(struct rt_thread *tid))
 static void _rt_scheduler_stack_check(struct rt_thread *thread)
 {
     RT_ASSERT(thread != RT_NULL);
+
+#ifdef RT_USING_LWP
+#ifndef ARCH_ARM_MMU
+    struct rt_lwp *lwp = thread ? (struct rt_lwp *)thread->lwp : 0;
+
+    /* if stack pointer locate in user data section skip stack check. */
+    if (lwp && ((rt_uint32_t)thread->sp > (rt_uint32_t)lwp->data_entry &&
+    (rt_uint32_t)thread->sp <= (rt_uint32_t)lwp->data_entry + (rt_uint32_t)lwp->data_size))
+    {
+        return;
+    }
+#endif /* not defined ARCH_ARM_MMU */
+#endif /* RT_USING_LWP */
 
 #if defined(ARCH_CPU_STACK_GROWS_UPWARD)
     if (*((rt_uint8_t *)((rt_ubase_t)thread->stack_addr + thread->stack_size - 1)) != '#' ||
