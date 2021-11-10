@@ -1207,7 +1207,7 @@ pid_t lwp_execve(char *filename, int argc, char **argv, char **envp)
             thread->user_stack = app_head->stack_offset ?
                               (void *)(app_head->stack_offset -
                                        app_head->data_offset +
-                                       lwp->data_entry) : RT_NULL;
+                                       (uint32_t)lwp->data_entry) : RT_NULL;
             thread->user_stack_size = app_head->stack_size;
             /* init data area */
             rt_memset(lwp->data_entry, 0, lwp->data_size);
