@@ -29,7 +29,7 @@ if RT_USING_LWP
         int "The maximum number of lwp thread id"
         default 64
 
-    if ARCH_ARM_MMU
+    if ARCH_MM_MMU
         config RT_LWP_SHM_MAX_NR
             int "The maximum number of shared memory"
             default 64

@@ -87,7 +87,7 @@ static void _rt_scheduler_stack_check(struct rt_thread *thread)
     RT_ASSERT(thread != RT_NULL);
 
 #ifdef RT_USING_LWP
-#ifndef ARCH_ARM_MMU
+#ifndef ARCH_MM_MMU
     struct rt_lwp *lwp = thread ? (struct rt_lwp *)thread->lwp : 0;
 
     /* if stack pointer locate in user data section skip stack check. */
@@ -96,7 +96,7 @@ static void _rt_scheduler_stack_check(struct rt_thread *thread)
     {
         return;
     }
-#endif /* not defined ARCH_ARM_MMU */
+#endif /* not defined ARCH_MM_MMU */
 #endif /* RT_USING_LWP */
 
 #if defined(ARCH_CPU_STACK_GROWS_UPWARD)

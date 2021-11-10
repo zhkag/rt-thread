@@ -365,7 +365,7 @@ void lwp_free(struct rt_lwp* lwp)
 #ifndef ARCH_MM_MPU
         rt_free(lwp->args);
 #endif /* not defined ARCH_MM_MPU */
-#endif /* ARCH_ARM_MMU */
+#endif /* ARCH_MM_MMU */
         lwp->args = RT_NULL;
     }
 
@@ -383,7 +383,7 @@ void lwp_free(struct rt_lwp* lwp)
     /* free data section */
     if (lwp->data_entry != RT_NULL)
     {
-#ifdef ARCH_ARM_MMU
+#ifdef ARCH_MM_MMU
         rt_free_align(lwp->data_entry);
 #else
 #ifdef ARCH_MM_MPU
@@ -392,7 +392,7 @@ void lwp_free(struct rt_lwp* lwp)
 #else
         rt_free_align(lwp->data_entry);
 #endif /* ARCH_MM_MPU */
-#endif /* ARCH_ARM_MMU */
+#endif /* ARCH_MM_MMU */
         lwp->data_entry = RT_NULL;
     }
 
@@ -402,9 +402,9 @@ void lwp_free(struct rt_lwp* lwp)
         if (lwp->text_entry)
         {
             LOG_D("lwp text free: %p", lwp->text_entry);
-#ifndef ARCH_ARM_MMU
+#ifndef ARCH_MM_MMU
             rt_free((void*)lwp->text_entry);
-#endif /* not defined ARCH_ARM_MMU */
+#endif /* not defined ARCH_MM_MMU */
             lwp->text_entry = RT_NULL;
         }
     }
@@ -503,11 +503,11 @@ void lwp_ref_dec(struct rt_lwp *lwp)
             }
 #endif /* RT_USING_GDBSERVER */
 
-#ifndef ARCH_ARM_MMU
+#ifndef ARCH_MM_MMU
 #ifdef RT_LWP_USING_SHM
             lwp_shm_lwp_free(lwp);
 #endif /* RT_LWP_USING_SHM */
-#endif /* not defined ARCH_ARM_MMU */
+#endif /* not defined ARCH_MM_MMU */
             lwp_free(lwp);
         }
     }

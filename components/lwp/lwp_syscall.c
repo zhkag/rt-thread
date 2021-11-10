@@ -69,7 +69,7 @@ int sys_dup(int oldfd);
 int sys_dup2(int oldfd, int new);
 void lwp_cleanup(struct rt_thread *tid);
 
-#ifdef ARCH_ARM_MMU
+#ifdef ARCH_MM_MMU
 #define ALLOC_KERNEL_STACK_SIZE 5120
 
 extern void lwp_user_thread_entry(void *args, const void *text, void *ustack, void *user_stack);
@@ -92,7 +92,7 @@ static void kmem_put(void *kptr)
 
 extern void lwp_user_entry(void *args, const void *text, void *data, void *user_stack);
 extern void set_user_context(void *stack);
-#endif /* ARCH_ARM_MMU */
+#endif /* ARCH_MM_MMU */
 
 /* The same socket option is defined differently in the user interfaces and the
  * implementation. The options should be converted in the kernel. */
@@ -362,12 +362,12 @@ static void lwp_user_thread(void *parameter)
     user_stack = (rt_size_t)tid->user_stack + tid->user_stack_size;
     user_stack &= ~7; //align 8
 
-#ifdef ARCH_ARM_MMU
+#ifdef ARCH_MM_MMU
     lwp_user_thread_entry(parameter, tid->user_entry, (void *)user_stack, tid->stack_addr + tid->stack_size);
 #else
     set_user_context((void*)user_stack);
     lwp_user_entry(parameter, tid->user_entry, ((struct rt_lwp *)tid->lwp)->data_entry, (void*)user_stack);
-#endif /* ARCH_ARM_MMU */
+#endif /* ARCH_MM_MMU */
 }
 
 /* thread/process */
@@ -383,7 +383,7 @@ void sys_exit(int value)
     lwp = (struct rt_lwp *)tid->lwp;
 
     level = rt_hw_interrupt_disable();
-#ifdef ARCH_ARM_MMU
+#ifdef ARCH_MM_MMU
     if (tid->clear_child_tid)
     {
         int t = 0;
@@ -418,7 +418,7 @@ void sys_exit(int value)
         }
         lwp->lwp_ret = value;
     }
-#endif /* ARCH_ARM_MMU */
+#endif /* ARCH_MM_MMU */
 
     rt_thread_delete(tid);
     rt_schedule();
@@ -1382,7 +1382,7 @@ fail:
     }
     return RT_NULL;
 }
-#ifdef ARCH_ARM_MMU
+#ifdef ARCH_MM_MMU
 #define CLONE_VM    0x00000100
 #define CLONE_FS    0x00000200
 #define CLONE_FILES 0x00000400
@@ -2336,11 +2336,11 @@ quit:
     }
     return (ret < 0 ? GET_ERRNO() : ret);
 }
-#endif /* ARCH_ARM_MMU */
+#endif /* ARCH_MM_MMU */
 
 rt_err_t sys_thread_delete(rt_thread_t thread)
 {
-#ifdef ARCH_ARM_MMU
+#ifdef ARCH_MM_MMU
     return rt_thread_delete(thread);
 #else
     rt_err_t ret = 0;
@@ -3046,7 +3046,7 @@ int sys_sigaction(int sig, const struct k_sigaction *act,
     }
 
     ret = lwp_sigaction(sig, pkact, pkoact, sigsetsize);
-#ifdef ARCH_ARM_MMU
+#ifdef ARCH_MM_MMU
     if (ret == 0 && oact)
     {
         lwp_put_to_user(&oact->handler, &pkoact->__sa_handler._sa_handler, sizeof(void (*)(int)));
@@ -3054,7 +3054,7 @@ int sys_sigaction(int sig, const struct k_sigaction *act,
         lwp_put_to_user(&oact->flags, &pkoact->sa_flags, sizeof(int));
         lwp_put_to_user(&oact->restorer, &pkoact->sa_restorer, sizeof(void (*)(void)));
     }
-#endif /* ARCH_ARM_MMU */
+#endif /* ARCH_MM_MMU */
 out:
     return (ret < 0 ? GET_ERRNO() : ret);
 }
@@ -3063,9 +3063,9 @@ int sys_sigprocmask(int how, const sigset_t *sigset, sigset_t *oset, size_t size
 {
     int ret = -1;
     lwp_sigset_t *pnewset = RT_NULL, *poldset = RT_NULL;
-#ifdef ARCH_ARM_MMU
+#ifdef ARCH_MM_MMU
     lwp_sigset_t newset, oldset;
-#endif /* ARCH_ARM_MMU*/
+#endif /* ARCH_MM_MMU*/
 
     if (!size)
     {
@@ -3081,7 +3081,7 @@ int sys_sigprocmask(int how, const sigset_t *sigset, sigset_t *oset, size_t size
     }
     if (oset)
     {
-#ifdef ARCH_ARM_MMU
+#ifdef ARCH_MM_MMU
         if (!lwp_user_accessable((void *)oset, size))
         {
             return -EFAULT;
@@ -3097,7 +3097,7 @@ int sys_sigprocmask(int how, const sigset_t *sigset, sigset_t *oset, size_t size
     }
     if (sigset)
     {
-#ifdef ARCH_ARM_MMU
+#ifdef ARCH_MM_MMU
         if (!lwp_user_accessable((void *)sigset, size))
         {
             return -EFAULT;
@@ -3110,10 +3110,10 @@ int sys_sigprocmask(int how, const sigset_t *sigset, sigset_t *oset, size_t size
             return -EFAULT;
         }
         pnewset = (lwp_sigset_t *)sigset;
-#endif /* ARCH_ARM_MMU */
+#endif /* ARCH_MM_MMU */
     }
     ret = lwp_sigprocmask(how, pnewset, poldset);
-#ifdef ARCH_ARM_MMU
+#ifdef ARCH_MM_MMU
     if (ret < 0)
     {
         return ret;
@@ -3122,13 +3122,13 @@ int sys_sigprocmask(int how, const sigset_t *sigset, sigset_t *oset, size_t size
     {
         lwp_put_to_user(oset, poldset, size);
     }
-#endif /* ARCH_ARM_MMU */
+#endif /* ARCH_MM_MMU */
     return (ret < 0 ? -EFAULT: ret);
 }
 
 int sys_tkill(int tid, int sig)
 {
-#ifdef ARCH_ARM_MMU
+#ifdef ARCH_MM_MMU
     rt_base_t level;
     rt_thread_t thread;
     int ret;
@@ -3147,9 +3147,9 @@ int sys_thread_sigprocmask(int how, const lwp_sigset_t *sigset, lwp_sigset_t *os
 {
     int ret = -1;
     lwp_sigset_t *pnewset = RT_NULL, *poldset = RT_NULL;
-#ifdef ARCH_ARM_MMU
+#ifdef ARCH_MM_MMU
     lwp_sigset_t newset, oldset;
-#endif /* ARCH_ARM_MMU */
+#endif /* ARCH_MM_MMU */
 
     if (!size)
     {
@@ -3165,7 +3165,7 @@ int sys_thread_sigprocmask(int how, const lwp_sigset_t *sigset, lwp_sigset_t *os
     }
     if (oset)
     {
-#ifdef ARCH_ARM_MMU
+#ifdef ARCH_MM_MMU
         if (!lwp_user_accessable((void *)oset, size))
         {
             return -EFAULT;
@@ -3181,7 +3181,7 @@ int sys_thread_sigprocmask(int how, const lwp_sigset_t *sigset, lwp_sigset_t *os
     }
     if (sigset)
     {
-#ifdef ARCH_ARM_MMU
+#ifdef ARCH_MM_MMU
         if (!lwp_user_accessable((void *)sigset, size))
         {
             return -EFAULT;
@@ -3201,7 +3201,7 @@ int sys_thread_sigprocmask(int how, const lwp_sigset_t *sigset, lwp_sigset_t *os
     {
         return ret;
     }
-#ifdef ARCH_ARM_MMU
+#ifdef ARCH_MM_MMU
     if (oset)
     {
         lwp_put_to_user(oset, poldset, sizeof(lwp_sigset_t));
@@ -3210,7 +3210,7 @@ int sys_thread_sigprocmask(int how, const lwp_sigset_t *sigset, lwp_sigset_t *os
     return (ret < 0 ? -EFAULT: ret);
 }
 
-#ifndef ARCH_ARM_MMU
+#ifndef ARCH_MM_MMU
 int sys_lwp_sighandler_set(int sig, lwp_sighandler_t func)
 {
     if (!lwp_user_accessable((void *)func, sizeof(lwp_sighandler_t)))
@@ -3232,7 +3232,7 @@ int sys_thread_sighandler_set(int sig, lwp_sighandler_t func)
     lwp_thread_sighandler_set(sig, func);
     return 0;
 }
-#endif /* not defined ARCH_ARM_MMU */
+#endif /* not defined ARCH_MM_MMU */
 
 int32_t sys_waitpid(int32_t pid, int *status, int options)
 {
@@ -3624,7 +3624,7 @@ rt_err_t sys_get_errno(void)
 {
     return rt_get_errno();
 }
-#ifdef ARCH_ARM_MMU
+#ifdef ARCH_MM_MMU
 int sys_set_thread_area(void *p)
 {
     rt_thread_t thread;
@@ -3650,7 +3650,7 @@ int sys_set_tid_address(int *tidptr)
     thread->clear_child_tid = tidptr;
     return thread->tid;
 }
-#endif /* ARCH_ARM_MMU */
+#endif /* ARCH_MM_MMU */
 
 int sys_gettid(void)
 {
@@ -3954,7 +3954,7 @@ const static void* func_table[] =
     SYSCALL_USPACE(sys_brk),
     SYSCALL_USPACE(sys_mmap2),
     SYSCALL_USPACE(sys_munmap),
-#ifdef ARCH_ARM_MMU
+#ifdef ARCH_MM_MMU
     SYSCALL_USPACE(sys_shmget), /* 55 */
     SYSCALL_USPACE(sys_shmrm),
     SYSCALL_USPACE(sys_shmat),
@@ -3971,7 +3971,7 @@ const static void* func_table[] =
     (void *)sys_notimpl,
     (void *)sys_notimpl,
 #endif /* RT_LWP_USING_SHM */
-#endif /* ARCH_ARM_MMU */
+#endif /* ARCH_MM_MMU */
     (void *)sys_device_init,
     (void *)sys_device_register, /* 60 */
     (void *)sys_device_control,
@@ -4032,7 +4032,7 @@ const static void* func_table[] =
     (void *)sys_sigprocmask,
     (void *)sys_tkill,             /* 105 */
     (void *)sys_thread_sigprocmask,
-#ifdef ARCH_ARM_MMU
+#ifdef ARCH_MM_MMU
     (void *)sys_cacheflush,
     (void *)sys_notimpl,
     (void *)sys_notimpl,
@@ -4055,7 +4055,7 @@ const static void* func_table[] =
     (void *)sys_rmdir,          /* 120 */
     (void *)sys_getdents,
     (void *)sys_get_errno,
-#ifdef ARCH_ARM_MMU
+#ifdef ARCH_MM_MMU
     (void *)sys_set_thread_area,
     (void *)sys_set_tid_address,
 #else
