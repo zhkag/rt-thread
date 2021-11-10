@@ -286,7 +286,7 @@ lwp_sighandler_t lwp_sighandler_get(int sig)
     }
     level = rt_hw_interrupt_disable();
     thread = rt_thread_self();
-#ifndef ARCH_ARM_MMU
+#ifndef ARCH_MM_MMU
     if (thread->signal_in_process)
     {
         func = thread->signal_handler[sig - 1];
@@ -331,7 +331,7 @@ void lwp_sighandler_set(int sig, lwp_sighandler_t func)
     rt_hw_interrupt_enable(level);
 }
 
-#ifndef ARCH_ARM_MMU
+#ifndef ARCH_MM_MMU
 void lwp_thread_sighandler_set(int sig, lwp_sighandler_t func)
 {
     rt_base_t level;

@@ -31,7 +31,7 @@ if platform in platform_file.keys(): # support platforms
     if arch in support_arch.keys() and cpu in support_arch[arch]:
         asm_path = 'arch/' + arch + '/' + cpu + '/*_' + platform_file[platform]
         arch_common = 'arch/' + arch + '/' + 'common/*.c'
-        if not GetDepend('ARCH_ARM_MMU'):
+        if not GetDepend('ARCH_MM_MMU'):
             excluded_files = ['ioremap.c', 'lwp_futex.c', 'lwp_mm_area.c', 'lwp_pmutex.c', 'lwp_shm.c', 'lwp_user_mm.c']
             src += [f for f in Glob('*.c') if os.path.basename(str(f)) not in excluded_files] + Glob(asm_path) + Glob(arch_common)
         else:
