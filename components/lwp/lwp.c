@@ -967,7 +967,7 @@ RT_WEAK int lwp_load(const char *filename, struct rt_lwp *lwp, uint8_t *load_add
     RT_ASSERT(filename != RT_NULL);
     /* check lwp control block */
     RT_ASSERT(lwp != RT_NULL);
-rt_kprintf("duibudui\r\n");
+
     /* copy file name to process name */
     rt_strncpy(lwp->cmd, filename, RT_NAME_MAX);
 

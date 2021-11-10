@@ -61,9 +61,10 @@ struct rt_lwp
     rt_mmu_info mmu_info;
     struct lwp_avl_struct *map_area;
     size_t end_heap;
-#endif
+#else
 #ifdef ARCH_MM_MPU
     struct rt_mpu_info mpu_info;
+#endif /* ARCH_MM_MPU */
 #endif
     uint8_t lwp_type;
     uint8_t reserv[3];
