@@ -45,12 +45,12 @@ rt_hw_context_switch_to:
 #ifdef RT_USING_SMP
     mov     r0, r1
     bl      rt_cpus_lock_status_restore
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
     bl      rt_thread_self
     bl      lwp_user_setting_restore
 #endif
 #else
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
     bl      rt_thread_self
     mov     r4, r0
     bl      lwp_mmu_switch
@@ -108,12 +108,12 @@ rt_hw_context_switch:
 #ifdef RT_USING_SMP
     mov     r0, r2
     bl      rt_cpus_lock_status_restore
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
     bl      rt_thread_self
     bl      lwp_user_setting_restore
 #endif
 #else
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
     bl      rt_thread_self
     mov     r4, r0
     bl      lwp_mmu_switch
@@ -151,7 +151,7 @@ rt_hw_context_switch_interrupt:
      */
 #ifdef RT_USING_LWP
     push {r0 - r3, lr}
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
     bl rt_thread_self
     bl lwp_user_setting_save
 #endif
@@ -161,11 +161,11 @@ rt_hw_context_switch_interrupt:
 
     ldr     sp, [r2]
     mov     r0, r3
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
     mov     r4, r0
 #endif
     bl      rt_cpus_lock_status_restore
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
     mov     r0, r4
     bl      lwp_user_setting_restore
 #endif
@@ -187,7 +187,7 @@ rt_hw_context_switch_interrupt:
     str r0, [r3]
     mov r3, #1              @ set rt_thread_switch_interrupt_flag to 1
     str r3, [ip]
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
     push {r1, lr}
     mov r0, r2
     bl lwp_user_setting_save

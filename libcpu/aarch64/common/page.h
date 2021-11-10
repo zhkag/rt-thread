@@ -11,7 +11,7 @@
 #ifndef  __PAGE_H__
 #define  __PAGE_H__
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 
 typedef struct tag_region
 {

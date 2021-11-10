@@ -18,15 +18,15 @@
 #include "cache.h"
 #include "i386.h"
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 #include "page.h"
-#endif /* ARCH_ARM_MMU */
+#endif /* RT_USING_USERSPACE */
 
 // #define RT_DEBUG_MMU_X86
 
 static void __rt_hw_mmu_unmap(rt_mmu_info *mmu_info,void *v_addr,rt_size_t npages);
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 void *_rt_hw_mmu_map(rt_mmu_info *mmu_info,void *v_addr,void *p_addr,rt_size_t size,rt_size_t attr);
 void *_rt_hw_mmu_map_auto(rt_mmu_info *mmu_info,void *v_addr,rt_size_t size,rt_size_t attr);
 #else
@@ -208,7 +208,7 @@ static int __rt_hw_mmu_map(rt_mmu_info *mmu_info,void *v_addr,void *p_addr,rt_si
     return 0;
 }
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 //check whether the range of virtual address are free
 static int check_vaddr(rt_mmu_info *mmu_info,void *va,rt_size_t pages)
 {
@@ -250,7 +250,7 @@ static int check_vaddr(rt_mmu_info *mmu_info,void *va,rt_size_t pages)
 
     return 0;
 }
-#endif  /* ARCH_ARM_MMU */
+#endif  /* RT_USING_USERSPACE */
 
 //find a range of free virtual address specified by pages
 static size_t find_vaddr(rt_mmu_info *mmu_info, int pages)
@@ -294,7 +294,7 @@ static size_t find_vaddr(rt_mmu_info *mmu_info, int pages)
     return 0;
 }
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 void *_rt_hw_mmu_map(rt_mmu_info *mmu_info,void *v_addr,void *p_addr,rt_size_t size,rt_size_t attr)
 {
     rt_size_t pa_s,pa_e;
@@ -372,9 +372,9 @@ void *_rt_hw_mmu_map(rt_mmu_info *mmu_info, void* p_addr, size_t size, size_t at
     }
     return 0;
 }
-#endif  /* ARCH_ARM_MMU */
+#endif  /* RT_USING_USERSPACE */
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 static int __rt_hw_mmu_map_auto(rt_mmu_info *mmu_info,void *v_addr,rt_size_t npages,rt_size_t attr)
 {
     rt_size_t loop_va = __UMASKVALUE((rt_size_t)v_addr, PAGE_OFFSET_MASK);
@@ -471,7 +471,7 @@ void *_rt_hw_mmu_map_auto(rt_mmu_info *mmu_info,void *v_addr,rt_size_t size,rt_s
     }
     return 0;
 }
-#endif  /* ARCH_ARM_MMU */
+#endif  /* RT_USING_USERSPACE */
 
 /**
  * unmap page on v_addr, free page if unmapped, further more, if page table empty, need free it.
@@ -535,7 +535,7 @@ void _rt_hw_mmu_unmap(rt_mmu_info *mmu_info,void *v_addr,rt_size_t size)
     rt_hw_cpu_tlb_invalidate();
 }
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 /**
  * map vaddr in vtable with size and attr, this need a phy addr
  *

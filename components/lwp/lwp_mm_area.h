@@ -15,7 +15,7 @@
 
 #include <lwp_avl.h>
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 
 #ifdef __cplusplus
 extern "C" {

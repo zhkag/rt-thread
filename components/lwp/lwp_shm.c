@@ -10,7 +10,7 @@
 #include <rthw.h>
 #include <rtthread.h>
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 #include <lwp.h>
 #include <lwp_shm.h>
 

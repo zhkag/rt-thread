@@ -14,7 +14,7 @@
 #include <lwp.h>
 #include <stackframe.h>
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 #define USER_VADDR_TOP    0xFFFFF000UL
 #define USER_HEAP_VEND    0xE0000000UL
 #define USER_HEAP_VADDR   0x90000000UL
@@ -49,6 +49,6 @@ rt_inline unsigned long ffz(unsigned long x)
 }
 #endif
 
-#endif  /* ARCH_ARM_MMU */
+#endif  /* RT_USING_USERSPACE */
 
 #endif  /*LWP_ARCH_H__*/

@@ -21,7 +21,7 @@ rt_hw_context_switch_to:
     la s0, rt_current_thread
     LOAD s1, (s0)
 
-    #ifdef ARCH_ARM_MMU
+    #ifdef RT_USING_USERSPACE
         mv a0, s1
         jal lwp_mmu_switch
     #endif
@@ -54,7 +54,7 @@ rt_hw_context_switch:
     la s0, rt_current_thread
     LOAD s1, (s0)
 
-    #ifdef ARCH_ARM_MMU
+    #ifdef RT_USING_USERSPACE
         mv a0, s1
         jal lwp_mmu_switch
     #endif

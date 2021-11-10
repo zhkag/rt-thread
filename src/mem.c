@@ -641,7 +641,7 @@ void rt_memory_info(rt_uint32_t *total,
 void list_mem(void)
 {
     size_t total_pages = 0, free_pages = 0;
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
     rt_page_get_info(&total_pages, &free_pages);
 #endif
 

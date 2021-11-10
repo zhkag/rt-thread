@@ -92,7 +92,7 @@ copy_context_loop_interrupt:
     LOAD  s1, 0(s0)
     LOAD  sp, 0(s1)
 
-    #ifdef ARCH_ARM_MMU
+    #ifdef RT_USING_USERSPACE
         mv a0, s1
         jal rt_thread_sp_to_thread
         jal lwp_mmu_switch
@@ -146,7 +146,7 @@ copy_context_loop:
 .global syscall_exit
 syscall_exit:
 
-    #if defined(ARCH_ARM_MMU) && defined(RT_USING_SIGNALS)
+    #if defined(RT_USING_USERSPACE) && defined(RT_USING_SIGNALS)
         LOAD s0, 2 * REGBYTES(sp)
         andi s0, s0, 0x100
         bnez s0, error

@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <elf.h>
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 #include <mmu.h>
 #include <page.h>
 #endif
@@ -17,7 +17,7 @@ typedef struct
     Elf64_Half st_shndx;
 } Elf64_sym;
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 void lwp_elf_reloc(rt_mmu_info *m_info, void *text_start, void *rel_dyn_start, size_t rel_dyn_size, void *got_start, size_t got_size, Elf64_sym *dynsym)
 {
     size_t rel_off;

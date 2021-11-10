@@ -35,7 +35,7 @@ if RT_USING_LWP
             default 64
     endif
 
-    if ARCH_ARM_MPU
+    if ARCH_MM_MPU
         config RT_LWP_MPU_MAX_NR
             int "The maximum number of mpu region"
             default 2

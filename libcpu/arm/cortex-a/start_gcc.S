@@ -43,7 +43,7 @@ stack_start:
 .endr
 stack_top:
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 .data
 .align 14
 init_mtbl:
@@ -122,7 +122,7 @@ continue:
     dsb
     isb
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
     ldr r5, =PV_OFFSET
 
     mov r7, #0x100000
@@ -194,7 +194,7 @@ bss_loop:
     ldr r1, [r1]
     bl rt_hw_init_mmu_table
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
     ldr r0, =MMUTable     /* vaddr    */
     add r0, r5            /* to paddr */
     bl  switch_mmu
@@ -252,7 +252,7 @@ stack_setup:
     msr     cpsr_c, #Mode_SVC|I_Bit|F_Bit
     bx      lr
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 .align 2
 .global enable_mmu
 enable_mmu:
@@ -476,7 +476,7 @@ rt_hw_context_switch_interrupt_do:
     ldr     sp,  [r6]       /* get new task's stack pointer */
 
     bl      rt_thread_self
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
     mov     r4, r0
     bl      lwp_mmu_switch
     mov     r0, r4
@@ -570,7 +570,7 @@ vector_undef:
     .globl  vector_pabt
 vector_pabt:
     push_svc_reg
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
     /* cp Mode_ABT stack to SVC */
     sub     sp, sp, #17 * 4     /* Sizeof(struct rt_hw_exp_stack)  */
     mov     lr, r0
@@ -598,7 +598,7 @@ vector_pabt:
     .globl  vector_dabt
 vector_dabt:
     push_svc_reg
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
     /* cp Mode_ABT stack to SVC */
     sub     sp, sp, #17 * 4    /* Sizeof(struct rt_hw_exp_stack)  */
     mov     lr, r0
@@ -637,7 +637,7 @@ rt_clz:
 
 .global rt_secondary_cpu_entry
 rt_secondary_cpu_entry:
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
     ldr     r5, =PV_OFFSET
 
     ldr     lr, =after_enable_mmu2
@@ -681,7 +681,7 @@ after_enable_mmu2:
     ldr sp, =abt_stack_2_limit
 
     /* initialize the mmu table and enable mmu */
-#ifndef ARCH_ARM_MMU
+#ifndef RT_USING_USERSPACE
     bl rt_hw_mmu_init
 #endif
 

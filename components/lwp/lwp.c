@@ -28,7 +28,7 @@
 #define DBG_LVL DBG_WARNING
 #include <rtdbg.h>
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 #ifdef RT_USING_GDBSERVER
 #include <hw_breakpoint.h>
 #include <lwp_gdbserver.h>
@@ -38,9 +38,7 @@
 #include <lwp_user_mm.h>
 #endif
 
-#ifdef ARCH_ARM_MMU
 static const char elf_magic[] = {0x7f, 'E', 'L', 'F'};
-#endif
 #ifdef DFS_USING_WORKDIR
 extern char working_directory[];
 #endif
@@ -111,7 +109,7 @@ void lwp_set_kernel_sp(uint32_t *sp)
 
 uint32_t *lwp_get_kernel_sp(void)
 {
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
     return (uint32_t *)rt_thread_self()->sp;
 #else
     uint32_t* kernel_sp;
@@ -129,7 +127,7 @@ uint32_t *lwp_get_kernel_sp(void)
 #endif
 }
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 struct process_aux *lwp_argscopy(struct rt_lwp *lwp, int argc, char **argv, char **envp)
 {
     int size = sizeof(size_t) * 5; /* store argc, argv, envp, aux, NULL */
@@ -380,13 +378,13 @@ typedef struct
     Elf_Half st_shndx;
 } Elf_sym;
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 void lwp_elf_reloc(rt_mmu_info *m_info, void *text_start, void *rel_dyn_start, size_t rel_dyn_size, void *got_start, size_t got_size, Elf_sym *dynsym);
 #else
 void lwp_elf_reloc(void *text_start, void *rel_dyn_start, size_t rel_dyn_size, void *got_start, size_t got_size, Elf_sym *dynsym);
 #endif
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 struct map_range
 {
     void *start;
@@ -503,7 +501,7 @@ static int load_elf(int fd, int len, struct rt_lwp *lwp, uint8_t *load_addr, str
     size_t rel_dyn_size = 0;
     size_t dynsym_off = 0;
     size_t dynsym_size = 0;
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
     struct map_range user_area[2] = {{NULL, 0}, {NULL, 0}}; /* 0 is text, 1 is data */
     void *pa, *va;
     void *va_self;
@@ -547,7 +545,7 @@ static int load_elf(int fd, int len, struct rt_lwp *lwp, uint8_t *load_addr, str
     }
 
     if ((eheader.e_type != ET_DYN)
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
         && (eheader.e_type != ET_EXEC)
 #endif
     )
@@ -556,7 +554,7 @@ static int load_elf(int fd, int len, struct rt_lwp *lwp, uint8_t *load_addr, str
         return -RT_ERROR;
     }
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
     {
         off = eheader.e_phoff;
         for (i = 0; i < eheader.e_phnum; i++, off += sizeof pheader)
@@ -591,7 +589,7 @@ static int load_elf(int fd, int len, struct rt_lwp *lwp, uint8_t *load_addr, str
 
         off = eheader.e_phoff;
         process_header_size = eheader.e_phnum * sizeof pheader;
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
         if (process_header_size > ARCH_PAGE_SIZE - sizeof(char[16]))
         {
             return -RT_ERROR;
@@ -614,12 +612,12 @@ static int load_elf(int fd, int len, struct rt_lwp *lwp, uint8_t *load_addr, str
         lseek(fd, off, SEEK_SET);
         read_len = load_fread(process_header, 1, process_header_size, fd);
         check_read(read_len, process_header_size);
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
         rt_hw_cpu_dcache_ops(RT_HW_CACHE_FLUSH, process_header, process_header_size);
 #endif
 
         aux->item[1].key = AT_PAGESZ;
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
         aux->item[1].value = ARCH_PAGE_SIZE;
 #else
         aux->item[1].value = RT_MM_PAGE_SIZE;
@@ -628,7 +626,7 @@ static int load_elf(int fd, int len, struct rt_lwp *lwp, uint8_t *load_addr, str
         {
             uint32_t random_value = rt_tick_get();
             uint8_t *random;
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
             uint8_t *krandom;
 
             random = (uint8_t *)(USER_VADDR_TOP - ARCH_PAGE_SIZE - sizeof(char[16]));
@@ -643,7 +641,7 @@ static int load_elf(int fd, int len, struct rt_lwp *lwp, uint8_t *load_addr, str
             aux->item[2].value = (size_t)random;
         }
         aux->item[3].key = AT_PHDR;
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
         aux->item[3].value = (size_t)va;
 #else
         aux->item[3].value = (size_t)process_header;
@@ -652,7 +650,7 @@ static int load_elf(int fd, int len, struct rt_lwp *lwp, uint8_t *load_addr, str
         aux->item[4].value = eheader.e_phnum;
         aux->item[5].key = AT_PHENT;
         aux->item[5].value = sizeof pheader;
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
         rt_hw_cpu_dcache_ops(RT_HW_CACHE_FLUSH, aux, sizeof *aux);
 #endif
     }
@@ -661,7 +659,7 @@ static int load_elf(int fd, int len, struct rt_lwp *lwp, uint8_t *load_addr, str
     {
         load_off = (size_t)load_addr;
     }
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
     else
     {
         /* map user */
@@ -813,7 +811,7 @@ static int load_elf(int fd, int len, struct rt_lwp *lwp, uint8_t *load_addr, str
 
             check_off(pheader.p_offset, len);
             lseek(fd, pheader.p_offset, SEEK_SET);
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
             {
                 uint32_t size = pheader.p_filesz;
                 size_t tmp_len = 0;
@@ -840,7 +838,7 @@ static int load_elf(int fd, int len, struct rt_lwp *lwp, uint8_t *load_addr, str
 
             if (pheader.p_filesz < pheader.p_memsz)
             {
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
                 uint32_t size = pheader.p_memsz - pheader.p_filesz;
                 uint32_t size_s;
                 uint32_t off;
@@ -927,7 +925,7 @@ static int load_elf(int fd, int len, struct rt_lwp *lwp, uint8_t *load_addr, str
             read_len = load_fread(dynsym, 1, dynsym_size, fd);
             check_read(read_len, dynsym_size);
         }
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
         lwp_elf_reloc(m_info, (void *)load_off, rel_dyn_start, rel_dyn_size, got_start, got_size, dynsym);
 #else
         lwp_elf_reloc((void *)load_off, rel_dyn_start, rel_dyn_size, got_start, got_size, dynsym);
@@ -960,7 +958,6 @@ int lwp_load(const char *filename, struct rt_lwp *lwp, uint8_t *load_addr, size_
 
 RT_WEAK int lwp_load(const char *filename, struct rt_lwp *lwp, uint8_t *load_addr, size_t addr_size, struct process_aux *aux)
 {
-#ifdef ARCH_ARM_MMU
     uint8_t *ptr;
     int ret = -1;
     int len;
@@ -970,7 +967,7 @@ RT_WEAK int lwp_load(const char *filename, struct rt_lwp *lwp, uint8_t *load_add
     RT_ASSERT(filename != RT_NULL);
     /* check lwp control block */
     RT_ASSERT(lwp != RT_NULL);
-
+rt_kprintf("duibudui\r\n");
     /* copy file name to process name */
     rt_strncpy(lwp->cmd, filename, RT_NAME_MAX);
 
@@ -1012,84 +1009,6 @@ out:
         close(fd);
     }
     return ret;
-#else
-    const char *process_name = RT_NULL;
-    int ret = -1;
-    int fd = 0;
-
-    /* check file name */
-    RT_ASSERT(filename != RT_NULL);
-    /* check lwp control block */
-    RT_ASSERT(lwp != RT_NULL);
-
-    /* copy file name to process name */
-    process_name = strrchr(filename, '/');
-    process_name = process_name? process_name + 1: filename;
-    rt_strncpy(lwp->cmd, process_name, RT_NAME_MAX);
-
-    if ((fd = open(filename, O_RDONLY)) == RT_NULL)
-    {
-        LOG_E("exec file (%s) find error!", filename);
-        goto out;
-    }
-    if (ioctl(fd, RT_FIOGETADDR, &lwp->text_entry) != RT_EOK)
-    {
-        LOG_E("get text addr error!", filename);
-        goto out;
-    }
-    lwp->text_size = lseek(fd, 0, SEEK_END);
-    close(fd);
-
-    lwp->data_size = ((struct lwp_app_head*)lwp->text_entry)->ram_size;
-#ifdef ARCH_ARM_MPU
-    struct stat buf;
-
-    if (stat(filename, &buf) != 0)
-    {
-        goto out;
-    }
-    if (rt_lwp_map_user(lwp, lwp->text_entry, buf.st_size, RT_MPU_ATT_READ) == RT_NULL)
-    {
-        goto out;
-    }
-    {
-        int i;
-        int argc;
-        char **argv;
-        void *new_args;
-        char *args_offset;
-        lwp->data_entry = rt_lwp_alloc_user(lwp, lwp->data_size + lwp->args_length, RT_MPU_ATT_FULL);
-        if (lwp->data_entry == RT_NULL)
-        {
-            rt_free(lwp->args);
-            rt_lwp_umap_user(lwp, lwp->text_entry, buf.st_size);
-            LOG_E("malloc for data section failed!", lwp->text_entry);
-            goto out;
-        }
-
-        argc = *(uint32_t*)(lwp->args);
-        argv = (char **)(lwp->args) + 1;
-        new_args = (void *)((uint32_t)lwp->data_entry + lwp->data_size);
-        args_offset = (char *)((uint32_t)new_args - (uint32_t)lwp->args);
-        for (i=0; i<argc; i++)
-        {
-            argv[i] += (uint32_t)args_offset;
-        }
-        memcpy(new_args, lwp->args, lwp->args_length);
-        rt_free(lwp->args);
-        lwp->args = new_args;
-    }
-#else
-    lwp->data_entry = (void*)rt_malloc_align(lwp->data_size, 8);
-#endif /* ARCH_ARM_MPU */
-
-    LOG_I("lwp->text_entry = 0x%p size:%d", lwp->text_entry, buf.st_size);
-    LOG_I("lwp->data_entry = 0x%p size:%d", lwp->data_entry, lwp->data_size);
-
-    ret = 0;
-out:
-    return ret;
-#endif /* ARCH_ARM_MMU */
 }
 
 void lwp_cleanup(struct rt_thread *tid)
@@ -1211,7 +1130,7 @@ pid_t lwp_execve(char *filename, int argc, char **argv, char **envp)
         lwp_ref_dec(lwp);
         return -ENOMEM;
     }
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
     if (lwp_user_space_init(lwp) != 0)
     {
         lwp_tid_put(tid);

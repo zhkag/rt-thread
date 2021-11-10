@@ -15,7 +15,7 @@
 
 .globl system_vectors
 system_vectors:
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
     b _reset
 #else
     ldr pc, _vector_reset

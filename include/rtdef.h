@@ -744,7 +744,7 @@ struct rt_thread
 
     struct rt_wakeup wakeup;                            /**< wakeup data */
     int exit_request;
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 #ifdef RT_USING_GDBSERVER
     int step_exec;
     int debug_attach_req;

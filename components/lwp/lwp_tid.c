@@ -13,7 +13,7 @@
 
 #include "lwp.h"
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 #include "lwp_user_mm.h"
 
 #ifdef RT_USING_GDBSERVER

@@ -10,7 +10,7 @@
 #include <rthw.h>
 #include <rtthread.h>
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 #include <lwp.h>
 #endif
 
@@ -200,7 +200,7 @@ void rt_cpus_lock_status_restore(struct rt_thread *thread)
 {
     struct rt_cpu* pcpu = rt_cpu_self();
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
     lwp_mmu_switch(thread);
 #endif
     pcpu->current_thread = thread;

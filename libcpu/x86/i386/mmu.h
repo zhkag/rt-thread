@@ -132,12 +132,12 @@ void switch_mmu(void *mmu_table);
 int rt_hw_mmu_map_init(rt_mmu_info *mmu_info,void *v_address,rt_size_t size,rt_size_t *vtable,rt_size_t pv_off);
 void rt_hw_mmu_kernel_map_init(rt_mmu_info *mmu_info,rt_size_t vaddr_start,rt_size_t size);
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 void *rt_hw_mmu_map(rt_mmu_info *mmu_info,void *v_addr,void *p_addr,rt_size_t size,rt_size_t attr);
 void *rt_hw_mmu_map_auto(rt_mmu_info *mmu_info,void *v_addr,rt_size_t size,rt_size_t attr);
 #else
 void *rt_hw_mmu_map(rt_mmu_info *mmu_info, void* p_addr, size_t size, size_t attr);
-#endif  /* ARCH_ARM_MMU */
+#endif  /* RT_USING_USERSPACE */
 
 void rt_hw_mmu_unmap(rt_mmu_info *mmu_info,void *v_addr,rt_size_t size);
 void *rt_hw_mmu_v2p(rt_mmu_info *mmu_info,void *v_addr);

@@ -15,7 +15,7 @@
 #include "cp15.h"
 #include "mmu.h"
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 #include "page.h"
 #endif
 
@@ -248,7 +248,7 @@ int rt_hw_mmu_ioremap_init(rt_mmu_info *mmu_info, void* v_address, size_t size)
     size_t l1_off;
     size_t *mmu_l1, *mmu_l2;
     size_t sections;
-#ifndef ARCH_ARM_MMU
+#ifndef RT_USING_USERSPACE
     size_t *ref_cnt;
 #endif
 
@@ -276,7 +276,7 @@ int rt_hw_mmu_ioremap_init(rt_mmu_info *mmu_info, void* v_address, size_t size)
         mmu_l1 =  (size_t*)mmu_info->vtable + l1_off;
 
         RT_ASSERT((*mmu_l1 & ARCH_MMU_USED_MASK) == 0);
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
         mmu_l2 = (size_t*)rt_pages_alloc(0);
 #else
         mmu_l2 = (size_t*)rt_malloc_align(ARCH_PAGE_TBL_SIZE * 2, ARCH_PAGE_TBL_SIZE);
@@ -297,7 +297,7 @@ int rt_hw_mmu_ioremap_init(rt_mmu_info *mmu_info, void* v_address, size_t size)
             return -1;
         }
 
-#ifndef ARCH_ARM_MMU
+#ifndef RT_USING_USERSPACE
         ref_cnt = mmu_l2 + (ARCH_SECTION_SIZE / ARCH_PAGE_SIZE);
         *ref_cnt = 1;
 #endif
@@ -371,7 +371,7 @@ static size_t find_vaddr(rt_mmu_info *mmu_info, int pages)
     return 0;
 }
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 static int check_vaddr(rt_mmu_info *mmu_info, void *va, int pages)
 {
     size_t loop_va = (size_t)va & ~ARCH_PAGE_MASK;
@@ -424,7 +424,7 @@ static void __rt_hw_mmu_unmap(rt_mmu_info *mmu_info, void* v_addr, size_t npages
     size_t loop_va = (size_t)v_addr & ~ARCH_PAGE_MASK;
     size_t l1_off, l2_off;
     size_t *mmu_l1, *mmu_l2;
-#ifndef ARCH_ARM_MMU
+#ifndef RT_USING_USERSPACE
     size_t *ref_cnt;
 #endif
 
@@ -459,7 +459,7 @@ static void __rt_hw_mmu_unmap(rt_mmu_info *mmu_info, void* v_addr, size_t npages
             /* cache maintain */
             rt_hw_cpu_dcache_clean(mmu_l2 + l2_off, 4);
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
             if (rt_pages_free(mmu_l2, 0))
             {
                 *mmu_l1 = 0;
@@ -488,7 +488,7 @@ static int __rt_hw_mmu_map(rt_mmu_info *mmu_info, void* v_addr, void* p_addr, si
     size_t loop_pa = (size_t)p_addr & ~ARCH_PAGE_MASK;
     size_t l1_off, l2_off;
     size_t *mmu_l1, *mmu_l2;
-#ifndef ARCH_ARM_MMU
+#ifndef RT_USING_USERSPACE
     size_t *ref_cnt;
 #endif
 
@@ -506,13 +506,13 @@ static int __rt_hw_mmu_map(rt_mmu_info *mmu_info, void* v_addr, void* p_addr, si
         if (*mmu_l1 & ARCH_MMU_USED_MASK)
         {
             mmu_l2 = (size_t *)((*mmu_l1 & ~ARCH_PAGE_TBL_MASK) - mmu_info->pv_off);
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
             rt_page_ref_inc(mmu_l2, 0);
 #endif
         }
         else
         {
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
             mmu_l2 = (size_t*)rt_pages_alloc(0);
 #else
             mmu_l2 = (size_t*)rt_malloc_align(ARCH_PAGE_TBL_SIZE * 2, ARCH_PAGE_TBL_SIZE);
@@ -535,7 +535,7 @@ static int __rt_hw_mmu_map(rt_mmu_info *mmu_info, void* v_addr, void* p_addr, si
             }
         }
 
-#ifndef ARCH_ARM_MMU
+#ifndef RT_USING_USERSPACE
         ref_cnt = mmu_l2 + (ARCH_SECTION_SIZE / ARCH_PAGE_SIZE);
         (*ref_cnt)++;
 #endif
@@ -555,7 +555,7 @@ static void rt_hw_cpu_tlb_invalidate(void)
     asm volatile ("mcr p15, 0, r0, c8, c7, 0\ndsb\nisb" ::: "memory");
 }
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 void *_rt_hw_mmu_map(rt_mmu_info *mmu_info, void *v_addr, void* p_addr, size_t size, size_t attr)
 {
     size_t pa_s, pa_e;
@@ -626,7 +626,7 @@ void *_rt_hw_mmu_map(rt_mmu_info *mmu_info, void* p_addr, size_t size, size_t at
 }
 #endif
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 static int __rt_hw_mmu_map_auto(rt_mmu_info *mmu_info, void* v_addr, size_t npages, size_t attr)
 {
     size_t loop_va = (size_t)v_addr & ~ARCH_PAGE_MASK;
@@ -753,7 +753,7 @@ void _rt_hw_mmu_unmap(rt_mmu_info *mmu_info, void* v_addr, size_t size)
     rt_hw_cpu_tlb_invalidate();
 }
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 void *rt_hw_mmu_map(rt_mmu_info *mmu_info, void *v_addr, void* p_addr, size_t size, size_t attr)
 {
     void *ret;
@@ -850,7 +850,7 @@ void *rt_hw_mmu_v2p(rt_mmu_info *mmu_info, void* v_addr)
     return ret;
 }
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 void init_mm_setup(unsigned int *mtbl, unsigned int size, unsigned int pv_off) {
     unsigned int va;
 

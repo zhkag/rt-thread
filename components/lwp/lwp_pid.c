@@ -17,7 +17,7 @@
 #include "lwp_pid.h"
 #include "lwp_console.h"
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 #include "lwp_user_mm.h"
 
 #ifdef RT_USING_GDBSERVER
@@ -360,11 +360,11 @@ void lwp_free(struct rt_lwp* lwp)
     lwp->finish = 1;
     if (lwp->args != RT_NULL)
     {
-#ifndef ARCH_ARM_MMU
+#ifndef ARCH_MM_MMU
         lwp->args_length = RT_NULL;
-#ifndef ARCH_ARM_MPU
+#ifndef ARCH_MM_MPU
         rt_free(lwp->args);
-#endif /* not defined ARCH_ARM_MPU */
+#endif /* not defined ARCH_MM_MPU */
 #endif /* ARCH_ARM_MMU */
         lwp->args = RT_NULL;
     }
@@ -386,12 +386,12 @@ void lwp_free(struct rt_lwp* lwp)
 #ifdef ARCH_ARM_MMU
         rt_free_align(lwp->data_entry);
 #else
-#ifdef ARCH_ARM_MPU
+#ifdef ARCH_MM_MPU
         rt_lwp_umap_user(lwp, lwp->text_entry, 0);
         rt_lwp_free_user(lwp, lwp->data_entry, lwp->data_size);
 #else
         rt_free_align(lwp->data_entry);
-#endif /* ARCH_ARM_MPU */
+#endif /* ARCH_MM_MPU */
 #endif /* ARCH_ARM_MMU */
         lwp->data_entry = RT_NULL;
     }
@@ -409,7 +409,7 @@ void lwp_free(struct rt_lwp* lwp)
         }
     }
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
     lwp_unmap_user_space(lwp);
 #endif
 

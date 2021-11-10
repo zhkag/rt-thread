@@ -186,7 +186,7 @@ rt_hw_intr_thread_switch:
     movl $rt_hw_intr_exit, %eax
     jmp *%eax
 
-#ifdef ARCH_ARM_MMU
+#ifdef RT_USING_USERSPACE
 
 .extern rt_hw_syscall_dispath
 
@@ -232,7 +232,7 @@ hw_syscall_entry:
 
 .global syscall_exit
 syscall_exit:
-#endif /* ARCH_ARM_MMU */
+#endif /* RT_USING_USERSPACE */
 .global rt_hw_intr_exit
 rt_hw_intr_exit:
     addl $4, %esp               // skip intr no
