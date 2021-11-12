@@ -31,6 +31,9 @@ static void rt_hw_interrupt_handler(int vector, void *param)
  */
 void rt_hw_interrupt_init(void)
 {
+    /* init interrupt controller */
+    plic_init();
+
     rt_int32_t idx;
 
     rt_memset(isr_table, 0x00, sizeof(isr_table));
@@ -44,9 +47,6 @@ void rt_hw_interrupt_init(void)
     rt_interrupt_from_thread        = 0;
     rt_interrupt_to_thread          = 0;
     rt_thread_switch_interrupt_flag = 0;
-
-    /* Enable machine external interrupts. */
-    set_csr(sie, SIP_SEIP);
 }
 
 /**
