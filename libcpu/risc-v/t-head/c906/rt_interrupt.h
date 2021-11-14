@@ -13,8 +13,10 @@
 
 #include <rthw.h>
 
+#define NR_CPUS       1
+
 #define IRQ_OFFSET          16
-#define IRQ_MAX_NR          234
+#define IRQ_MAX_NR          207
 #define INTERRUPTS_MAX      (IRQ_OFFSET + IRQ_MAX_NR)
 
 enum {
@@ -40,5 +42,7 @@ void rt_hw_interrupt_init(void);
 void rt_hw_interrupt_mask(int vector);
 void rt_hw_interrupt_umask(int vector);
 rt_isr_handler_t rt_hw_interrupt_install(int vector, rt_isr_handler_t handler, void *param, const char *name);
+
+void generic_handle_irq(int irq);
 
 #endif

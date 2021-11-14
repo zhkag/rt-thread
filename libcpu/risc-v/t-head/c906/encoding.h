@@ -103,6 +103,10 @@
 #define SIP_STIP    MIP_STIP /* timer interrupt */
 #define SIP_SEIP    MIP_SEIP /* ext interrupt */
 
+#define SIE_SSIE            (1 << IRQ_S_SOFT)
+#define SIE_STIE            (1 << IRQ_S_TIMER)
+#define SIE_SEIE            (1 << IRQ_S_EXT)
+
 #define RISCV_XLEN    64
 
 #define SCAUSE_INTERRUPT    (1UL << (RISCV_XLEN - 1))

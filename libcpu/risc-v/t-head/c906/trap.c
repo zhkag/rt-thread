@@ -207,11 +207,35 @@ static const char *Interrupt_Name[] =
                                     "Reserved-11",
                                 };
 
-static int sys_ticks = 0;
-
 extern struct rt_irq_desc isr_table[];
 
-//Trap处理入口
+void generic_handle_irq(int irq)
+{
+    rt_isr_handler_t isr;
+    void *param;
+
+    if (irq < 0 || irq >= IRQ_MAX_NR)
+    {
+        LOG_E("bad irq number %d!\n", irq);
+        return;
+    }
+
+    if (!irq)   // irq = 0 => no irq
+    {
+        LOG_W("no irq!\n");
+        return;
+    }
+    isr = isr_table[IRQ_OFFSET + irq].handler;
+    param = isr_table[IRQ_OFFSET + irq].param;
+    if (isr != RT_NULL)
+    {
+        isr(irq, param);
+    }
+    /* complete irq. */
+    plic_complete(irq);
+}
+
+/* Trap entry */
 void handle_trap(rt_size_t scause,rt_size_t stval,rt_size_t sepc,struct rt_hw_stack_frame *sp)
 {
     rt_size_t id = __MASKVALUE(scause,__MASK(63UL));
@@ -221,39 +245,13 @@ void handle_trap(rt_size_t scause,rt_size_t stval,rt_size_t sepc,struct rt_hw_st
     if ((SCAUSE_INTERRUPT & scause) && SCAUSE_S_EXTERNAL_INTR == (scause & 0xff))
     {
         rt_interrupt_enter();
-        int irq = plic_claim();
-        rt_isr_handler_t isr;
-        void *param;
-
-        if (irq < 0 || irq >= IRQ_MAX_NR)
-        {
-            LOG_E("bad irq number %d!\n", irq);
-            return;
-        }
-
-        if (!irq)   // irq = 0 => no irq
-        {
-            LOG_W("no irq!\n");
-            return;
-        }
-        isr = isr_table[IRQ_OFFSET + irq].handler;
-        param = isr_table[IRQ_OFFSET + irq].param;
-        if (isr != RT_NULL)
-        {
-            isr(irq, param);
-        }
-        plic_complete(irq);
+        plic_handle_irq();
         rt_interrupt_leave();
         return;
     }
     else if ((SCAUSE_INTERRUPT | SCAUSE_S_TIMER_INTR) == scause)
     {
         /* supervisor timer */
-        sys_ticks++;
-        if (sys_ticks % RT_TICK_PER_SECOND == 0)
-        {
-            // rt_kprintf(".");
-        }
         rt_interrupt_enter();
         tick_isr();
         rt_interrupt_leave();
