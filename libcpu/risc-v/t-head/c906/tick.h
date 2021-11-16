@@ -11,6 +11,9 @@
 #ifndef TICK_H__
 #define TICK_H__
 
+/* timer clock is 24 MHZ */
+#define TIMER_CLK_FREQ  (24000000)
+
 int tick_isr(void);
 int rt_hw_tick_init(void);
 
