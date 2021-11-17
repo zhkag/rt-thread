@@ -46,6 +46,7 @@
 #define RT_VER_NUM 0x50000
 #define ARCH_CPU_64BIT
 #define RT_USING_CACHE
+#define ARCH_MM_MMU
 #define RT_USING_USERSPACE
 #define KERNEL_VADDR_START 0x150000000
 #define PV_OFFSET 0
@@ -66,6 +67,7 @@
 
 #define RT_USING_FINSH
 #define RT_USING_MSH
+#define FINSH_USING_MSH
 #define FINSH_THREAD_NAME "tshell"
 #define FINSH_USING_HISTORY
 #define FINSH_HISTORY_LINES 5
@@ -89,6 +91,7 @@
 /* Device Drivers */
 
 #define RT_USING_DEVICE_IPC
+#define RT_UNAMED_PIPE_NUMBER 64
 #define RT_PIPE_BUFSZ 512
 #define RT_USING_SYSTEM_WORKQUEUE
 #define RT_SYSTEM_WORKQUEUE_STACKSIZE 2048
@@ -131,9 +134,9 @@
 #define RT_LWP_MAX_NR 30
 #define LWP_TASK_STACK_SIZE 16384
 #define RT_CH_MSG_MAX_NR 1024
-#define RT_LWP_SHM_MAX_NR 64
 #define LWP_CONSOLE_INPUT_BUFFER_SIZE 1024
 #define LWP_TID_MAX_NR 64
+#define RT_LWP_SHM_MAX_NR 64
 
 /* RT-Thread online packages */
 
@@ -159,6 +162,11 @@
 
 /* multimedia packages */
 
+/* LVGL: powerful and easy-to-use embedded GUI library */
+
+
+/* u8g2: a monochrome graphic library */
+
 
 /* tools packages */
 
@@ -166,6 +174,9 @@
 /* system packages */
 
 /* acceleration: Assembly language or algorithmic acceleration packages */
+
+
+/* CMSIS: ARM Cortex-M Microcontroller Software Interface Standard */
 
 
 /* Micrium: Micrium software products porting for RT-Thread */
@@ -179,7 +190,6 @@
 
 /* miscellaneous packages */
 
-
 /* samples: kernel and components samples */
 
 
@@ -190,10 +200,6 @@
 /* General Purpose UARTs */
 
 #define RT_USING_SUNXI_HAL
-
-/* UART Devices */
-
-#define DRIVERS_UART
 #define __STACKSIZE__ 16384
 
 #endif
