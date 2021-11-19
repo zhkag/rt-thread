@@ -31,6 +31,10 @@ config RT_USING_USERSPACE
     bool
     default y
 
+config ENABLE_FPU
+    bool "Enable FPU"
+    default y
+
 source "drivers/Kconfig"
 source "libraries/Kconfig"
 

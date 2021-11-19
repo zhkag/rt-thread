@@ -7,6 +7,7 @@
  * Date           Author       Notes
  * 2018/10/28     Bernard      The unify RISC-V porting code.
  * 2021-02-11     lizhirui     add gp support
+ * 2021-11-19     JasonHu      add fpu support
  */
 
 #include <rthw.h>
@@ -72,8 +73,12 @@ rt_uint8_t *rt_hw_stack_init(void       *tentry,
     frame->epc     = (rt_ubase_t)tentry;
     frame->user_sp_exc_stack = (rt_ubase_t)(((rt_ubase_t)stk) + sizeof(struct rt_hw_stack_frame));
 
-    /* force to supervisor mode(SPP=1) and set SPIE and SUM to 1, enable FPU */
-    frame->sstatus = 0x00042120;
+    /* force to supervisor mode(SPP=1) and set SPIE and SUM to 1 */
+#ifdef ENABLE_FPU
+    frame->sstatus = 0x00046120;    /* enable FPU */
+#else
+    frame->sstatus = 0x00040120;
+#endif
 
     return stk;
 }
