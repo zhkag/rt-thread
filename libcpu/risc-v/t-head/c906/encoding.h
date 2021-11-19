@@ -28,7 +28,10 @@
 #define SSTATUS_UPIE        0x00000010
 #define SSTATUS_SPIE        0x00000020
 #define SSTATUS_SPP         0x00000100
-#define SSTATUS_FS          0x00006000
+#define SSTATUS_FS          0x00006000 /* Floating-point Status */
+#define SSTATUS_FS_INITIAL  0x00002000
+#define SSTATUS_FS_CLEAN    0x00004000
+#define SSTATUS_FS_DIRTY    0x00006000
 #define SSTATUS_XS          0x00018000
 #define SSTATUS_PUM         0x00040000
 #define SSTATUS32_SD        0x80000000
@@ -176,7 +179,7 @@
 #define RISCV_PGSHIFT 12
 #define RISCV_PGSIZE (1 << RISCV_PGSHIFT)
 
-#ifndef __ASSEMBLER__
+#ifndef __ASSEMBLY__
 
 #ifdef __GNUC__
 
@@ -217,7 +220,7 @@
 
 #endif /* end of __GNUC__ */
 
-#endif /* end of __ASSEMBLER__ */
+#endif /* end of __ASSEMBLY__ */
 
 #endif /* end of __riscv */
 

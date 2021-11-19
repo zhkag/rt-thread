@@ -196,6 +196,7 @@
 /* entertainment: terminal games and other interesting software packages */
 
 #define BOARD_allwinnerd1
+#define ENABLE_FPU
 
 /* General Purpose UARTs */
 
