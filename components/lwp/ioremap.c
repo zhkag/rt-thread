@@ -7,17 +7,15 @@
  * Date           Author       Notes
  * 2021-05-06     Jesven       first version
  */
-#include <rtthread.h>
 #include <rthw.h>
-
-#ifdef RT_USING_USERSPACE
-#include <mmu.h>
-#include <lwp_mm_area.h>
-#endif
+#include <rtthread.h>
 
 #include <ioremap.h>
 
 #ifdef RT_USING_USERSPACE
+#include <mmu.h>
+#include <lwp_mm_area.h>
+
 static struct lwp_avl_struct *k_map_area;
 extern rt_mmu_info mmu_info;
 
@@ -84,8 +82,24 @@ void *rt_ioremap_cached(void *paddr, size_t size)
     return _ioremap_type(paddr, size, MM_AREA_TYPE_PHY_CACHED);
 }
 
-#else
+void rt_iounmap(volatile void *vaddr)
+{
+    rt_base_t level;
+    struct lwp_avl_struct *ma_avl_node;
 
+    level = rt_hw_interrupt_disable();
+    ma_avl_node = lwp_map_find(k_map_area, (size_t)vaddr);
+    if (ma_avl_node)
+    {
+        struct rt_mm_area_struct *ma = (struct rt_mm_area_struct *)ma_avl_node->data;
+
+        _iounmap_range((void *)ma->addr, ma->size);
+        lwp_map_area_remove(&k_map_area, (size_t)vaddr);
+    }
+    rt_hw_interrupt_enable(level);
+}
+
+#else
 void *rt_ioremap(void *paddr, size_t size)
 {
     return paddr;
@@ -101,23 +115,7 @@ void *rt_ioremap_cached(void *paddr, size_t size)
     return paddr;
 }
 
-#endif
-
 void rt_iounmap(volatile void *vaddr)
 {
-#ifdef RT_USING_USERSPACE
-    rt_base_t level;
-    struct lwp_avl_struct *ma_avl_node;
-
-    level = rt_hw_interrupt_disable();
-    ma_avl_node = lwp_map_find(k_map_area, (size_t)vaddr);
-    if (ma_avl_node)
-    {
-        struct rt_mm_area_struct *ma = (struct rt_mm_area_struct *)ma_avl_node->data;
-
-        _iounmap_range((void *)ma->addr, ma->size);
-        lwp_map_area_remove(&k_map_area, (size_t)vaddr);
-    }
-    rt_hw_interrupt_enable(level);
-#endif
 }
+#endif

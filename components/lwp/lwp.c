@@ -36,7 +36,7 @@
 
 #include <lwp_mm_area.h>
 #include <lwp_user_mm.h>
-#endif
+#endif /* end of RT_USING_USERSPACE */
 
 static const char elf_magic[] = {0x7f, 'E', 'L', 'F'};
 #ifdef DFS_USING_WORKDIR
@@ -49,33 +49,31 @@ int load_ldso(struct rt_lwp *lwp, char *exec_name, char *const argv[], char *con
 
 void lwp_setcwd(char *buf)
 {
+    struct rt_lwp *lwp = RT_NULL;
+
     if(strlen(buf) >= DFS_PATH_MAX)
     {
         rt_kprintf("buf too long!\n");
         return ;
     }
 
-#ifdef RT_USING_LWP
-    struct rt_lwp *lwp;
-
     lwp = (struct rt_lwp *)rt_thread_self()->lwp;
     if (lwp)
+    {
         rt_strncpy(lwp->working_directory, buf, DFS_PATH_MAX);
+    }
     else
+    {
         rt_strncpy(working_directory, buf, DFS_PATH_MAX);
-#else
-#ifdef DFS_USING_WORKDIR
-    rt_strncpy(working_directory, buf, DFS_PATH_MAX);
-#endif
-#endif
+    }
+
     return ;
 }
 
 char *lwp_getcwd(void)
 {
     char *dir_buf = RT_NULL;
-#ifdef RT_USING_LWP
-    struct rt_lwp *lwp;
+    struct rt_lwp *lwp = RT_NULL;
 
     lwp = (struct rt_lwp *)rt_thread_self()->lwp;
     if (lwp)
@@ -91,11 +89,7 @@ char *lwp_getcwd(void)
     }
     else
         dir_buf = &working_directory[0];
-#else
-#ifdef DFS_USING_WORKDIR
-    dir_buf = &working_directory[0];
-#endif
-#endif
+
     return dir_buf;
 }
 
@@ -953,8 +947,6 @@ _exit:
     return result;
 }
 #endif /* ARCH_MM_MMU */
-
-int lwp_load(const char *filename, struct rt_lwp *lwp, uint8_t *load_addr, size_t addr_size, struct process_aux *aux);
 
 RT_WEAK int lwp_load(const char *filename, struct rt_lwp *lwp, uint8_t *load_addr, size_t addr_size, struct process_aux *aux)
 {
