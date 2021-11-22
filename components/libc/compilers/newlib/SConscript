@@ -6,6 +6,7 @@ cwd = GetCurrentDir()
 group = []
 
 CPPDEFINES = []
+CPPPATH = []
 
 # link with libc and libm:
 # libm is a frequently used lib. Newlib is compiled with -ffunction-sections in
@@ -17,11 +18,14 @@ if rtconfig.PLATFORM == 'gcc' and GetDepend('RT_USING_LIBC'):
     if GetDepend('RT_USING_MUSL'):
         # musl libc is used as a software library.
         src  = []
-        LIBS = []
     elif GetDepend('RT_USING_NEWLIB'):
         # RT_USING_NEWLIB is defined already
         CPPPATH = [cwd]
-        group = DefineGroup('newlib', src, depend = ['RT_USING_LIBC'], 
-            CPPPATH = CPPPATH, CPPDEFINES = CPPDEFINES, LIBS = LIBS)
+    else:
+        CPPPATH = [cwd]
+        CPPDEFINES = ['RT_USING_NEWLIB']
+
+    group = DefineGroup('newlib', src, depend = ['RT_USING_LIBC'],
+        CPPPATH = CPPPATH, CPPDEFINES = CPPDEFINES, LIBS = LIBS)
 
 Return('group')

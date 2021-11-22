@@ -19,10 +19,6 @@
 #include <lwp.h>
 #endif
 
-#if defined(RT_USING_DFS_DEVFS) && defined(RT_USING_POSIX)
-#include <libc.h>
-#endif
-
 /* Global variables */
 const struct dfs_filesystem_ops *filesystem_operation_table[DFS_FILESYSTEM_TYPES_MAX];
 struct dfs_filesystem filesystem_table[DFS_FILESYSTEMS_MAX];
