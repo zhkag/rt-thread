@@ -8,11 +8,9 @@
 
 #define RT_NAME_MAX 8
 #define RT_USING_SMART
-#define RT_USING_SMP
-#define RT_CPUS_NR 2
 #define RT_ALIGN_SIZE 4
-#define RT_THREAD_PRIORITY_32
-#define RT_THREAD_PRIORITY_MAX 32
+#define RT_THREAD_PRIORITY_256
+#define RT_THREAD_PRIORITY_MAX 256
 #define RT_TICK_PER_SECOND 100
 #define RT_USING_OVERFLOW_CHECK
 #define RT_USING_HOOK
@@ -50,8 +48,9 @@
 #define RT_USING_CONSOLE
 #define RT_CONSOLEBUF_SIZE 256
 #define RT_CONSOLE_DEVICE_NAME "uart0"
-#define RT_VER_NUM 0x40003
+#define RT_VER_NUM 0x50000
 #define RT_USING_CACHE
+#define ARCH_MM_MMU
 #define ARCH_ARM
 #define ARCH_ARM_MMU
 #define RT_USING_USERSPACE
@@ -75,6 +74,7 @@
 
 #define RT_USING_FINSH
 #define RT_USING_MSH
+#define FINSH_USING_MSH
 #define FINSH_THREAD_NAME "tshell"
 #define FINSH_USING_HISTORY
 #define FINSH_HISTORY_LINES 10
@@ -111,6 +111,7 @@
 /* Device Drivers */
 
 #define RT_USING_DEVICE_IPC
+#define RT_UNAMED_PIPE_NUMBER 64
 #define RT_PIPE_BUFSZ 512
 #define RT_USING_SYSTEM_WORKQUEUE
 #define RT_SYSTEM_WORKQUEUE_STACKSIZE 2048
@@ -154,6 +155,7 @@
 #define RT_USING_POSIX_MMAP
 #define RT_USING_POSIX_TERMIOS
 #define RT_USING_POSIX_AIO
+#define RT_POSIX_AIO_THREAD_STACK_SIZE 2048
 #define RT_USING_POSIX_CLOCKTIME
 
 /* Network */
@@ -235,9 +237,9 @@
 #define RT_LWP_MAX_NR 30
 #define LWP_TASK_STACK_SIZE 16384
 #define RT_CH_MSG_MAX_NR 1024
-#define RT_LWP_SHM_MAX_NR 64
 #define LWP_CONSOLE_INPUT_BUFFER_SIZE 1024
 #define LWP_TID_MAX_NR 64
+#define RT_LWP_SHM_MAX_NR 64
 
 /* RT-Thread online packages */
 
@@ -263,11 +265,21 @@
 
 /* multimedia packages */
 
+/* LVGL: powerful and easy-to-use embedded GUI library */
+
+
+/* u8g2: a monochrome graphic library */
+
 
 /* tools packages */
 
 
 /* system packages */
+
+/* acceleration: Assembly language or algorithmic acceleration packages */
+
+
+/* CMSIS: ARM Cortex-M Microcontroller Software Interface Standard */
 
 
 /* Micrium: Micrium software products porting for RT-Thread */
@@ -281,11 +293,10 @@
 
 /* miscellaneous packages */
 
-
 /* samples: kernel and components samples */
 
 
-/* games: games run on RT-Thread console */
+/* entertainment: terminal games and other interesting software packages */
 
 #define SOC_VEXPRESS_A9
 #define RT_USING_UART0

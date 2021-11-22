@@ -931,15 +931,23 @@ RTM_EXPORT(setcwd);
  */
 char *getcwd(char *buf, size_t size)
 {
-    char *dir_buf = RT_NULL;
 #ifdef DFS_USING_WORKDIR
+    char *dir_buf = RT_NULL;
+
     dfs_lock();
+
 #ifdef RT_USING_LWP
     dir_buf = lwp_getcwd();
-    rt_strncpy(buf, dir_buf, size);
 #else
     dir_buf = &working_directory[0];
 #endif
+
+    /* copy to buf parameter */
+    if (buf)
+    {
+        rt_strncpy(buf, dir_buf, size);
+    }
+
     dfs_unlock();
 #else
     rt_kprintf(NO_WORKING_DIR);
