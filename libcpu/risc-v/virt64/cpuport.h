@@ -22,6 +22,9 @@
 // error here, not portable
 #endif
 
+/* 33 normal register */
+#define CTX_REG_NR  33
+
 #ifndef __ASSEMBLY__
 rt_inline void rt_hw_dsb()
 {

@@ -71,9 +71,9 @@ __restore_sp_from_tcb_interrupt:
 __move_stack_context_interrupt:
     mv t1, sp//src
     mv sp, t0//switch stack
-    addi sp, sp, -33 * REGBYTES
+    addi sp, sp, -CTX_REG_NR * REGBYTES
     //copy context
-    li s0, 33//cnt
+    li s0, CTX_REG_NR//cnt
     mv t2, sp//dst
 
 copy_context_loop_interrupt:
@@ -121,9 +121,9 @@ __restore_sp_from_tcb:
 __move_stack_context:
     mv t1, sp//src
     mv sp, t0//switch stack
-    addi sp, sp, -33 * REGBYTES
+    addi sp, sp, -CTX_REG_NR * REGBYTES
     //copy context
-    li s0, 33//cnt
+    li s0, CTX_REG_NR//cnt
     mv t2, sp//dst
 
 copy_context_loop:

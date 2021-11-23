@@ -50,13 +50,6 @@ lwp_user_thread_entry:
     mv a0, s0//args
     sret//enter user mode
 
-/*
-int lwp_set_thread_context(void *new_thread_stack, void *origin_thread_stack, void *user_stack, void **thread_sp, int tid);
-*/
-.global lwp_set_thread_context
-lwp_set_thread_context:
-    ret//don't support this temporarily
-
 .global ret_to_user
 ret_to_user:
     call lwp_signal_check
@@ -140,8 +133,8 @@ user_do_signal:
     SAVE_ALL
     //ensure original user sp correct
     mv t0, sp
-    addi t0, t0, 33 * REGBYTES
-    STORE t0, 33 * REGBYTES(sp)
+    addi t0, t0, CTX_REG_NR * REGBYTES
+    STORE t0, CTX_REG_NR * REGBYTES(sp)
     OPEN_INTERRUPT
     mv s0, sp
     la t0, lwp_sigreturn//t0 = src
@@ -227,11 +220,8 @@ sys_vfork:
     jal _sys_fork
 sys_fork_exit:
     j syscall_exit
-
-.global sys_clone
+    
 .global sys_clone_exit
-sys_clone:
-    jal _sys_clone
 sys_clone_exit:
     j syscall_exit
 

@@ -15,7 +15,7 @@
 #include "cpuport.h"
 
 .macro SAVE_ALL
-    addi sp, sp, -33 * REGBYTES
+    addi sp, sp, -CTX_REG_NR * REGBYTES
 
     STORE x1,   1 * REGBYTES(sp)
 
@@ -98,7 +98,7 @@
     LOAD x30, 30 * REGBYTES(sp)
     LOAD x31, 31 * REGBYTES(sp)
 
-    addi sp,  sp, 33 * REGBYTES
+    addi sp,  sp, CTX_REG_NR * REGBYTES
 .endm
 
 .macro RESTORE_ALL

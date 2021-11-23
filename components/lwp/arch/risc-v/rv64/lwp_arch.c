@@ -25,6 +25,10 @@
 #include <lwp_user_mm.h>
 #include <lwp_arch.h>
 
+#include <stack.h>
+#include <cpuport.h>
+#include <encoding.h>
+
 extern size_t MMUTable[];
 
 int arch_expand_user_stack(void *addr)
@@ -128,6 +132,83 @@ void arch_user_space_vtable_free(struct rt_lwp *lwp)
     {
         rt_pages_free(lwp->mmu_info.vtable, 0);
     }
+}
+
+extern long _sys_clone(void *arg[]);
+long sys_clone(void *arg[])
+{
+    return _sys_clone(arg);
+}
+
+/**
+ * set exec context for fork/clone.
+ */
+void lwp_set_thread_context(void *exit_addr, void *new_thread_stack, void *user_stack, void **thread_sp)
+{
+    struct rt_hw_stack_frame *syscall_frame;
+    struct rt_hw_stack_frame *thread_frame;
+    
+    rt_uint8_t *stk;
+    rt_uint8_t *syscall_stk;
+
+    stk = (rt_uint8_t *)new_thread_stack;
+    /* reserve syscall context, all the registers are copyed from parent */
+    stk -= CTX_REG_NR * REGBYTES;
+    syscall_stk = stk;
+
+    syscall_frame = (struct rt_hw_stack_frame *)stk;
+
+    /* modify user sp */
+    syscall_frame->user_sp_exc_stack = (rt_ubase_t)user_stack;
+
+    /* skip ecall */
+    syscall_frame->epc += 4;
+
+    /* child return value is 0 */
+    syscall_frame->a0 = 0;
+    syscall_frame->a1 = 0;
+
+    /* build temp thread context */
+    stk -= sizeof(struct rt_hw_stack_frame);
+
+    thread_frame = (struct rt_hw_stack_frame *)stk;
+
+    int i;
+    for (i = 0; i < sizeof(struct rt_hw_stack_frame) / sizeof(rt_ubase_t); i++)
+    {
+        ((rt_ubase_t *)thread_frame)[i] = 0xdeadbeaf;
+    }
+
+    /* set pc for thread */
+    thread_frame->epc     = (rt_ubase_t)exit_addr;
+    
+    /* set old exception mode as supervisor, because in kernel */
+    thread_frame->sstatus = read_csr(sstatus) | SSTATUS_SPP;
+         
+    /* set stack as syscall stack */
+    thread_frame->user_sp_exc_stack = (rt_ubase_t)syscall_stk;
+
+    /* save new stack top */
+    *thread_sp = (void *)stk;
+
+    /**
+     * The stack for child thread:
+     * 
+     * +------------------------+ --> kernel stack top
+     * | syscall stack          | 
+     * |                        |
+     * | @sp                    | --> `user_stack`
+     * | @epc                   | --> user ecall addr + 4 (skip ecall)
+     * | @a0&a1                 | --> 0 (for child return 0)
+     * |                        |
+     * +------------------------+ --> temp thread stack top 
+     * | temp thread stack      |           ^
+     * |                        |           |
+     * | @sp                    | ---------/ 
+     * | @epc                   | --> `exit_addr` (sys_clone_exit/sys_fork_exit)
+     * |                        |
+     * +------------------------+ --> thread sp
+     */
 }
 
 #endif
