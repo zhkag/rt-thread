@@ -267,11 +267,6 @@
 
 /* multimedia packages */
 
-/* LVGL: powerful and easy-to-use embedded GUI library */
-
-
-/* u8g2: a monochrome graphic library */
-
 
 /* tools packages */
 
@@ -279,9 +274,6 @@
 /* system packages */
 
 /* acceleration: Assembly language or algorithmic acceleration packages */
-
-
-/* CMSIS: ARM Cortex-M Microcontroller Software Interface Standard */
 
 
 /* Micrium: Micrium software products porting for RT-Thread */
@@ -297,6 +289,7 @@
 
 
 /* miscellaneous packages */
+
 
 /* samples: kernel and components samples */
 
@@ -328,8 +321,15 @@
 /* Select LCD Driver */
 
 #define BSP_USING_LCD
-#define BSP_LCD_WIDTH 1024
-#define BSP_LCD_HEIGHT 600
+#define BSP_LCD_WIDTH 480
+#define BSP_LCD_HEIGHT 272
+#define BSP_LCD_VSW 2
+#define BSP_LCD_VBP 23
+#define BSP_LCD_VFP 22
+#define BSP_LCD_HSW 2
+#define BSP_LCD_HBP 46
+#define BSP_LCD_HFP 210
+#define BSP_LCD_PLL_DIV 8
 
 /* Select SDHC Driver */
 
