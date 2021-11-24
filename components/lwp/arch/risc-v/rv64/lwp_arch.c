@@ -134,7 +134,7 @@ void arch_user_space_vtable_free(struct rt_lwp *lwp)
     }
 }
 
-extern long _sys_clone(void *arg[]);
+long _sys_clone(void *arg[]);
 long sys_clone(void *arg[])
 {
     return _sys_clone(arg);
