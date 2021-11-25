@@ -108,6 +108,27 @@ config BSP_USING_LCD
         config BSP_LCD_HEIGHT
             int "Height of LCD panel"
             default 600
+        config BSP_LCD_VSW
+            int "value of LCD_VSW"
+            default 2
+        config BSP_LCD_VBP
+            int "value of LCD_VBP"
+            default 23        
+        config BSP_LCD_VFP
+            int "value of LCD_VFP"
+            default 22
+        config BSP_LCD_HSW
+            int "value of LCD_HSW"
+            default 2    
+        config BSP_LCD_HBP
+            int "value of LCD_HBP"
+            default 46
+        config BSP_LCD_HFP
+            int "value of LCD_HFP"
+            default 210       
+        config BSP_LCD_PLL_DIV
+            int "value of PLL DIV"
+            default 8                                
     endif
 endmenu
 

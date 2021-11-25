@@ -26,12 +26,13 @@
 
 #define LCD_WIDTH                   BSP_LCD_WIDTH
 #define LCD_HEIGHT                  BSP_LCD_HEIGHT
-#define LCD_VSW                     3
-#define LCD_VBP                     20
-#define LCD_VFP                     12
-#define LCD_HSW                     20
-#define LCD_HBP                     140
-#define LCD_HFP                     160
+#define LCD_VSW                     BSP_LCD_VSW
+#define LCD_VBP                     BSP_LCD_VBP
+#define LCD_VFP                     BSP_LCD_VFP
+#define LCD_HSW                     BSP_LCD_HSW
+#define LCD_HBP                     BSP_LCD_HBP
+#define LCD_HFP                     BSP_LCD_HFP
+#define LCD_PLL_DIV                 BSP_LCD_PLL_DIV
 
 #define LCD_BITS_PER_PIXEL          32
 #define LCD_BUF_SIZE                (LCD_WIDTH * LCD_HEIGHT * LCD_BITS_PER_PIXEL / 8)

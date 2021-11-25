@@ -38,7 +38,8 @@ static rt_err_t imx6ull_elcd_init(rt_device_t device)
     elcd_dev = (struct imx6ull_lcd_bus *)device;
     ELCDIF_Reset(elcd_dev->config->ELCDIF);
     pll_config.loopDivider = 32;
-    pll_config.postDivider = 1;
+    pll_config.postDivider = LCD_PLL_DIV;
+
     pll_config.numerator   = 0;
     pll_config.denominator = 0;
 
