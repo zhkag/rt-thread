@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2018, RT-Thread Development Team
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -147,7 +147,7 @@ void lwp_set_thread_context(void *exit_addr, void *new_thread_stack, void *user_
 {
     struct rt_hw_stack_frame *syscall_frame;
     struct rt_hw_stack_frame *thread_frame;
-    
+
     rt_uint8_t *stk;
     rt_uint8_t *syscall_stk;
 
@@ -181,10 +181,10 @@ void lwp_set_thread_context(void *exit_addr, void *new_thread_stack, void *user_
 
     /* set pc for thread */
     thread_frame->epc     = (rt_ubase_t)exit_addr;
-    
+
     /* set old exception mode as supervisor, because in kernel */
     thread_frame->sstatus = read_csr(sstatus) | SSTATUS_SPP;
-         
+
     /* set stack as syscall stack */
     thread_frame->user_sp_exc_stack = (rt_ubase_t)syscall_stk;
 
@@ -193,18 +193,18 @@ void lwp_set_thread_context(void *exit_addr, void *new_thread_stack, void *user_
 
     /**
      * The stack for child thread:
-     * 
+     *
      * +------------------------+ --> kernel stack top
-     * | syscall stack          | 
+     * | syscall stack          |
      * |                        |
      * | @sp                    | --> `user_stack`
      * | @epc                   | --> user ecall addr + 4 (skip ecall)
      * | @a0&a1                 | --> 0 (for child return 0)
      * |                        |
-     * +------------------------+ --> temp thread stack top 
+     * +------------------------+ --> temp thread stack top
      * | temp thread stack      |           ^
      * |                        |           |
-     * | @sp                    | ---------/ 
+     * | @sp                    | ---------/
      * | @epc                   | --> `exit_addr` (sys_clone_exit/sys_fork_exit)
      * |                        |
      * +------------------------+ --> thread sp
