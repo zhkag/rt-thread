@@ -189,7 +189,7 @@ static int _pthread_mutex_lock_timeout(void *umutex, struct timespec *timeout)
     {
         rt_mutex_release(&_pmutex_lock);
         rt_set_errno(EINVAL);
-        return -RT_EINVAL;
+        return -RT_ENOMEM;  /* umutex not recored in kernel */
     }
 
     rt_mutex_release(&_pmutex_lock);
@@ -273,6 +273,15 @@ int sys_pmutex(void *umutex, int op, void *arg)
             break;
         case PMUTEX_LOCK:
             ret = _pthread_mutex_lock_timeout(umutex, (struct timespec*)arg);
+            if (ret == -RT_ENOMEM)
+            {
+                /* lock not init, try init it and lock again. */
+                ret = _pthread_mutex_init(umutex);
+                if (ret == RT_EOK)
+                {
+                    ret = _pthread_mutex_lock_timeout(umutex, (struct timespec*)arg);
+                }
+            }
             break;
         case PMUTEX_UNLOCK:
             ret = _pthread_mutex_unlock(umutex);

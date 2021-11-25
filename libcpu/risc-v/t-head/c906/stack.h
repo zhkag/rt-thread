@@ -49,7 +49,7 @@ struct rt_hw_stack_frame
     rt_ubase_t t6;         /* x31 - t6     - temporary register 6                */
     rt_ubase_t user_sp_exc_stack;    /* sscratch - user mode sp/exception stack  */
 #ifdef ENABLE_FPU
-    rt_ubase_t f[32];      /* f0~f31 */
+    rt_ubase_t f[CTX_FPU_REG_NR];      /* f0~f31 */
 #endif
 };
 

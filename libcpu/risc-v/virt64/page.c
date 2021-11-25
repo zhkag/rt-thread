@@ -44,7 +44,7 @@ static rt_size_t page_nr;
 
 static struct page *page_list[ADDRESS_WIDTH_BITS];
 
-//get the correct page_list index according the actual size 
+//get the correct page_list index according the actual size
 rt_size_t rt_page_bits(rt_size_t size)
 {
     rt_base_t bit;
@@ -169,7 +169,7 @@ void rt_page_ref_inc(void *addr, uint32_t size_bits)
 static void page_insert(struct page *p,rt_size_t size_bits)
 {
     PAGE_VALID(p);
-    
+
     p -> next = page_list[size_bits];
 
     if(p -> next)
@@ -350,7 +350,7 @@ void rt_page_init(rt_region_t reg)
 
     rt_size_t nr = PAGE_SIZE / sizeof(struct page);
     rt_size_t total = (reg.end - reg.start) >> PAGE_OFFSET_BIT;
-    
+
     /*
         equation:cell((total - mnr) / nr) = mnr
         let total - mnr = knr + p(k is integer,0 <= p < nr)
@@ -400,7 +400,7 @@ void rt_page_init(rt_region_t reg)
         {
             size_bits = align_bits;
         }
-        
+
         _pages_free(addr_to_page((void *)reg.start),size_bits - PAGE_OFFSET_BIT);
         reg.start += (1U << size_bits);
     }

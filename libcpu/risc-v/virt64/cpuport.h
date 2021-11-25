@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2018, RT-Thread Development Team
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -21,6 +21,9 @@
 #else
 // error here, not portable
 #endif
+
+/* 33 normal register */
+#define CTX_REG_NR  33
 
 #ifndef __ASSEMBLY__
 rt_inline void rt_hw_dsb()

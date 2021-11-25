@@ -54,7 +54,7 @@
 .macro SAVE_ALL
 #ifdef ENABLE_FPU
     /* save float registers */
-    addi sp, sp, -32 * REGBYTES
+    addi sp, sp, -CTX_FPU_REG_NR * REGBYTES
 
     li  t0, SSTATUS_FS
     csrs sstatus, t0
@@ -101,8 +101,7 @@
 #endif /* ENABLE_FPU */
 
     /* save general registers */
-    addi sp, sp, -33 * REGBYTES
-
+    addi sp, sp, -CTX_GENERAL_REG_NR * REGBYTES
     STORE x1,   1 * REGBYTES(sp)
 
     csrr  x1, sstatus
@@ -189,7 +188,7 @@
 #ifdef ENABLE_FPU
     /* restore float register  */
     mv t2, sp
-    addi t2, t2, 33 * REGBYTES   /* skip all normal reg */
+    addi t2, t2, CTX_GENERAL_REG_NR * REGBYTES   /* skip all normal reg */
 
     li  t0, SSTATUS_FS
     csrs sstatus, t0
