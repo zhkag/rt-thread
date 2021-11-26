@@ -73,7 +73,7 @@ rt_mmu_info* arch_kernel_get_mmu_info(void)
     return mmu_info;
 }
 
-uint32_t lwp_fix_sp(uint32_t cursp)
+rt_ubase_t lwp_fix_sp(rt_ubase_t cursp)
 {
     void lwp_thread_return();
     void lwp_thread_return_end();
