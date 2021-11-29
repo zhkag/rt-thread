@@ -12,6 +12,8 @@
  * 2021-03-02     lizhirui     add a auxillary function for interrupt
  * 2021-03-04     lizhirui     delete thread filter
  * 2021-03-04     lizhirui     modify for new version of rt-smart
+ * 2021-11-22     JasonHu      add lwp_set_thread_context
+ * 2021-11-30     JasonHu      add clone/fork support
  */
 
 #include <rthw.h>
@@ -96,10 +98,14 @@ void *get_thread_kernel_stack_top(rt_thread_t thread)
     return (void *)(((rt_size_t)thread->stack_addr) + ((rt_size_t)thread->stack_size));
 }
 
-//don't support this temporarily in riscv
-void *lwp_get_user_sp()
+void *lwp_get_user_sp(void)
 {
-    return RT_NULL;
+    /* user sp saved in interrupt context */
+    rt_thread_t self = rt_thread_self();
+    rt_uint8_t *stack_top = (rt_uint8_t *)self->stack_addr + self->stack_size;
+    struct rt_hw_stack_frame *frame = (struct rt_hw_stack_frame *)(stack_top - sizeof(struct rt_hw_stack_frame));
+
+    return (void *)frame->user_sp_exc_stack;
 }
 
 int arch_user_space_init(struct rt_lwp *lwp)
@@ -140,11 +146,27 @@ long sys_clone(void *arg[])
     return _sys_clone(arg);
 }
 
+long _sys_fork(void);
+long sys_fork(void)
+{
+    return _sys_fork();
+}
+
+long _sys_vfork(void);
+long sys_vfork(void)
+{
+    return _sys_fork();
+}
+
 /**
  * set exec context for fork/clone.
  */
 void lwp_set_thread_context(void *exit_addr, void *new_thread_stack, void *user_stack, void **thread_sp)
 {
+    RT_ASSERT(exit_addr != RT_NULL);
+    RT_ASSERT(user_stack != RT_NULL);
+    RT_ASSERT(new_thread_stack != RT_NULL);
+    RT_ASSERT(thread_sp != RT_NULL);
     struct rt_hw_stack_frame *syscall_frame;
     struct rt_hw_stack_frame *thread_frame;
 
@@ -184,6 +206,7 @@ void lwp_set_thread_context(void *exit_addr, void *new_thread_stack, void *user_
 
     /* set old exception mode as supervisor, because in kernel */
     thread_frame->sstatus = read_csr(sstatus) | SSTATUS_SPP;
+    thread_frame->sstatus &= ~SSTATUS_SIE; /* must disable interrupt */
 
     /* set stack as syscall stack */
     thread_frame->user_sp_exc_stack = (rt_ubase_t)syscall_stk;

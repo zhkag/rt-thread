@@ -212,12 +212,7 @@ lwp_set_thread_area:
     mv tp, a0
     ret
 
-.global sys_fork
-.global sys_vfork
 .global sys_fork_exit
-sys_fork:
-sys_vfork:
-    jal _sys_fork
 sys_fork_exit:
     j syscall_exit
     

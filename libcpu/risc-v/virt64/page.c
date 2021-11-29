@@ -1,140 +1,162 @@
 /*
- * Copyright (c) 2006-2021, RT-Thread Development Team
+ * Copyright (c) 2006-2019, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
  * Change Logs:
  * Date           Author       Notes
- * 2021-01-29     lizhirui     first version
+ * 2019-11-01     Jesven      The first version
  */
-
 #include <stdint.h>
-#include <rtthread.h>
+
 #include <rthw.h>
-#include <board.h>
-#include "riscv.h"
-#include "riscv_mmu.h"
-#include "page.h"
+#include <rtthread.h>
 
-#define PAGE_LIST_SIZE (ADDRESS_WIDTH_BITS - PAGE_OFFSET_BIT)
+#ifdef RT_USING_USERSPACE
 
-//#define RT_PAGE_DEBUG
+#include <page.h>
+#include <mmu.h>
 
-#ifdef RT_PAGE_DEBUG
-    #define dprintf rt_kprintf
-#else
-    #define dprintf(...)
-#endif
+#define ARCH_PAGE_LIST_SIZE     (ARCH_ADDRESS_WIDTH_BITS - ARCH_PAGE_SHIFT)
 
-#define RT_PASSERT RT_ASSERT
+#define DBG_TAG "PAGE"
+#define DBG_LVL DBG_WARNING
+#include <rtdbg.h>
 
 struct page
 {
-    struct page *next;
-    struct page *pre;
-    rt_size_t size_bits;
-    int ref_cnt;
+    struct page *next;  /* same level next */
+    struct page *pre;   /* same level pre  */
+    uint32_t size_bits; /* if is ARCH_ADDRESS_WIDTH_BITS, means not free */
+    int ref_cnt;        /* page group ref count */
 };
 
-static struct page *page_start;
-static void *page_addr;
-static rt_size_t page_nr;
+static struct page* page_start;
+static void*  page_addr;
+static size_t page_nr;
 
-#define PAGE_VALID(pageobj) RT_PASSERT(!((((rt_size_t)pageobj) - ((rt_size_t)page_start)) % sizeof(struct page)))
+static struct page *page_list[ARCH_PAGE_LIST_SIZE];
 
-static struct page *page_list[ADDRESS_WIDTH_BITS];
-
-//get the correct page_list index according the actual size
-rt_size_t rt_page_bits(rt_size_t size)
+RT_WEAK int rt_clz(size_t n)
 {
-    rt_base_t bit;
+    int bits = sizeof(size_t) * 8;
 
-    //get highest 1 bit index
-    bit = __builtin_clzl(size);
-    bit = sizeof(rt_size_t) * 8 - bit - 1;
+    n |= (n >> 1);
+    n |= (n >> 2);
+    n |= (n >> 4);
+    n |= (n >> 8);
+    n |= (n >> 16);
 
-    //if bits remained has 1,the large page is needed
-    if((size ^ (1UL << bit)) != 0)
+#ifdef ARCH_CPU_64BIT
+    n |= (n >> 32);
+
+    n = (n & 0x5555555555555555UL) + ((n >> 1) & 0x5555555555555555UL);
+    n = (n & 0x3333333333333333UL) + ((n >> 2) & 0x3333333333333333UL);
+    n = (n & 0x0707070707070707UL) + ((n >> 4) & 0x0707070707070707UL);
+    n = (n & 0x000f000f000f000fUL) + ((n >> 8) & 0x000f000f000f000fUL);
+    n = (n & 0x0000001f0000001fUL) + ((n >> 16) & 0x0000001f0000001fUL);
+    n = (n & 0x000000000000003fUL) + ((n >> 32) & 0x000000000000003fUL);
+#else
+    n = (n & 0x55555555UL) + ((n >> 1) & 0x55555555UL);
+    n = (n & 0x33333333UL) + ((n >> 2) & 0x33333333UL);
+    n = (n & 0x07070707UL) + ((n >> 4) & 0x07070707UL);
+    n = (n & 0x000f000fUL) + ((n >> 8) & 0x000f000fUL);
+    n = (n & 0x0000001fUL) + ((n >> 16) & 0x0000001fUL);
+#endif
+    return bits - n;
+}
+
+RT_WEAK int rt_ctz(size_t n)
+{
+    int ret = sizeof(size_t) * 8;
+
+    if (n)
+    {
+        ret -= (rt_clz(n ^ (n - 1)) + 1);
+    }
+    return ret;
+}
+
+size_t rt_page_bits(size_t size)
+{
+    int bit = sizeof(size_t) * 8 - rt_clz(size) - 1;
+
+    if ((size ^ (1UL << bit)) != 0)
     {
         bit++;
     }
-
-    bit -= PAGE_OFFSET_BIT;
-
-    if(bit < 0)
+    bit -= ARCH_PAGE_SHIFT;
+    if (bit < 0)
     {
         bit = 0;
     }
-
-    return (rt_size_t)bit;
+    return bit;
 }
 
-//convert physical address to page object
-static struct page *addr_to_page(void *addr)
+static struct page * addr_to_page(void *addr)
 {
-    rt_size_t off;
+    size_t off;
 
-    if(addr < page_addr)
+    if (addr < page_addr)
     {
         return 0;
     }
-
-    RT_PASSERT(__CHECKALIGN(addr,PAGE_OFFSET_BIT));
-    off = ((rt_size_t)addr) - ((rt_size_t)page_addr);
-    off >>= PAGE_OFFSET_BIT;
-
-    if(off >= page_nr)
+    off = (size_t)((char*)addr - (char*)page_addr);
+    off >>= ARCH_PAGE_SHIFT;
+    if (off >= page_nr)
     {
         return 0;
     }
-
     return &page_start[off];
 }
 
-//convert page object to physical address
-static void *page_to_addr(struct page *p)
+static void* page_to_addr(struct page* p)
 {
-    if(!p)
+    if (!p)
     {
         return 0;
     }
-
-    PAGE_VALID(p);
-    return (void *)(((rt_size_t)page_addr) + ((p - page_start) << PAGE_OFFSET_BIT));
+    return (void*)((char*)page_addr + ((p - page_start) << ARCH_PAGE_SHIFT));
 }
 
-//get the buddy of page specified by p(split a page to two page according to size_bits)
-static inline struct page *buddy_get(struct page *p,rt_size_t size_bits)
+static inline struct page *buddy_get(struct page *p, uint32_t size_bits)
 {
-    rt_size_t addr;
+    size_t addr;
 
-    PAGE_VALID(p);
-    addr = (rt_size_t)page_to_addr(p);
-    RT_PASSERT(__CHECKALIGN(addr,size_bits + PAGE_OFFSET_BIT));
-    addr ^= (1UL << (size_bits + PAGE_OFFSET_BIT));
-    return addr_to_page((void *)addr);
+    addr = (size_t)page_to_addr(p);
+    addr ^= (1UL << (size_bits + ARCH_PAGE_SHIFT));
+    return addr_to_page((void*)addr);
 }
 
-//remove the page from the linked list
-static void page_remove(struct page *p,rt_size_t size_bits)
+static void page_remove(struct page *p, uint32_t size_bits)
 {
-    PAGE_VALID(p);
-
-    if(p -> pre)
+    if (p->pre)
     {
-        p -> pre -> next = p -> next;
+        p->pre->next = p->next;
     }
     else
     {
-        page_list[size_bits] = p -> next;
+        page_list[size_bits] = p->next;
     }
 
-    if(p -> next)
+    if (p->next)
     {
-        p -> next -> pre = p -> pre;
+        p->next->pre = p->pre;
     }
 
-    p -> size_bits = ADDRESS_WIDTH_BITS;
+    p->size_bits = ARCH_ADDRESS_WIDTH_BITS;
+}
+
+static void page_insert(struct page *p, uint32_t size_bits)
+{
+    p->next = page_list[size_bits];
+    if (p->next)
+    {
+        p->next->pre = p;
+    }
+    p->pre = 0;
+    page_list[size_bits] = p;
+    p->size_bits = size_bits;
 }
 
 static void _pages_ref_inc(struct page *p, uint32_t size_bits)
@@ -154,6 +176,109 @@ static void _pages_ref_inc(struct page *p, uint32_t size_bits)
     page_head->ref_cnt++;
 }
 
+static int _pages_ref_get(struct page *p, uint32_t size_bits)
+{
+    struct page *page_head;
+    int idx;
+
+    /* find page group head */
+    idx = p - page_start;
+    if (idx < 0 || idx >= page_nr)
+    {
+        return 0;
+    }
+    idx = idx & ~((1UL << size_bits) - 1);
+
+    page_head = page_start + idx;
+    return page_head->ref_cnt;
+}
+
+static int _pages_free(struct page *p, uint32_t size_bits)
+{
+    uint32_t level = size_bits;
+    uint32_t high = ARCH_ADDRESS_WIDTH_BITS - size_bits - 1;
+    struct page *buddy;
+
+    RT_ASSERT(p->ref_cnt > 0);
+    RT_ASSERT(p->size_bits == ARCH_ADDRESS_WIDTH_BITS);
+
+    p->ref_cnt--;
+    if (p->ref_cnt != 0)
+    {
+        return 0;
+    }
+
+    while (level < high)
+    {
+        buddy = buddy_get(p, level);
+        if (buddy && buddy->size_bits == level)
+        {
+            page_remove(buddy, level);
+            p = (p < buddy) ? p : buddy;
+            level++;
+        }
+        else
+        {
+            break;
+        }
+    }
+    page_insert(p, level);
+    return 1;
+}
+
+static struct page *_pages_alloc(uint32_t size_bits)
+{
+    struct page *p;
+
+    if (page_list[size_bits])
+    {
+        p = page_list[size_bits];
+        page_remove(p, size_bits);
+    }
+    else
+    {
+        uint32_t level;
+        uint32_t high = ARCH_ADDRESS_WIDTH_BITS - size_bits - 1;
+
+        for (level = size_bits + 1; level <= high; level++)
+        {
+            if (page_list[level])
+            {
+                break;
+            }
+        }
+        if (level == high + 1)
+        {
+            return 0;
+        }
+
+        p = page_list[level];
+        page_remove(p, level);
+        while (level > size_bits)
+        {
+            page_insert(p, level - 1);
+            p = buddy_get(p, level - 1);
+            level--;
+        }
+    }
+    p->size_bits = ARCH_ADDRESS_WIDTH_BITS;
+    p->ref_cnt = 1;
+    return p;
+}
+
+int rt_page_ref_get(void *addr, uint32_t size_bits)
+{
+    struct page *p;
+    rt_base_t level;
+    int ref;
+
+    p = addr_to_page(addr);
+    level = rt_hw_interrupt_disable();
+    ref = _pages_ref_get(p, size_bits);
+    rt_hw_interrupt_enable(level);
+    return ref;
+}
+
 void rt_page_ref_inc(void *addr, uint32_t size_bits)
 {
     struct page *p;
@@ -165,99 +290,7 @@ void rt_page_ref_inc(void *addr, uint32_t size_bits)
     rt_hw_interrupt_enable(level);
 }
 
-//add new page to the first item of the linked list
-static void page_insert(struct page *p,rt_size_t size_bits)
-{
-    PAGE_VALID(p);
-
-    p -> next = page_list[size_bits];
-
-    if(p -> next)
-    {
-        p -> next -> pre = p;
-    }
-
-    p -> pre = 0;
-    page_list[size_bits] = p;
-    p -> size_bits = size_bits;
-}
-
-static struct page *_pages_alloc(rt_size_t size_bits)
-{
-    struct page *p;
-
-    if(page_list[size_bits])
-    {
-        //if appropriate page exists,just get new page from the linked list specified by size_bits
-        p = page_list[size_bits];
-        page_remove(p,size_bits);
-    }
-    else
-    {
-        //otherwise get new page from large linked list
-        rt_size_t level;
-        rt_size_t high = PAGE_LIST_SIZE;
-
-        for(level = size_bits + 1;level <= high;level++)
-        {
-            if(page_list[level])
-            {
-                break;
-            }
-        }
-
-        RT_ASSERT(level <= (high + 2));
-
-        if(level == high + 2)
-        {
-            return 0;//couldn't find a appropriate page
-        }
-
-        p = page_list[level];
-        page_remove(p,level);
-
-        //push down this page,and split it to the size specified by size_bits
-        while(level > size_bits)
-        {
-            page_insert(p,level - 1);
-            p = buddy_get(p,level - 1);
-            level--;
-        }
-    }
-
-    dprintf("page_alloc:paddr = 0x%p,size_bits = 0x%p\n",page_to_addr(p),size_bits);
-    return p;
-}
-
-static void _pages_free(struct page *p,rt_size_t size_bits)
-{
-    rt_size_t level = size_bits;
-    rt_size_t high = ADDRESS_WIDTH_BITS - size_bits - 1;
-    struct page *buddy;
-
-    dprintf("page_free:paddr = 0x%p,size_bits = 0x%p\n",page_to_addr(p),size_bits);
-    PAGE_VALID(p);
-
-    while(level < high)
-    {
-        buddy = buddy_get(p,level);
-
-        if(buddy && (buddy -> size_bits == level))
-        {
-            page_remove(buddy,level);
-            p = (p < buddy) ? p : buddy;
-            level++;
-        }
-        else
-        {
-            break;
-        }
-    }
-
-    page_insert(p,level);
-}
-
-void *rt_pages_alloc(rt_size_t size_bits)
+void *rt_pages_alloc(uint32_t size_bits)
 {
     struct page *p;
     rt_base_t level;
@@ -268,70 +301,67 @@ void *rt_pages_alloc(rt_size_t size_bits)
     return page_to_addr(p);
 }
 
-void rt_pages_free(void *addr,rt_size_t size_bits)
+int rt_pages_free(void *addr, uint32_t size_bits)
 {
     struct page *p;
-    RT_PASSERT(__CHECKALIGN(addr,size_bits));
-    p = addr_to_page(addr);
+    int real_free = 0;
 
-    if(p)
+    p = addr_to_page(addr);
+    if (p)
     {
         rt_base_t level;
         level = rt_hw_interrupt_disable();
-        _pages_free(p,size_bits);
+        real_free = _pages_free(p, size_bits);
         rt_hw_interrupt_enable(level);
     }
+    return real_free;
 }
 
-void rt_pageinfo_dump()
+void list_page(void)
 {
-    rt_size_t i;
-    rt_size_t total = 0;
+    int i;
+    size_t total = 0;
 
     rt_base_t level;
     level = rt_hw_interrupt_disable();
 
-    for(i = 0;i < PAGE_LIST_SIZE;i++)
+    for (i = 0; i < ARCH_PAGE_LIST_SIZE; i++)
     {
         struct page *p = page_list[i];
 
-        rt_kprintf("level %d ",i);
+        rt_kprintf("level %d ", i);
 
-        while(p)
+        while (p)
         {
             total += (1UL << i);
-            rt_kprintf("[0x%08x]",page_to_addr(p));
-            p = p -> next;
+            rt_kprintf("[0x%08p]", page_to_addr(p));
+            p = p->next;
         }
-
         rt_kprintf("\n");
     }
-
     rt_hw_interrupt_enable(level);
-    rt_kprintf("free pages is %08x\n",total);
+    rt_kprintf("free pages is %08x\n", total);
     rt_kprintf("-------------------------------\n");
 }
-MSH_CMD_EXPORT(rt_pageinfo_dump, show page info);
+MSH_CMD_EXPORT(list_page, show page info);
 
 void rt_page_get_info(size_t *total_nr, size_t *free_nr)
 {
-    rt_size_t i;
-    rt_size_t total_free = 0;
+    int i;
+    size_t total_free = 0;
     rt_base_t level;
 
     level = rt_hw_interrupt_disable();
-
-    for (i = 0;i < PAGE_LIST_SIZE;i++)
+    for (i = 0; i < ARCH_PAGE_LIST_SIZE; i++)
     {
         struct page *p = page_list[i];
 
         while (p)
         {
             total_free += (1UL << i);
-            p = p -> next;
+            p = p->next;
         }
     }
-
     rt_hw_interrupt_enable(level);
     *total_nr = page_nr;
     *free_nr = total_free;
@@ -339,69 +369,58 @@ void rt_page_get_info(size_t *total_nr, size_t *free_nr)
 
 void rt_page_init(rt_region_t reg)
 {
-    rt_size_t align_bits;
-    rt_size_t size_bits;
-    rt_size_t i;
+    int i;
 
-    dprintf("split 0x%08x 0x%08x\n",reg.start,reg.end);
+    LOG_D("split 0x%08x 0x%08x\n", reg.start, reg.end);
 
-    reg.start = __ALIGNUP(reg.start,PAGE_OFFSET_BIT);
-    reg.end = __ALIGNDOWN(reg.end,PAGE_OFFSET_BIT);
+    reg.start += ARCH_PAGE_MASK;
+    reg.start &= ~ARCH_PAGE_MASK;
 
-    rt_size_t nr = PAGE_SIZE / sizeof(struct page);
-    rt_size_t total = (reg.end - reg.start) >> PAGE_OFFSET_BIT;
+    reg.end &= ~ARCH_PAGE_MASK;
 
-    /*
-        equation:cell((total - mnr) / nr) = mnr
-        let total - mnr = knr + p(k is integer,0 <= p < nr)
-        then,k + cell(p / nr) = mnr
-        when p = 0,k = (total - mnr) / nr,mnr = total / (nr + 1)
-        when p > 0,k = (total - mnr - p) / nr,cell(p / nr) = 1,mnr = (total - p + nr) / (nr + 1)
-        to be simple,let all free memory remained can be indicated in page struct memory,so let use the upbound of mnr
-        let p = 0,mnr = max(total / (nr + 1),(total - p + nr) / (nr + 1)) = (total + nr) / (nr + 1)
-    */
-    rt_size_t mnr = (total + nr) / (nr + 1);
-
-    dprintf("nr = 0x%08x\n",nr);
-    dprintf("total = 0x%08x\n",total);
-    dprintf("mnr = 0x%08x\n",mnr);
-
-    page_start = (struct page *)reg.start;
-    reg.start += (mnr << PAGE_OFFSET_BIT);//now reg.start is the start point of free memory remained
-    page_addr = (void *)reg.start;
-    page_nr = (reg.end - reg.start) >> PAGE_OFFSET_BIT;
-
-    dprintf("align 0x%08x 0x%08x\n",reg.start,reg.end);
-
-    //init page struct
-    for(i = 0;i < page_nr;i++)
     {
-        page_start[i].size_bits = ADDRESS_WIDTH_BITS;
+        int nr = ARCH_PAGE_SIZE / sizeof(struct page);
+        int total = (reg.end - reg.start) >> ARCH_PAGE_SHIFT;
+        int mnr = (total + nr) / (nr + 1);
+
+        LOG_D("nr = 0x%08x\n", nr);
+        LOG_D("total = 0x%08x\n", total);
+        LOG_D("mnr = 0x%08x\n", mnr);
+
+        RT_ASSERT(mnr < total);
+
+        page_start = (struct page*)reg.start;
+        reg.start += (mnr << ARCH_PAGE_SHIFT);
+        page_addr = (void*)reg.start;
+        page_nr = (reg.end - reg.start) >> ARCH_PAGE_SHIFT;
     }
 
-    //init free list
-    for(i = 0;i < PAGE_LIST_SIZE;i++)
+    LOG_D("align 0x%08x 0x%08x\n", reg.start, reg.end);
+
+    /* init free list */
+    for (i = 0; i < ARCH_PAGE_LIST_SIZE; i++)
     {
-        page_list[i] = RT_NULL;
+        page_list[i] = 0;
     }
 
-    //init buddy list
-    while(reg.start != reg.end)
+    /* add pages to free list */
+    while (reg.start != reg.end)
     {
-        size_bits = ADDRESS_WIDTH_BITS - 1 - __builtin_clzl(reg.end - reg.start);
-        align_bits = __builtin_ctzl(reg.start);
+        struct page *p;
+        int align_bits;
+        int size_bits;
 
-        /*
-            align_bits < size_bits:a small page exists
-            align_bits = size_bits:this is a page
-            align_bits > size_bits:the size of memory is less than the align size of current addr
-        */
-        if(align_bits < size_bits)
+        size_bits = ARCH_ADDRESS_WIDTH_BITS - 1 - rt_clz(reg.end - reg.start);
+        align_bits = rt_ctz(reg.start);
+        if (align_bits < size_bits)
         {
             size_bits = align_bits;
         }
-
-        _pages_free(addr_to_page((void *)reg.start),size_bits - PAGE_OFFSET_BIT);
-        reg.start += (1U << size_bits);
+        p = addr_to_page((void*)reg.start);
+        p->size_bits = ARCH_ADDRESS_WIDTH_BITS;
+        p->ref_cnt = 1;
+        _pages_free(p, size_bits - ARCH_PAGE_SHIFT);
+        reg.start += (1UL << size_bits);
     }
 }
+#endif
