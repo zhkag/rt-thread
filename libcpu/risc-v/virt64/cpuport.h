@@ -22,8 +22,18 @@
 // error here, not portable
 #endif
 
-/* 33 normal register */
-#define CTX_REG_NR  33
+/* 33 general register */
+#define CTX_GENERAL_REG_NR  33
+
+#ifdef ENABLE_FPU
+/* 32 fpu register */
+#define CTX_FPU_REG_NR  32
+#else
+#define CTX_FPU_REG_NR  0
+#endif
+
+/* all context registers */
+#define CTX_REG_NR  (CTX_GENERAL_REG_NR + CTX_FPU_REG_NR)
 
 #ifndef __ASSEMBLY__
 rt_inline void rt_hw_dsb()

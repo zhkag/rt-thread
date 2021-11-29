@@ -192,6 +192,7 @@
 /* entertainment: terminal games and other interesting software packages */
 
 #define BOARD_virt
+#define ENABLE_FPU
 
 /* General Purpose UARTs */
 
