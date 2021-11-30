@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2020, RT-Thread Development Team
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -48,7 +48,7 @@ void plic_init()
     {
         plic_set_priority(i,7);
     }
-    
+
     plic_set_ie(0,0xffffffff);
     plic_set_ie(1,0xffffffff);
     plic_set_ie(2,0xffffffff);
