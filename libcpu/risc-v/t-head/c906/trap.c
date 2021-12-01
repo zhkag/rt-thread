@@ -33,107 +33,75 @@
     #include "lwp_arch.h"
 #endif
 
-#include "symbol_analysis.h"
 void dump_regs(struct rt_hw_stack_frame *regs)
 {
     rt_kprintf("--------------Dump Registers-----------------\n");
 
     rt_kprintf("Function Registers:\n");
     rt_kprintf("\tra(x1) = 0x%p(",regs->ra);
-    print_symbol_info(regs->ra, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\tuser_sp(x2) = 0x%p(",regs->user_sp_exc_stack);
-    print_symbol_info(regs->user_sp_exc_stack, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\tgp(x3) = 0x%p(",regs->gp);
-    print_symbol_info(regs->gp, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\ttp(x4) = 0x%p(",regs->tp);
-    print_symbol_info(regs->tp, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("Temporary Registers:\n");
     rt_kprintf("\tt0(x5) = 0x%p(",regs->t0);
-    print_symbol_info(regs->t0, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\tt1(x6) = 0x%p(",regs->t1);
-    print_symbol_info(regs->t1, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\tt2(x7) = 0x%p(",regs->t2);
-    print_symbol_info(regs->t2, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\tt3(x28) = 0x%p(",regs->t3);
-    print_symbol_info(regs->t3, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\tt4(x29) = 0x%p(",regs->t4);
-    print_symbol_info(regs->t4, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\tt5(x30) = 0x%p(",regs->t5);
-    print_symbol_info(regs->t5, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\tt6(x31) = 0x%p(",regs->t6);
-    print_symbol_info(regs->t6, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("Saved Registers:\n");
     rt_kprintf("\ts0/fp(x8) = 0x%p(",regs->s0_fp);
-    print_symbol_info(regs->s0_fp, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\ts1(x9) = 0x%p(",regs->s1);
-    print_symbol_info(regs->s1, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\ts2(x18) = 0x%p(",regs->s2);
-    print_symbol_info(regs->s2, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\ts3(x19) = 0x%p(",regs->s3);
-    print_symbol_info(regs->s3, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\ts4(x20) = 0x%p(",regs->s4);
-    print_symbol_info(regs->s4, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\ts5(x21) = 0x%p(",regs->s5);
-    print_symbol_info(regs->s5, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\ts6(x22) = 0x%p(",regs->s6);
-    print_symbol_info(regs->s6, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\ts7(x23) = 0x%p(",regs->s7);
-    print_symbol_info(regs->s7, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\ts8(x24) = 0x%p(",regs->s8);
-    print_symbol_info(regs->s8, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\ts9(x25) = 0x%p(",regs->s9);
-    print_symbol_info(regs->s9, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\ts10(x26) = 0x%p(",regs->s10);
-    print_symbol_info(regs->s10, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\ts11(x27) = 0x%p(",regs->s11);
-    print_symbol_info(regs->s11, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("Function Arguments Registers:\n");
     rt_kprintf("\ta0(x10) = 0x%p(",regs->a0);
-    print_symbol_info(regs->a0, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\ta1(x11) = 0x%p(",regs->a1);
-    print_symbol_info(regs->a1, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\ta2(x12) = 0x%p(",regs->a2);
-    print_symbol_info(regs->a2, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\ta3(x13) = 0x%p(",regs->a3);
-    print_symbol_info(regs->a3, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\ta4(x14) = 0x%p(",regs->a4);
-    print_symbol_info(regs->a4, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\ta5(x15) = 0x%p(",regs->a5);
-    print_symbol_info(regs->a5, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\ta6(x16) = 0x%p(",regs->a6);
-    print_symbol_info(regs->a6, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("\ta7(x17) = 0x%p(",regs->a7);
-    print_symbol_info(regs->a7, RT_FALSE);
     rt_kprintf(")\n");
     rt_kprintf("sstatus = 0x%p\n",regs->sstatus);
     rt_kprintf("\t%s\n",(regs->sstatus & SSTATUS_SIE) ? "Supervisor Interrupt Enabled" : "Supervisor Interrupt Disabled");
@@ -168,7 +136,6 @@ void dump_regs(struct rt_hw_stack_frame *regs)
 
     rt_kprintf("\tMode = %s\n",mode_str);
     rt_kprintf("-----------------Dump OK---------------------\n");
-    print_stacktrace(regs->epc,regs->s0_fp);
 }
 
 static const char *Exception_Name[] =
@@ -293,5 +260,6 @@ void handle_trap(rt_size_t scause,rt_size_t stval,rt_size_t sepc,struct rt_hw_st
     }
 
     rt_kprintf("scause:0x%p,stval:0x%p,sepc:0x%p\n",scause,stval,sepc);
+    dump_regs(sp);
     while(1);
 }

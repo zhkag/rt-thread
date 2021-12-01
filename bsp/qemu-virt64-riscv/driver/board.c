@@ -86,15 +86,15 @@ void rt_hw_board_init(void)
         /* set console device */
         rt_console_set_device("uart");
     #endif /* RT_USING_CONSOLE */
-
+ 
     #ifdef RT_USING_COMPONENTS_INIT
         rt_components_board_init();
     #endif
 
     #ifdef RT_USING_USERSPACE
-        rt_hw_mmu_map_init(&mmu_info,(void *)0x100000000UL,0xFFFFFFFEFFFFFFFFUL,(rt_size_t *)MMUTable,0);
         rt_page_init(init_page_region);
-        rt_hw_mmu_kernel_map_init(&mmu_info,0x00000000UL,0xFFFFFFFFUL);
+        rt_hw_mmu_map_init(&mmu_info,(void *)USER_VADDR_START, USER_VADDR_TOP - USER_VADDR_START, (rt_size_t *)MMUTable, 0);
+        rt_hw_mmu_kernel_map_init(&mmu_info, 0x00000000UL, USER_VADDR_START - 1);
         switch_mmu((void *)MMUTable);
     #endif
 
