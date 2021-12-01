@@ -81,8 +81,8 @@ struct imx6ull_i2c_bus
         .name        = "i2c4",                                      \
         .clk_ip_name = kCLOCK_I2c4S,                                \
         .baud_rate   = I2C4_BAUD_RATE,                              \
-        .scl_gpio    = {IOMUXC_ENET2_RX_EN_I2C4_SCL, 1, 0x70B0},    \
-        .sda_gpio    = {IOMUXC_ENET2_TX_DATA0_I2C4_SDA, 1, 0x70B0}, \
+        .scl_gpio    = {IOMUXC_UART2_TX_DATA_I2C4_SCL, 1, 0x70B0},    \
+        .sda_gpio    = {IOMUXC_UART2_RX_DATA_I2C4_SDA, 1, 0x70B0}, \
     }
 #endif /* BSP_USING_I2C4 */
 
