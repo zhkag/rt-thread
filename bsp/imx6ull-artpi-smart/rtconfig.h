@@ -310,13 +310,14 @@
 /* Select SPI Driver */
 
 #define BSP_USING_SPI
-#define BSP_USING_SPI3
 
 /* Select I2C Driver */
 
 #define BSP_USING_I2C
 #define BSP_USING_I2C3
 #define I2C3_BAUD_RATE 400000
+#define BSP_USING_I2C4
+#define I2C4_BAUD_RATE 100000
 
 /* Select LCD Driver */
 
