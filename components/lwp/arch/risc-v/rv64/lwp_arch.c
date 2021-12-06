@@ -122,7 +122,7 @@ int arch_user_space_init(struct rt_lwp *lwp)
 
     memcpy(mmu_table, MMUTable, PAGE_SIZE);
     rt_hw_cpu_dcache_ops(RT_HW_CACHE_FLUSH, mmu_table, 4 * PAGE_SIZE);
-    rt_hw_mmu_map_init(&lwp->mmu_info, (void *)0x100000000UL, 0xFFFFFFFEFFFFFFFFUL, (rt_size_t *)mmu_table, 0);
+    rt_hw_mmu_map_init(&lwp->mmu_info, (void *)USER_VADDR_START, USER_VADDR_TOP - USER_VADDR_START, (rt_size_t *)mmu_table, 0);
 
     return 0;
 }
