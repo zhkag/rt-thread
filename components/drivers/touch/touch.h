@@ -13,6 +13,7 @@
 
 #include <rtthread.h>
 #include <rtdevice.h>
+#include <time.h>
 
 #ifdef __cplusplus
 extern "C" {
