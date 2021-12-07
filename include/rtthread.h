@@ -551,6 +551,7 @@ struct rt_cpu *rt_cpu_index(int index);
 rt_uint8_t rt_interrupt_get_nest(void);
 
 #ifdef RT_USING_HOOK
+void rt_scheduler_switch_sethook(void (*hook)(struct rt_thread *tid));
 void rt_interrupt_enter_sethook(void (*hook)(void));
 void rt_interrupt_leave_sethook(void (*hook)(void));
 #endif
