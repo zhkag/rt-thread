@@ -31,15 +31,15 @@
 #include <cpuport.h>
 #include <encoding.h>
 
-extern size_t MMUTable[];
+extern rt_ubase_t MMUTable[];
 
 int arch_expand_user_stack(void *addr)
 {
     int ret = 0;
-    size_t stack_addr = (size_t)addr;
+    rt_ubase_t stack_addr = (rt_ubase_t)addr;
 
     stack_addr &= ~PAGE_OFFSET_MASK;
-    if ((stack_addr >= (size_t)USER_STACK_VSTART) && (stack_addr < (size_t)USER_STACK_VEND))
+    if ((stack_addr >= (rt_ubase_t)USER_STACK_VSTART) && (stack_addr < (rt_ubase_t)USER_STACK_VEND))
     {
         void *map = lwp_map_user(lwp_self(), (void *)stack_addr, PAGE_SIZE, RT_FALSE);
 
@@ -59,9 +59,9 @@ void *lwp_copy_return_code_to_user_stack()
 
     if (tid->user_stack != RT_NULL)
     {
-        size_t size = (size_t)lwp_thread_return_end - (size_t)lwp_thread_return;
-        size_t userstack = (size_t)tid->user_stack + tid->user_stack_size - size;
-        memcpy((void *)userstack, lwp_thread_return, size);
+        rt_size_t size = (rt_size_t)lwp_thread_return_end - (rt_size_t)lwp_thread_return;
+        rt_size_t userstack = (rt_size_t)tid->user_stack + tid->user_stack_size - size;
+        rt_memcpy((void *)userstack, lwp_thread_return, size);
         return (void *)userstack;
     }
 
@@ -85,7 +85,7 @@ rt_ubase_t lwp_fix_sp(rt_ubase_t cursp)
         return 0;
     }
 
-    return cursp - ((size_t)lwp_thread_return_end - (size_t)lwp_thread_return);
+    return cursp - ((rt_size_t)lwp_thread_return_end - (rt_size_t)lwp_thread_return);
 }
 
 rt_thread_t rt_thread_sp_to_thread(void *spmember_addr)
@@ -110,9 +110,9 @@ void *lwp_get_user_sp(void)
 
 int arch_user_space_init(struct rt_lwp *lwp)
 {
-    size_t *mmu_table;
+    rt_ubase_t *mmu_table;
 
-    mmu_table = (size_t *)rt_pages_alloc(0);
+    mmu_table = (rt_ubase_t *)rt_pages_alloc(0);
     if (!mmu_table)
     {
         return -1;
@@ -120,7 +120,7 @@ int arch_user_space_init(struct rt_lwp *lwp)
 
     lwp->end_heap = USER_HEAP_VADDR;
 
-    memcpy(mmu_table, MMUTable, PAGE_SIZE);
+    rt_memcpy(mmu_table, MMUTable, PAGE_SIZE);
     rt_hw_cpu_dcache_ops(RT_HW_CACHE_FLUSH, mmu_table, 4 * PAGE_SIZE);
     rt_hw_mmu_map_init(&lwp->mmu_info, (void *)USER_VADDR_START, USER_VADDR_TOP - USER_VADDR_START, (rt_size_t *)mmu_table, 0);
 

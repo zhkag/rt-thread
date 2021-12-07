@@ -25,8 +25,13 @@
 .global lwp_user_entry
 .type lwp_user_entry, % function
 lwp_user_entry:
-    csrci sstatus, 8//set sstatus.spp = 0
+    li t0, SSTATUS_SPP | SSTATUS_SIE    // set as user mode, close interrupt
+    csrc sstatus, t0 
+    li t0, SSTATUS_SPIE // enable interrupt when return to user mode
+    csrs sstatus, t0
+
     csrw sepc, a1
+    mv a3, a2
     sret//enter user mode
 
 /*
@@ -35,7 +40,11 @@ lwp_user_entry:
 .global lwp_user_thread_entry
 .type lwp_user_thread_entry, % function
 lwp_user_thread_entry:
-    csrci sstatus, 8//set sstatus.spp = 0
+    li t0, SSTATUS_SPP | SSTATUS_SIE    // set as user mode, close interrupt
+    csrc sstatus, t0
+    li t0, SSTATUS_SPIE // enable interrupt when return to user mode
+    csrs sstatus, t0
+    
     csrw sepc, a1
     mv s0, a0
     mv s1, a1
