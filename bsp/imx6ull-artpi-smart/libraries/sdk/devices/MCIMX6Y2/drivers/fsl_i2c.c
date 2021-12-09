@@ -1373,7 +1373,6 @@ void I2C4_DriverIRQHandler(void)
 }
 #endif
 
-
 extern void *imx6ull_get_periph_paddr(uint32_t vaddr);
 void I2C_DriverIRQHandler(int irq, void *base)
 {
