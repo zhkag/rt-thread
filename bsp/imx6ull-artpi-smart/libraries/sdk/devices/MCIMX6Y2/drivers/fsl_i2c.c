@@ -246,7 +246,6 @@ static status_t I2C_MasterTransferRunStateMachine(I2C_Type *base, i2c_master_han
     {
         result = kStatus_Success;
     }
-
     /* Handle Check address state to check the slave address is Acked in slave
        probe application. */
     if (handle->state == kCheckAddressState)
@@ -375,7 +374,6 @@ static status_t I2C_MasterTransferRunStateMachine(I2C_Type *base, i2c_master_han
                 {
                     base->I2CR |= I2C_I2CR_TXAK_MASK;
                 }
-
                 /* Read the data byte into the transfer buffer. */
                 *handle->transfer.data = base->I2DR;
                 handle->transfer.data++;
@@ -1374,3 +1372,11 @@ void I2C4_DriverIRQHandler(void)
     I2C_TransferCommonIRQHandler(I2C4, s_i2cHandle[4]);
 }
 #endif
+
+extern void *imx6ull_get_periph_paddr(uint32_t vaddr);
+void I2C_DriverIRQHandler(int irq, void *base)
+{
+    uint32_t i2c_instance = 0;
+    i2c_instance = I2C_GetInstance(imx6ull_get_periph_paddr((uint32_t)base));
+    I2C_TransferCommonIRQHandler(base, s_i2cHandle[i2c_instance]);
+}

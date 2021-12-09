@@ -41,17 +41,36 @@ static struct imx6ull_i2c_config i2c_config[] =
 };
 
 static struct imx6ull_i2c_bus i2c_obj[sizeof(i2c_config) / sizeof(i2c_config[0])];
+static char i2c_buff_temp[4][1024];
+extern uint32_t I2C_GetInstance(I2C_Type *base);
+
+#ifdef IMX_I2C_IRQ_MODE
+static uint32_t g_MasterCompletionFlag[4] = {0,0,0,0};
+static void i2c_master_callback(I2C_Type *base, i2c_master_handle_t *handle, status_t status, void *userData)
+{
+    /* Signal transfer success when received success status. */
+    
+    uint32_t instance = I2C_GetInstance(imx6ull_get_periph_paddr((uint32_t)base));
+    if (status == kStatus_Success)
+    {
+        g_MasterCompletionFlag[instance-1] = 1;
+    }
+}
+#endif
 
 static rt_size_t imx6ull_i2c_mst_xfer(struct rt_i2c_bus_device *bus, struct rt_i2c_msg msgs[], rt_uint32_t num)
 {
     struct imx6ull_i2c_bus *i2c_bus = RT_NULL;
-    i2c_master_transfer_t xfer = {0};
+    static i2c_master_transfer_t xfer = {0};
     rt_size_t i = 0;
-
     RT_ASSERT(bus != RT_NULL);
-    
+#ifdef IMX_I2C_IRQ_MODE    
+    uint32_t timeout_cnt = 100;
+#endif    
+    uint32_t instance = 0;
     i2c_bus = (struct imx6ull_i2c_bus *)bus;
 
+    instance = I2C_GetInstance(imx6ull_get_periph_paddr((uint32_t)i2c_bus->config->I2C));
     for(i = 0 ;i < num; i++)
     {
         if(msgs[i].flags & RT_I2C_RD)
@@ -61,9 +80,26 @@ static rt_size_t imx6ull_i2c_mst_xfer(struct rt_i2c_bus_device *bus, struct rt_i
             xfer.direction = kI2C_Read;
             xfer.subaddress = 0;
             xfer.subaddressSize = 0;
-            xfer.data = msgs[i].buf;
-            xfer.dataSize = msgs[i].len;
+            xfer.data = (uint8_t *volatile)i2c_buff_temp[instance - 1];
+            xfer.dataSize = msgs[i].len ;
+
+#ifdef IMX_I2C_IRQ_MODE
+            I2C_MasterTransferNonBlocking(i2c_bus->config->I2C, &i2c_bus->config->master_handle,&xfer);
+            while(!g_MasterCompletionFlag[instance - 1])
+            {
+                rt_thread_delay(1);
+                timeout_cnt--;
+                if(timeout_cnt == 0) 
+                {
+                    break;
+                }   
+            }
+            timeout_cnt = 100;
+            g_MasterCompletionFlag[instance - 1] = 0;
+#else
             I2C_MasterTransferBlocking(i2c_bus->config->I2C, &xfer);
+#endif
+            rt_memcpy(msgs[i].buf,i2c_buff_temp[instance - 1],msgs[i].len);
         }
         else
         {
@@ -72,9 +108,26 @@ static rt_size_t imx6ull_i2c_mst_xfer(struct rt_i2c_bus_device *bus, struct rt_i
             xfer.direction = kI2C_Write;
             xfer.subaddress = 0;
             xfer.subaddressSize = 0;
-            xfer.data = msgs[i].buf;
+            xfer.data = (uint8_t *volatile)i2c_buff_temp[instance - 1];
             xfer.dataSize = msgs[i].len;
+            rt_memcpy(i2c_buff_temp[instance - 1],msgs[i].buf,msgs[i].len);
+
+#ifdef IMX_I2C_IRQ_MODE            
+            I2C_MasterTransferNonBlocking(i2c_bus->config->I2C, &i2c_bus->config->master_handle,&xfer);
+            while(!g_MasterCompletionFlag[instance - 1])
+            {
+                timeout_cnt--;
+                rt_thread_delay(1);
+                if(timeout_cnt == 0) 
+                {
+                    break;
+                }  
+            }
+            timeout_cnt = 100;
+            g_MasterCompletionFlag[instance - 1] = 0;
+#else
             I2C_MasterTransferBlocking(i2c_bus->config->I2C, &xfer);
+#endif            
         }
     }
 
@@ -107,6 +160,7 @@ static const struct rt_i2c_bus_device_ops imx6ull_i2c_ops =
 };
 #endif
 
+extern void I2C_DriverIRQHandler(int irq, void *base);
 int rt_hw_i2c_init(void)
 {
     rt_uint16_t obj_num = 0;
@@ -132,6 +186,12 @@ int rt_hw_i2c_init(void)
         I2C_MasterInit(i2c_obj[i].config->I2C, &masterConfig, src_clock);
 
         rt_i2c_bus_device_register(&i2c_obj[i].parent, i2c_obj[i].config->name);
+
+#ifdef IMX_I2C_IRQ_MODE        
+        I2C_MasterTransferCreateHandle(imx6ull_get_periph_paddr((uint32_t)(i2c_obj[i].config->I2C)), &i2c_obj[i].config->master_handle, i2c_master_callback, NULL);
+        rt_hw_interrupt_install(i2c_obj[i].config->irq_num, (rt_isr_handler_t)I2C_DriverIRQHandler, (void *)i2c_obj[i].config->I2C,i2c_obj[i].config->name);
+#endif
+
     }
 
     return RT_EOK;
