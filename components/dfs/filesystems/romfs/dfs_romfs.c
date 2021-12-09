@@ -44,7 +44,7 @@ int dfs_romfs_ioctl(struct dfs_fd *file, int cmd, void *args)
     {
     case RT_FIOGETADDR:
         {
-            *(rt_uint32_t*)args = (rt_uint32_t)dirent->data;
+            *(rt_ubase_t*)args = (rt_ubase_t)dirent->data;
             break;
         }
     case RT_FIOFTRUNCATE:
