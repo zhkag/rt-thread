@@ -28,7 +28,7 @@ struct rt_pmutex
 
     struct lwp_avl_struct node;
     struct rt_object *custom_obj;
-    rt_ubase_t type; /* pmutex type */
+    rt_uint8_t type; /* pmutex type */
 };
 
 static struct rt_mutex _pmutex_lock;
@@ -80,8 +80,9 @@ static struct rt_pmutex* pmutex_create(void *umutex, struct rt_lwp *lwp)
         return RT_NULL;
     }
 
-    /* umutex[0] bit[0-2] saved mutex type */
-    type = *((rt_ubase_t *)umutex) & (~3);
+    long *p = (long *)umutex;
+    /* umutex[0] bit[0-1] saved mutex type */
+    type = *p & 3;
     if (type != PMUTEX_NORMAL && type != PMUTEX_RECURSIVE)
     {
         return RT_NULL;
