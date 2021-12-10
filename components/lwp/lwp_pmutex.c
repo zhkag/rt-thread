@@ -15,11 +15,20 @@
 #endif
 #include "clock_time.h"
 
+#define PMUTEX_NORMAL    0 /* Unable to recursion */
+#define PMUTEX_RECURSIVE 1 /* Can be recursion */
+
 struct rt_pmutex
 {
-    rt_mutex_t kmutex;
+    union
+    {
+        rt_mutex_t kmutex;
+        rt_sem_t ksem; /* use sem to emulate the mutex without recursive */
+    } lock;
+
     struct lwp_avl_struct node;
     struct rt_object *custom_obj;
+    rt_ubase_t type; /* pmutex type */
 };
 
 static struct rt_mutex _pmutex_lock;
@@ -44,7 +53,14 @@ static rt_err_t pmutex_destory(void *data)
         lwp_avl_remove(&pmutex->node, (struct lwp_avl_struct **)pmutex->node.data);
         rt_hw_interrupt_enable(level);
 
-        rt_mutex_delete(pmutex->kmutex);
+        if (pmutex->type == PMUTEX_NORMAL)
+        {
+            rt_sem_delete(pmutex->lock.ksem);
+        }
+        else
+        {
+            rt_mutex_delete(pmutex->lock.kmutex);
+        }
 
         /* release object */
         rt_free(pmutex);
@@ -57,32 +73,63 @@ static struct rt_pmutex* pmutex_create(void *umutex, struct rt_lwp *lwp)
 {
     struct rt_pmutex *pmutex = RT_NULL;
     struct rt_object *obj = RT_NULL;
+    rt_ubase_t type;
 
     if (!lwp)
     {
         return RT_NULL;
     }
+
+    /* umutex[0] bit[0-2] saved mutex type */
+    type = *((rt_ubase_t *)umutex) & (~3);
+    if (type != PMUTEX_NORMAL && type != PMUTEX_RECURSIVE)
+    {
+        return RT_NULL;
+    }
+
     pmutex = (struct rt_pmutex *)rt_malloc(sizeof(struct rt_pmutex));
     if (!pmutex)
     {
         return RT_NULL;
     }
-    pmutex->kmutex = rt_mutex_create("pmutex", RT_IPC_FLAG_PRIO);
-    if (!pmutex->kmutex)
+
+    if (type == PMUTEX_NORMAL)
     {
-        rt_free(pmutex);
-        return RT_NULL;
+        pmutex->lock.ksem = rt_sem_create("pmutex", 1, RT_IPC_FLAG_PRIO);
+        if (!pmutex->lock.ksem)
+        {
+            rt_free(pmutex);
+            return RT_NULL;
+        }
     }
+    else
+    {
+        pmutex->lock.kmutex = rt_mutex_create("pmutex", RT_IPC_FLAG_PRIO);
+        if (!pmutex->lock.kmutex)
+        {
+            rt_free(pmutex);
+            return RT_NULL;
+        }
+    }
+
     obj = rt_custom_object_create("pmutex", (void *)pmutex, pmutex_destory);
     if (!obj)
     {
-        rt_mutex_delete(pmutex->kmutex);
+        if (pmutex->type == PMUTEX_NORMAL)
+        {
+            rt_sem_delete(pmutex->lock.ksem);
+        }
+        else
+        {
+            rt_mutex_delete(pmutex->lock.kmutex);
+        }
         rt_free(pmutex);
         return RT_NULL;
     }
     pmutex->node.avl_key = (avl_key_t)umutex;
     pmutex->node.data = &lwp->address_search_head;
     pmutex->custom_obj = obj;
+    pmutex->type = type;
 
     /* insert into pmutex head */
     lwp_avl_insert(&pmutex->node, &lwp->address_search_head);
@@ -146,11 +193,17 @@ static int _pthread_mutex_init(void *umutex)
     {
         rt_base_t level = rt_hw_interrupt_disable();
 
-        pmutex->kmutex->value = 1;
-        pmutex->kmutex->owner = RT_NULL;
-        pmutex->kmutex->original_priority = 0xFF;
-        pmutex->kmutex->hold  = 0;
-
+        if (pmutex->type == PMUTEX_NORMAL)
+        {
+            pmutex->lock.ksem->value = 1;
+        }
+        else
+        {
+            pmutex->lock.kmutex->value = 1;
+            pmutex->lock.kmutex->owner = RT_NULL;
+            pmutex->lock.kmutex->original_priority = 0xFF;
+            pmutex->lock.kmutex->hold  = 0;
+        }
         rt_hw_interrupt_enable(level);
     }
 
@@ -194,7 +247,19 @@ static int _pthread_mutex_lock_timeout(void *umutex, struct timespec *timeout)
 
     rt_mutex_release(&_pmutex_lock);
 
-    lock_ret = rt_mutex_take_interruptible(pmutex->kmutex, time);
+    switch (pmutex->type)
+    {
+    case PMUTEX_NORMAL:
+        lock_ret = rt_sem_take_interruptible(pmutex->lock.ksem, time);
+        break;
+    case PMUTEX_RECURSIVE:
+        lock_ret = rt_mutex_take_interruptible(pmutex->lock.kmutex, time);
+        break;
+    default: /* unknown type */
+        lock_ret = -RT_ENOSYS;
+        break;
+    }
+
     if (lock_ret != RT_EOK)
     {
         rt_set_errno(EAGAIN);
@@ -226,7 +291,19 @@ static int _pthread_mutex_unlock(void *umutex)
 
     rt_mutex_release(&_pmutex_lock);
 
-    lock_ret = rt_mutex_release(pmutex->kmutex);
+    switch (pmutex->type)
+    {
+    case PMUTEX_NORMAL:
+        lock_ret = rt_sem_release(pmutex->lock.ksem);
+        break;
+    case PMUTEX_RECURSIVE:
+        lock_ret = rt_mutex_release(pmutex->lock.kmutex);
+        break;
+    default: /* unknown type */
+        lock_ret = -RT_ENOSYS;
+        break;
+    }
+
     if (lock_ret != RT_EOK)
     {
         rt_set_errno(EPERM);
