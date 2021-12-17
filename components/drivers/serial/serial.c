@@ -38,9 +38,8 @@
 #include <dfs_posix.h>
 #include <dfs_poll.h>
 
-#ifdef RT_USING_POSIX_TERMIOS
 #include <posix_termios.h>
-#endif
+
 
 /* it's possible the 'getc/putc' is defined by stdio.h in gcc/newlib. */
 #ifdef getc
@@ -894,7 +893,6 @@ static rt_size_t rt_serial_write(struct rt_device *dev,
     }
 }
 
-#ifdef RT_USING_POSIX_TERMIOS
 struct speed_baudrate_item
 {
     speed_t speed;
@@ -988,8 +986,6 @@ static void _tc_flush(struct rt_serial_device *serial, int queue)
     }
 
 }
-
-#endif
 
 static rt_err_t rt_serial_control(struct rt_device *dev,
                                   int              cmd,

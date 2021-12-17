@@ -15,7 +15,7 @@
 
 #include "lwp.h"
 #include "lwp_pid.h"
-#include "lwp_console.h"
+#include "tty.h"
 
 #ifdef RT_USING_USERSPACE
 #include "lwp_user_mm.h"
@@ -129,8 +129,6 @@ static void lwp_pid_set_lwp(pid_t pid, struct rt_lwp *lwp)
     }
     rt_hw_interrupt_enable(level);
 }
-
-int libc_stdio_get_console(void);
 
 static void __exit_files(struct rt_lwp *lwp)
 {
@@ -332,6 +330,10 @@ struct rt_lwp* lwp_new(void)
     rt_memset(lwp, 0, sizeof(*lwp));
     rt_list_init(&lwp->wait_list);
     lwp->pid = pid;
+    lwp->leader = 0;
+    lwp->session = -1;
+    lwp->tty = RT_NULL;
+    //lwp->tgroup_leader = RT_NULL;
     lwp_pid_set_lwp(pid, lwp);
     rt_list_init(&lwp->t_grp);
     lwp_user_object_lock_init(lwp);
@@ -434,12 +436,19 @@ void lwp_free(struct rt_lwp* lwp)
 
     /* for parent */
     {
-        struct rt_lwp *console_lwp;
-
-        console_lwp = rt_console_get_foreground();
-        if (lwp == console_lwp)
+        extern struct termios old_stdin_termios;
+        struct rt_lwp *self_lwp = (struct rt_lwp *)lwp_self();
+        if (lwp->session == -1)
         {
-            rt_console_set_foreground(lwp->parent);
+            tcsetattr(1, 0, &old_stdin_termios);
+        }
+        if (lwp->tty != RT_NULL)
+        {
+            if (lwp->tty->foreground == lwp)
+            {
+                lwp->tty->foreground = self_lwp;
+                lwp->tty = RT_NULL;
+            }
         }
 
         if (lwp->parent)
