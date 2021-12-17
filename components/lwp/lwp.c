@@ -16,13 +16,14 @@
 
 #include <dfs_posix.h>
 #include <lwp_elf.h>
-#include <lwp_console.h>
 
 #ifndef RT_USING_DFS
 #error "lwp need file system(RT_USING_DFS)"
 #endif
 
 #include "lwp.h"
+#include "lwp_arch.h"
+#include "console.h"
 
 #define DBG_TAG "LWP"
 #define DBG_LVL DBG_WARNING
@@ -42,9 +43,9 @@ static const char elf_magic[] = {0x7f, 'E', 'L', 'F'};
 #ifdef DFS_USING_WORKDIR
 extern char working_directory[];
 #endif
+struct termios stdin_termios, old_stdin_termios;
 
 extern void lwp_user_entry(void *args, const void *text, void *ustack, void *k_stack);
-extern int libc_stdio_get_console(void);
 int load_ldso(struct rt_lwp *lwp, char *exec_name, char *const argv[], char *const envp[]);
 
 void lwp_setcwd(char *buf)
@@ -1188,10 +1189,49 @@ pid_t lwp_execve(char *filename, int argc, char **argv, char **envp)
             self_lwp = lwp_self();
             if (self_lwp)
             {
+                //lwp->tgroup_leader = &thread; //add thread group leader for lwp
+                lwp->__pgrp = tid;
+                lwp->session = self_lwp->session;
                 /* lwp add to children link */
                 lwp->sibling = self_lwp->first_child;
                 self_lwp->first_child = lwp;
                 lwp->parent = self_lwp;
+            }
+            else
+            {
+                //lwp->tgroup_leader = &thread; //add thread group leader for lwp
+                lwp->__pgrp = tid;
+            }
+            if (!bg)
+            {
+                if (lwp->session == -1)
+                {
+                    struct tty_struct *tty = RT_NULL;
+                    tty = (struct tty_struct *)console_tty_get();
+                    lwp->tty = tty;
+                    lwp->tty->pgrp = lwp->__pgrp;
+                    lwp->tty->session = lwp->session;
+                    lwp->tty->foreground = lwp;
+                    tcgetattr(1, &stdin_termios);
+                    old_stdin_termios = stdin_termios;
+                    stdin_termios.c_lflag |= ICANON | ECHO | ECHOCTL;
+                    tcsetattr(1, 0, &stdin_termios);
+                }
+                else
+                {
+                    if (self_lwp != RT_NULL)
+                    {
+                        lwp->tty = self_lwp->tty;
+                        lwp->tty->pgrp = lwp->__pgrp;
+                        lwp->tty->session = lwp->session;
+                        lwp->tty->foreground = lwp;
+                    }
+                    else
+                    {
+                        lwp->tty = RT_NULL;
+                    }
+
+                }
             }
             thread->lwp = lwp;
 #ifndef ARCH_MM_MMU
@@ -1214,11 +1254,6 @@ pid_t lwp_execve(char *filename, int argc, char **argv, char **envp)
                 lwp->debug = debug;
             }
 #endif
-
-            if ((rt_console_get_foreground() == self_lwp) && !bg)
-            {
-                rt_console_set_foreground(lwp);
-            }
             rt_hw_interrupt_enable(level);
 
             rt_thread_startup(thread);

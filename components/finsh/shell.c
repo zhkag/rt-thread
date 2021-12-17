@@ -593,7 +593,8 @@ void finsh_thread_entry(void *parameter)
             }
             else
             {
-                rt_kprintf("\b \b");
+                if (shell->echo_mode)
+                    rt_kprintf("\b \b");
                 shell->line[shell->line_position] = 0;
             }
 

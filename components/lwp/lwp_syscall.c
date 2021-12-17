@@ -54,7 +54,7 @@
 #include <sal.h>
 #endif /* RT_USING_SAL */
 
-#include <lwp_console.h>
+#include <tty.h>
 #include "lwp_ipc_internal.h"
 
 #define SET_ERRNO(no) rt_set_errno(-(no))
@@ -1550,6 +1550,11 @@ static void lwp_struct_copy(struct rt_lwp *dst, struct rt_lwp *src)
     dst->data_entry = src->data_entry;
     dst->data_size = src->data_size;
     dst->args = src->args;
+    dst->leader = 0;
+    dst->session = src->session;
+    dst->tty_old_pgrp = 0;
+    dst->__pgrp = src->__pgrp;
+    dst->tty = src->tty;
     rt_memcpy(dst->cmd, src->cmd, RT_NAME_MAX);
 
     dst->sa_flags = src->sa_flags;
@@ -1716,9 +1721,9 @@ int _sys_fork(void)
             user_stack, &thread->sp);
     /* new thread never reach there */
     level = rt_hw_interrupt_disable();
-    if (rt_console_get_foreground() == self_lwp)
+    if (lwp->tty != RT_NULL)
     {
-        rt_console_set_foreground(lwp);
+        lwp->tty->foreground = lwp;
     }
     rt_hw_interrupt_enable(level);
     rt_thread_startup(thread);
@@ -3897,6 +3902,15 @@ int sys_setrlimit(unsigned int resource, struct rlimit *rlim)
     return -ENOSYS;
 }
 
+int sys_setsid(void)
+{
+    int ret = 0;
+    ret = setsid();
+    return (ret < 0 ? GET_ERRNO() : ret);
+}
+
+int sys_cacheflush(void *addr, int len, int cache);
+
 const static void* func_table[] =
 {
     (void *)sys_exit,            /* 01 */
@@ -4080,6 +4094,7 @@ const static void* func_table[] =
     (void *)sys_prlimit64,      /* 140 */
     (void *)sys_getrlimit,
     (void *)sys_setrlimit,
+    (void *)sys_setsid,
 };
 
 const void *lwp_get_sys_api(rt_uint32_t number)

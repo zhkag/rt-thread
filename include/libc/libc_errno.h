@@ -16,6 +16,7 @@
 #if defined(RT_USING_NEWLIB) || defined(RT_USING_MUSL) || defined(_WIN32) || defined(__ARMCC_GNUC__)
 /* use errno.h file in toolchains */
 #include <errno.h>
+#define ENOIOCTLCMD	    (ERROR_BASE_NO + 515) /* No ioctl command */
 #endif
 
 #if defined(__CC_ARM)

@@ -30,7 +30,6 @@
 #define RT_USING_EVENT
 #define RT_USING_MAILBOX
 #define RT_USING_MESSAGEQUEUE
-#define RT_USING_SIGNALS
 
 /* Memory Management */
 
@@ -119,6 +118,7 @@
 #define RT_USING_SERIAL
 #define RT_SERIAL_USING_DMA
 #define RT_SERIAL_RB_BUFSZ 256
+#define RT_USING_TTY
 #define RT_USING_I2C
 #define RT_USING_I2C_BITOPS
 #define RT_USING_PIN
@@ -153,7 +153,6 @@
 #define RT_USING_MUSL
 #define RT_USING_POSIX
 #define RT_USING_POSIX_MMAP
-#define RT_USING_POSIX_TERMIOS
 #define RT_USING_POSIX_AIO
 #define RT_POSIX_AIO_THREAD_STACK_SIZE 2048
 #define RT_USING_POSIX_CLOCKTIME
@@ -277,9 +276,6 @@
 /* system packages */
 
 /* acceleration: Assembly language or algorithmic acceleration packages */
-
-
-/* CMSIS: ARM Cortex-M Microcontroller Software Interface Standard */
 
 
 /* Micrium: Micrium software products porting for RT-Thread */

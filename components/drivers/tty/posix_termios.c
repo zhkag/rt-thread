@@ -1,23 +1,24 @@
 /*
- * Copyright (c) 2006-2018, RT-Thread Development Team
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
  * Change Logs:
  * Date           Author       Notes
  * 2017/08/30     Bernard      The first version
+ * 2021/12/10     linzhenxing  put tty system
  */
 #include <stdlib.h>
 #include <string.h>
 #include <rtthread.h>
 #include <dfs_posix.h>
 
-#include <termios.h>
+#include <posix_termios.h>
 
 int tcgetattr(int fd, struct termios *tio)
 {
     /* Get the current serial port settings. */
-    if (ioctl(fd, TCGETA, tio))
+    if (ioctl(fd, TCGETS, tio))
         return -1;
 
     return 0;
@@ -29,19 +30,19 @@ int tcsetattr(int fd, int act, const struct termios *tio)
     {
     case TCSANOW:
         /* make the change immediately */
-        return (ioctl(fd, TCSETA, (void*)tio));
+        return (ioctl(fd, TCSETS, (void*)tio));
     case TCSADRAIN:
         /*
          * Don't make the change until all currently written data
          * has been transmitted.
          */
-        return (ioctl(fd, TCSETAW, (void*)tio));
+        return (ioctl(fd, TCSETSW, (void*)tio));
     case TCSAFLUSH:
         /* Don't make the change until all currently written data
          * has been transmitted, at which point any received but
          * unread data is also discarded.
          */
-        return (ioctl(fd, TCSETAF, (void*)tio));
+        return (ioctl(fd, TCSETSF, (void*)tio));
     default:
         errno = EINVAL;
         return (-1);

@@ -41,7 +41,9 @@
 
 #ifdef RT_USING_MUSL
 #include <locale.h>
-typedef int32_t pid_t;
+#endif
+#ifdef  RT_USING_TTY
+struct tty_struct;
 #endif
 
 #ifdef __cplusplus
@@ -86,7 +88,12 @@ struct rt_lwp
     void *args;
     uint32_t args_length;
     pid_t pid;
+    pid_t __pgrp; /*Accessed via process_group()*/
+    pid_t tty_old_pgrp;
+    pid_t session;
     rt_list_t t_grp;
+
+    int leader; /*boolean value for session group_leader*/
     struct dfs_fdtable fdt;
     char cmd[RT_NAME_MAX];
 
@@ -102,6 +109,7 @@ struct rt_lwp
     struct rt_user_context user_ctx;
 
     struct rt_wqueue wait_queue; /*for console */
+    struct tty_struct *tty; /* NULL if no tty */
 
     struct lwp_avl_struct *address_search_head; /* for addressed object fast rearch */
     char working_directory[DFS_PATH_MAX];
@@ -137,6 +145,8 @@ void lwp_tid_set_thread(int tid, rt_thread_t thread);
 
 size_t lwp_user_strlen(const char *s, int *err);
 
+/*create by lwp_setsid.c*/
+int setsid(void);
 #ifdef RT_USING_USERSPACE
 void lwp_mmu_switch(struct rt_thread *thread);
 #endif
