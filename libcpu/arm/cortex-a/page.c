@@ -179,7 +179,7 @@ static void _pages_ref_inc(struct page *p, uint32_t size_bits)
 static int _pages_free(struct page *p, uint32_t size_bits)
 {
     uint32_t level = size_bits;
-    uint32_t high = ARCH_ADDRESS_WIDTH_BITS - size_bits - 1;
+    uint32_t high = ARCH_PAGE_LIST_SIZE - size_bits - 1;
     struct page *buddy;
 
     RT_ASSERT(p->ref_cnt > 0);
@@ -221,7 +221,7 @@ static struct page *_pages_alloc(uint32_t size_bits)
     else
     {
         uint32_t level;
-        uint32_t high = ARCH_ADDRESS_WIDTH_BITS - size_bits - 1;
+        uint32_t high = ARCH_PAGE_LIST_SIZE - size_bits - 1;
 
         for (level = size_bits + 1; level <= high; level++)
         {
