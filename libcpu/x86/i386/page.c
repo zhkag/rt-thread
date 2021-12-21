@@ -292,7 +292,7 @@ static struct page *_pages_alloc(rt_size_t size_bits)
 static int _pages_free(struct page *p,rt_size_t size_bits)
 {
     rt_size_t level = size_bits;
-    rt_size_t high = ADDRESS_WIDTH_BITS - size_bits - 1;
+    rt_size_t high = ARCH_PAGE_LIST_SIZE - size_bits - 1;
     struct page *buddy;
 
     if (p->ref_cnt <= 0)
