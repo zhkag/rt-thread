@@ -96,7 +96,7 @@ static rt_err_t pty_device_close(struct rt_device *dev)
 {
     rt_err_t result = RT_EOK;
     struct tty_struct *tty = (struct tty_struct*)dev;
-    struct tty_struct *to = RT_NULL;
+    //struct tty_struct *to = RT_NULL;
 
     if (tty->subtype == PTY_TYPE_MASTER)
     {

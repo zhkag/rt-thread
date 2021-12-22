@@ -70,7 +70,6 @@ static int is_ignored(int sig)
 
 int __tty_check_change(struct tty_struct *tty, int sig)
 {
-    unsigned long flags = 0;
     pid_t pgrp = 0, tty_pgrp = 0;
     struct rt_lwp *lwp = tty->foreground;
     int ret = 0;

@@ -809,7 +809,7 @@ static size_t __process_echoes(struct tty_struct *tty)
 
             switch (op)
             {
-                unsigned int num_chars = 0, num_bs = 0;
+                unsigned char num_chars = 0, num_bs = 0;
 
             case ECHO_OP_ERASE_TAB:
                 num_chars = echo_buf(ldata, tail + 2);
