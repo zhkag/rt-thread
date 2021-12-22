@@ -176,6 +176,23 @@ static void _pages_ref_inc(struct page *p, uint32_t size_bits)
     page_head->ref_cnt++;
 }
 
+static int _pages_ref_get(struct page *p, uint32_t size_bits)
+{
+    struct page *page_head;
+    int idx;
+
+    /* find page group head */
+    idx = p - page_start;
+    if (idx < 0 || idx >= page_nr)
+    {
+        return 0;
+    }
+    idx = idx & ~((1UL << size_bits) - 1);
+
+    page_head = page_start + idx;
+    return page_head->ref_cnt;
+}
+
 static int _pages_free(struct page *p, uint32_t size_bits)
 {
     uint32_t level = size_bits;
@@ -249,6 +266,19 @@ static struct page *_pages_alloc(uint32_t size_bits)
     return p;
 }
 
+int rt_page_ref_get(void *addr, uint32_t size_bits)
+{
+    struct page *p;
+    rt_base_t level;
+    int ref;
+
+    p = addr_to_page(addr);
+    level = rt_hw_interrupt_disable();
+    ref = _pages_ref_get(p, size_bits);
+    rt_hw_interrupt_enable(level);
+    return ref;
+}
+
 void rt_page_ref_inc(void *addr, uint32_t size_bits)
 {
     struct page *p;
@@ -304,7 +334,7 @@ void list_page(void)
         while (p)
         {
             total += (1UL << i);
-            rt_kprintf("[0x%08x]", page_to_addr(p));
+            rt_kprintf("[0x%08p]", page_to_addr(p));
             p = p->next;
         }
         rt_kprintf("\n");

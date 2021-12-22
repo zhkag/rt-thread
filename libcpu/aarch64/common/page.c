@@ -196,7 +196,6 @@ static int _pages_ref_get(struct page *p, uint32_t size_bits)
 static int _pages_free(struct page *p, uint32_t size_bits)
 {
     uint32_t level = size_bits;
-    uint32_t high = ARCH_PAGE_LIST_SIZE - size_bits - 1;
     struct page *buddy;
 
     RT_ASSERT(p->ref_cnt > 0);
@@ -208,7 +207,7 @@ static int _pages_free(struct page *p, uint32_t size_bits)
         return 0;
     }
 
-    while (level < high)
+    while (level < ARCH_PAGE_LIST_SIZE)
     {
         buddy = buddy_get(p, level);
         if (buddy && buddy->size_bits == level)
@@ -238,16 +237,15 @@ static struct page *_pages_alloc(uint32_t size_bits)
     else
     {
         uint32_t level;
-        uint32_t high = ARCH_PAGE_LIST_SIZE - size_bits - 1;
 
-        for (level = size_bits + 1; level <= high; level++)
+        for (level = size_bits + 1; level < ARCH_PAGE_LIST_SIZE; level++)
         {
             if (page_list[level])
             {
                 break;
             }
         }
-        if (level == high + 1)
+        if (level == ARCH_PAGE_LIST_SIZE)
         {
             return 0;
         }
