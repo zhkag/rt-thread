@@ -255,9 +255,8 @@ static struct page *_pages_alloc(rt_size_t size_bits)
     {
         //otherwise get new page from large linked list
         rt_size_t level;
-        rt_size_t high = PAGE_LIST_SIZE;
 
-        for(level = size_bits + 1;level <= high;level++)
+        for(level = size_bits + 1;level < PAGE_LIST_SIZE;level++)
         {
             if(page_list[level])
             {
@@ -265,9 +264,7 @@ static struct page *_pages_alloc(rt_size_t size_bits)
             }
         }
 
-        RT_ASSERT(level <= (high + 2));
-
-        if(level == high + 2)
+        if(level == PAGE_LIST_SIZE)
         {
             return 0;//couldn't find a appropriate page
         }
@@ -292,7 +289,6 @@ static struct page *_pages_alloc(rt_size_t size_bits)
 static int _pages_free(struct page *p,rt_size_t size_bits)
 {
     rt_size_t level = size_bits;
-    rt_size_t high = ARCH_PAGE_LIST_SIZE - size_bits - 1;
     struct page *buddy;
 
     if (p->ref_cnt <= 0)
@@ -311,7 +307,7 @@ static int _pages_free(struct page *p,rt_size_t size_bits)
     dprintf("page_free:paddr = 0x%p,size_bits = 0x%p\n",page_to_addr(p),size_bits);
     PAGE_VALID(p);
 
-    while(level < high)
+    while(level < PAGE_LIST_SIZE)
     {
         buddy = buddy_get(p,level);
 
