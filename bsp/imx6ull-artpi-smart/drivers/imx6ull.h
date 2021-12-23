@@ -282,6 +282,13 @@ enum _imx_interrupts
 #define IMX6ULL_CAN1_BASE           CAN1_BASE
 #define IMX6ULL_CAN2_BASE           CAN2_BASE
 
+#define IMX6ULL_USBPHY1_BASE                0x20C9000u
+#define IMX6ULL_USBPHY2_BASE                0x20CA000u
+
+#define IMX6ULL_USB1_BASE                   0x2184000u
+#define IMX6ULL_USB2_BASE                   0x2184200u
+
+#define IMX6ULL_USB_ANALOG_BASE             0x20C81A0u
 /* the maximum number of gic */
 #define ARM_GIC_MAX_NR 1
 

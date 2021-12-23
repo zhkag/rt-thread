@@ -73,6 +73,13 @@ extern uint32_t *g_ccm_vbase;
 extern uint32_t *g_ccm_analog_vbase;
 extern uint32_t *g_pmu_vbase;
 
+extern uint32_t g_usbphy1_base;
+extern uint32_t g_usbphy2_base;
+extern uint32_t g_usb1_base;
+extern uint32_t g_usb2_base;
+extern uint32_t g_usb_analog_base;
+
+
 /** Memory map major version (memory maps with equal major version number are
  * compatible) */
 #define MCU_MEM_MAP_VERSION 0x0300U
@@ -38827,11 +38834,11 @@ typedef struct {
 
 /* USB - Peripheral instance base addresses */
 /** Peripheral USB1 base address */
-#define USB1_BASE                                (0x2184000u)
+#define USB1_BASE                                (g_usb1_base) //(0x2184000u)
 /** Peripheral USB1 base pointer */
 #define USB1                                     ((USB_Type *)USB1_BASE)
 /** Peripheral USB2 base address */
-#define USB2_BASE                                (0x2184200u)
+#define USB2_BASE                                (g_usb2_base) //(0x2184200u)
 /** Peripheral USB2 base pointer */
 #define USB2                                     ((USB_Type *)USB2_BASE)
 /** Array initializer of USB peripheral base addresses */
@@ -40537,11 +40544,11 @@ typedef struct {
 
 /* USBPHY - Peripheral instance base addresses */
 /** Peripheral USBPHY1 base address */
-#define USBPHY1_BASE                             (0x20C9000u)
+#define USBPHY1_BASE                             (g_usbphy1_base) //(0x20C9000u)
 /** Peripheral USBPHY1 base pointer */
 #define USBPHY1                                  ((USBPHY_Type *)USBPHY1_BASE)
 /** Peripheral USBPHY2 base address */
-#define USBPHY2_BASE                             (0x20CA000u)
+#define USBPHY2_BASE                             (g_usbphy2_base) //(0x20CA000u)
 /** Peripheral USBPHY2 base pointer */
 #define USBPHY2                                  ((USBPHY_Type *)USBPHY2_BASE)
 /** Array initializer of USBPHY peripheral base addresses */
@@ -40838,7 +40845,7 @@ typedef struct {
 
 /* USB_ANALOG - Peripheral instance base addresses */
 /** Peripheral USB_ANALOG base address */
-#define USB_ANALOG_BASE                          (0x20C81A0u)
+#define USB_ANALOG_BASE                          (g_usb_analog_base) //(0x20C81A0u)
 /** Peripheral USB_ANALOG base pointer */
 #define USB_ANALOG                               ((USB_ANALOG_Type *)USB_ANALOG_BASE)
 /** Array initializer of USB_ANALOG peripheral base addresses */

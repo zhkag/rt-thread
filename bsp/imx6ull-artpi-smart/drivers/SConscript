@@ -2,6 +2,11 @@ from building import *
 
 cwd  = GetCurrentDir()
 src  = Glob('*.c') + Glob('iomux/*.c')
+
+if GetDepend(['BSP_USING_USB_DEVICE']):
+    src += Glob('usb/device/*.c')
+    src += Glob('usb/phy/*.c')
+
 list = os.listdir(cwd)
 CPPPATH = [cwd, cwd + '/iomux']
 objs = []
