@@ -19,6 +19,12 @@ uint32_t *g_ccm_vbase = (uint32_t*)IMX6ULL_CCM_BASE;
 uint32_t *g_ccm_analog_vbase = (uint32_t*)IMX6ULL_CCM_ANALOGY_BASE;
 uint32_t *g_pmu_vbase = (uint32_t*)IMX6ULL_PMU_BASE;
 
+uint32_t g_usbphy1_base = IMX6ULL_USBPHY1_BASE;
+uint32_t g_usbphy2_base = IMX6ULL_USBPHY2_BASE;
+
+uint32_t g_usb1_base = IMX6ULL_USB1_BASE;
+uint32_t g_usb2_base = IMX6ULL_USB2_BASE;
+uint32_t g_usb_analog_base = IMX6ULL_USB_ANALOG_BASE;
 /* used by all files */
 uint32_t *g_iomuxc_vbase = (uint32_t*)IMX6ULL_IOMUXC_BASE;
 uint32_t *g_iomuxc_snvs_vbase = (uint32_t*)IMX6ULL_IOMUXC_SNVS_BASE;
@@ -177,6 +183,12 @@ void SystemAddressMapping(void)
     g_snvs_vbase = (uint32_t*)platform_get_periph_vaddr((rt_uint32_t)g_snvs_vbase);
 
     _s_gpt1_vbase = (uint32_t*)platform_get_periph_vaddr((rt_uint32_t)_s_gpt1_vbase);
+    g_usbphy1_base = (uint32_t)platform_get_periph_vaddr((rt_uint32_t)g_usbphy1_base);
+    g_usbphy2_base = (uint32_t)platform_get_periph_vaddr((rt_uint32_t)g_usbphy2_base);
+
+    g_usb1_base = (uint32_t)platform_get_periph_vaddr((rt_uint32_t)g_usb1_base);
+    g_usb2_base = (uint32_t)platform_get_periph_vaddr((rt_uint32_t)g_usb2_base);
+    g_usb_analog_base = (uint32_t)platform_get_periph_vaddr((rt_uint32_t)g_usb_analog_base);
 }
 
 void SystemClockInit(void)

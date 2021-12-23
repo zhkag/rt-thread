@@ -211,4 +211,10 @@ menu "Select Wifi Driver"
     endif
 endmenu
 
+menu "Select USB Driver"
+    config BSP_USING_USB_DEVICE
+        bool "Enable ENET1"
+        default y
+endmenu
+
 endmenu

@@ -118,6 +118,7 @@
 #define RT_SYSTEM_WORKQUEUE_PRIORITY 23
 #define RT_USING_SERIAL
 #define RT_SERIAL_RB_BUFSZ 64
+#define RT_USING_TTY
 #define RT_USING_I2C
 #define RT_USING_PIN
 #define RT_USING_NULL
@@ -137,6 +138,13 @@
 
 /* Using USB */
 
+#define RT_USING_USB_DEVICE
+#define RT_USBD_THREAD_STACK_SZ 4096
+#define USB_VENDOR_ID 0x0FFE
+#define USB_PRODUCT_ID 0x0001
+#define _RT_USB_DEVICE_WINUSB
+#define RT_USB_DEVICE_WINUSB
+#define RT_WINUSB_GUID "{6860DC3C-C05F-4807-8807-1CA861CC1D66}"
 
 /* POSIX layer and C standard library */
 
@@ -356,5 +364,9 @@
 
 /* Select Wifi Driver */
 
+
+/* Select USB Driver */
+
+#define BSP_USING_USB_DEVICE
 
 #endif
