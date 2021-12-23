@@ -16,7 +16,7 @@
 #include "mmu.h"
 
 #ifdef RT_USING_USERSPACE
-#include "page.h"
+#include <page.h>
 #endif
 
 #define MMU_LEVEL_MASK 0x1ffUL

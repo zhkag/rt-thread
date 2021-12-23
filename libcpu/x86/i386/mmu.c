@@ -509,16 +509,13 @@ static void __rt_hw_mmu_unmap(rt_mmu_info *mmu_info,void *v_addr,rt_size_t npage
         *mmu_l2 = 0;    /* clear page table entry */
         rt_hw_cpu_dcache_clean(mmu_l2, sizeof(*mmu_l2));
         mmu_l2 -= l2_off;   /* get base addr on page aligned */
-        rt_page_ref_dec(mmu_l2, 0); /* page ref dec when unmap */
 
-        if(!rt_page_ref_get(mmu_l2, 0)) /* page table no phy page, empty */
+        if(rt_pages_free(mmu_l2, 0)) /* page table no phy page, empty */
         {
-            rt_page_ref_inc(mmu_l2, 0); /* page ref inc before free, make sure ref > 0 */
-            //release level 2 page
-            rt_pages_free(mmu_l2, 0); //entry page and ref_cnt page
             *mmu_l1 = 0;    /* clear page dir table entry */
             rt_hw_cpu_dcache_clean(mmu_l1, sizeof(*mmu_l1));
         }
+        
         loop_va += PAGE_SIZE;
     }
 }
