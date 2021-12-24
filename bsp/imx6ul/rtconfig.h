@@ -85,6 +85,7 @@
 #define RT_USING_SERIAL
 #define RT_SERIAL_USING_DMA
 #define RT_SERIAL_RB_BUFSZ 64
+#define RT_USING_TTY
 #define RT_USING_PIN
 
 /* Using USB */
@@ -145,10 +146,16 @@
 /* u8g2: a monochrome graphic library */
 
 
+/* PainterEngine: A cross-platform graphics application framework written in C language */
+
+
 /* tools packages */
 
 
 /* system packages */
+
+/* enhanced kernel services */
+
 
 /* acceleration: Assembly language or algorithmic acceleration packages */
 
