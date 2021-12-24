@@ -51,6 +51,14 @@
 #define FPU_CTX_F31_OFF  248 /* offsetof(fpu_context_t, fpustatus.f[31]) - offsetof(fpu_context_t, fpustatus.f[0]) */
 #endif /* ENABLE_FPU */
 
+/**
+ * The register `tp` always save/restore when context switch,
+ * we call `lwp_user_setting_save` when syscall enter,
+ * call `lwp_user_setting_restore` when syscall exit 
+ * and modify context stack after `lwp_user_setting_restore` called
+ * so that the `tp` can be the correct thread area value.
+ */
+
 .macro SAVE_ALL
 
 #ifdef ENABLE_FPU
@@ -69,7 +77,7 @@
     STORE x1, 0 * REGBYTES(sp)
 
     STORE x3,   3 * REGBYTES(sp)
-    STORE x4,   4 * REGBYTES(sp)
+    STORE x4,   4 * REGBYTES(sp) /* save tp */
     STORE x5,   5 * REGBYTES(sp)
     STORE x6,   6 * REGBYTES(sp)
     STORE x7,   7 * REGBYTES(sp)
@@ -160,38 +168,38 @@
 
     li  t0, SSTATUS_FS
     csrs sstatus, t0
-    fld f0, FPU_CTX_F0_OFF(t2)
-    fld f1, FPU_CTX_F1_OFF(t2)
-    fld f2, FPU_CTX_F2_OFF(t2)
-    fld f3, FPU_CTX_F3_OFF(t2)
-    fld f4, FPU_CTX_F4_OFF(t2)
-    fld f5, FPU_CTX_F5_OFF(t2)
-    fld f6, FPU_CTX_F6_OFF(t2)
-    fld f7, FPU_CTX_F7_OFF(t2)
-    fld f8, FPU_CTX_F8_OFF(t2)
-    fld f9, FPU_CTX_F9_OFF(t2)
-    fld f10,FPU_CTX_F10_OFF(t2)
-    fld f11,FPU_CTX_F11_OFF(t2)
-    fld f12,FPU_CTX_F12_OFF(t2)
-    fld f13,FPU_CTX_F13_OFF(t2)
-    fld f14,FPU_CTX_F14_OFF(t2)
-    fld f15,FPU_CTX_F15_OFF(t2)
-    fld f16,FPU_CTX_F16_OFF(t2)
-    fld f17,FPU_CTX_F17_OFF(t2)
-    fld f18,FPU_CTX_F18_OFF(t2)
-    fld f19,FPU_CTX_F19_OFF(t2)
-    fld f20,FPU_CTX_F20_OFF(t2)
-    fld f21,FPU_CTX_F21_OFF(t2)
-    fld f22,FPU_CTX_F22_OFF(t2)
-    fld f23,FPU_CTX_F23_OFF(t2)
-    fld f24,FPU_CTX_F24_OFF(t2)
-    fld f25,FPU_CTX_F25_OFF(t2)
-    fld f26,FPU_CTX_F26_OFF(t2)
-    fld f27,FPU_CTX_F27_OFF(t2)
-    fld f28,FPU_CTX_F28_OFF(t2)
-    fld f29,FPU_CTX_F29_OFF(t2)
-    fld f30,FPU_CTX_F30_OFF(t2)
-    fld f31,FPU_CTX_F31_OFF(t2)
+    fld f0,  FPU_CTX_F0_OFF(t2)
+    fld f1,  FPU_CTX_F1_OFF(t2)
+    fld f2,  FPU_CTX_F2_OFF(t2)
+    fld f3,  FPU_CTX_F3_OFF(t2)
+    fld f4,  FPU_CTX_F4_OFF(t2)
+    fld f5,  FPU_CTX_F5_OFF(t2)
+    fld f6,  FPU_CTX_F6_OFF(t2)
+    fld f7,  FPU_CTX_F7_OFF(t2)
+    fld f8,  FPU_CTX_F8_OFF(t2)
+    fld f9,  FPU_CTX_F9_OFF(t2)
+    fld f10, FPU_CTX_F10_OFF(t2)
+    fld f11, FPU_CTX_F11_OFF(t2)
+    fld f12, FPU_CTX_F12_OFF(t2)
+    fld f13, FPU_CTX_F13_OFF(t2)
+    fld f14, FPU_CTX_F14_OFF(t2)
+    fld f15, FPU_CTX_F15_OFF(t2)
+    fld f16, FPU_CTX_F16_OFF(t2)
+    fld f17, FPU_CTX_F17_OFF(t2)
+    fld f18, FPU_CTX_F18_OFF(t2)
+    fld f19, FPU_CTX_F19_OFF(t2)
+    fld f20, FPU_CTX_F20_OFF(t2)
+    fld f21, FPU_CTX_F21_OFF(t2)
+    fld f22, FPU_CTX_F22_OFF(t2)
+    fld f23, FPU_CTX_F23_OFF(t2)
+    fld f24, FPU_CTX_F24_OFF(t2)
+    fld f25, FPU_CTX_F25_OFF(t2)
+    fld f26, FPU_CTX_F26_OFF(t2)
+    fld f27, FPU_CTX_F27_OFF(t2)
+    fld f28, FPU_CTX_F28_OFF(t2)
+    fld f29, FPU_CTX_F29_OFF(t2)
+    fld f30, FPU_CTX_F30_OFF(t2)
+    fld f31, FPU_CTX_F31_OFF(t2)
 
     /* clr FS domain */
     csrc sstatus, t0
@@ -214,7 +222,7 @@
     LOAD x1,   1 * REGBYTES(sp)
 
     LOAD x3,   3 * REGBYTES(sp)
-    LOAD x4,   4 * REGBYTES(sp)
+    LOAD x4,   4 * REGBYTES(sp) /* restore tp */
     LOAD x5,   5 * REGBYTES(sp)
     LOAD x6,   6 * REGBYTES(sp)
     LOAD x7,   7 * REGBYTES(sp)
