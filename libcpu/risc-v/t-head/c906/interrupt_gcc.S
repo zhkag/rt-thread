@@ -8,6 +8,7 @@
  * 2018/10/02     Bernard      The first version
  * 2018/12/27     Jesven       Add SMP schedule
  * 2021/02/02     lizhirui     Add userspace support
+ * 2021/12/24     JasonHu      Add user setting save/restore
  */
 
 #define __ASSEMBLY__
@@ -138,6 +139,12 @@ copy_context_loop:
     addi s0, s0, -0xfe
     beqz s0, lwp_signal_quit
 
+#ifdef RT_USING_USERSPACE
+    /* save setting when syscall enter */
+    call  rt_thread_self
+    call  lwp_user_setting_save
+#endif
+
     mv a0, sp
     OPEN_INTERRUPT
     call syscall_handler
@@ -154,6 +161,15 @@ syscall_exit:
         j ret_to_user
         dont_ret_to_user:
     #endif
+
+#ifdef RT_USING_USERSPACE
+    /* restore setting when syscall exit */
+    call  rt_thread_self
+    call  lwp_user_setting_restore
+
+    /* after restore the reg `tp`, need modify context */
+    STORE tp, 4 * REGBYTES(sp)
+#endif
 
     //restore context
     RESTORE_ALL

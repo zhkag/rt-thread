@@ -216,8 +216,15 @@ get_vfp:
     li a0, 0
     ret
 
+.globl rt_cpu_get_thread_idr
+rt_cpu_get_thread_idr:
+    mv a0, tp 
+    ret
+
 .global lwp_set_thread_area
 lwp_set_thread_area:
+.globl rt_cpu_set_thread_idr
+rt_cpu_set_thread_idr:
     mv tp, a0
     ret
 
