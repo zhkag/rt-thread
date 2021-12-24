@@ -895,6 +895,9 @@ void rt_hw_mmu_setup_early(unsigned long *tbl0, unsigned long *tbl1, unsigned lo
     unsigned long count = (size + ARCH_SECTION_MASK) >> ARCH_SECTION_SHIFT;
     unsigned long normal_attr = MMU_MAP_CUSTOM(MMU_AP_KAUN, NORMAL_MEM);
 
+    mmu_memset((char *)tbl0, 0, sizeof(struct page_table));
+    mmu_memset((char *)tbl1, 0, sizeof(struct page_table));
+
     ret = armv8_init_map_2M(tbl1 , va, va + pv_off, count, normal_attr);
     if (ret != 0)
     {

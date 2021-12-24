@@ -88,15 +88,31 @@ __start:
     msr     cpacr_el1, x1
 
     /* clear bss */
-    ldr     x1, =__bss_start
-    add     x1, x1, x9
-    ldr     w2, =__bss_size
+    ldr     x0, =__bss_start
+    ldr     x1, =__bss_end
+    ldr     x2, =PV_OFFSET
+    add     x0, x0, x2
+    add     x1, x1, x2
 
-.L__clean_bss_loop:
-    cbz     w2, .L__jump_to_entry
-    str     xzr, [x1], #8
-    sub     w2, w2, #8
-    cbnz    w2, .L__clean_bss_loop
+    sub     x2, x1, x0
+    mov     x3, x1
+    cmp     x2, #7
+    bls     .L__clean_bss_check
+
+.L__clean_bss_loop_quad:
+    str     xzr, [x0], #8
+    sub     x2, x3, x0
+    cmp     x2, #7
+    bhi     .L__clean_bss_loop_quad
+    cmp     x1, x0
+    bls     .L__jump_to_entry
+
+.L__clean_bss_loop_byte:
+    str     xzr, [x0], #1
+
+.L__clean_bss_check:
+    cmp     x1, x0
+    bhi     .L__clean_bss_loop_byte
 
 .L__jump_to_entry:          /* jump to C code, should not return */        
 
