@@ -16,6 +16,15 @@
 
 #define L1_CACHE_BYTES (64)
 
+/**
+ * GCC version not support t-head cache flush, so we use fixed code to achieve.
+ * The following function cannot be optimized.
+ */
+static void dcache_wb_range(unsigned long start, unsigned long end) __attribute__((optimize("O0")));
+static void dcache_inv_range(unsigned long start, unsigned long end) __attribute__((optimize("O0")));
+static void dcache_wbinv_range(unsigned long start, unsigned long end) __attribute__((optimize("O0")));
+static void icache_inv_range(unsigned long start, unsigned long end) __attribute__((optimize("O0")));
+
 static void dcache_wb_range(unsigned long start, unsigned long end)
 {
     unsigned long i = start & ~(L1_CACHE_BYTES - 1);
