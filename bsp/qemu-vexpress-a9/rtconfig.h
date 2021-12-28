@@ -270,12 +270,21 @@
 /* u8g2: a monochrome graphic library */
 
 
+/* PainterEngine: A cross-platform graphics application framework written in C language */
+
+
 /* tools packages */
 
 
 /* system packages */
 
+/* enhanced kernel services */
+
+
 /* acceleration: Assembly language or algorithmic acceleration packages */
+
+
+/* CMSIS: ARM Cortex-M Microcontroller Software Interface Standard */
 
 
 /* Micrium: Micrium software products porting for RT-Thread */

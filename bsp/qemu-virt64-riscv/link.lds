@@ -14,14 +14,13 @@ OUTPUT_ARCH( "riscv" )
 
 /*
  * Memory layout:
- * 0x10200000 - 0x10201000: Bootloader
- * 0x10201000 - 0x10A00000: Kernel
- * 0x10A00000 - 0x11200000: Heap
+ * 0x80000000 - 0x80200000: SBI
+ * 0x80200000 - 0x81200000: Kernel
  */
 
 MEMORY
 {
-   SRAM : ORIGIN = 0x80200000, LENGTH = 0x7FF000
+   SRAM : ORIGIN = 0x80200000, LENGTH = 0x1000000
 }
 
 ENTRY(_start)
@@ -96,6 +95,23 @@ SECTIONS
 
         *(.sdata)
         *(.sdata.*)
+    } > SRAM
+
+    . = ALIGN(8);
+    .ctors :
+    {
+        PROVIDE(__ctors_start__ = .);
+        KEEP(*(SORT(.init_array.*)))
+        KEEP(*(.init_array))
+        PROVIDE(__ctors_end__ = .);
+    } > SRAM
+
+    .dtors :
+    {
+        PROVIDE(__dtors_start__ = .);
+        KEEP(*(SORT(.fini_array.*)))
+        KEEP(*(.fini_array))
+        PROVIDE(__dtors_end__ = .);
     } > SRAM
 
     /* stack for dual core */
