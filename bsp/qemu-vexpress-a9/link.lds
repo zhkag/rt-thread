@@ -58,16 +58,16 @@ SECTIONS
     .ctors :
     {
         PROVIDE(__ctors_start__ = .);
-        KEEP(*(SORT(.ctors.*)))
-        KEEP(*(.ctors))
+        KEEP(*(SORT(.init_array.*)))
+        KEEP(*(.init_array))
         PROVIDE(__ctors_end__ = .);
     }
 
     .dtors :
     {
         PROVIDE(__dtors_start__ = .);
-        KEEP(*(SORT(.dtors.*)))
-        KEEP(*(.dtors))
+        KEEP(*(SORT(.fini_array.*)))
+        KEEP(*(.fini_array))
         PROVIDE(__dtors_end__ = .);
     }
 
@@ -80,7 +80,7 @@ SECTIONS
     }
     __data_end = .;
 
-    . = ALIGN(8);
+    . = ALIGN(4);
     __bss_start = .;
     .bss       :
     {

@@ -15,30 +15,30 @@ SECTIONS
         *(.text.*)
 
         /* section information for utest */
-        . = ALIGN(4);
+        . = ALIGN(8);
         __rt_utest_tc_tab_start = .;
         KEEP(*(UtestTcTab))
         __rt_utest_tc_tab_end = .;
 
         /* section information for finsh shell */
-        . = ALIGN(4);
+        . = ALIGN(8);
         __fsymtab_start = .;
         KEEP(*(FSymTab))
         __fsymtab_end = .;
-        . = ALIGN(4);
+        . = ALIGN(8);
         __vsymtab_start = .;
         KEEP(*(VSymTab))
         __vsymtab_end = .;
-        . = ALIGN(4);
+        . = ALIGN(8);
 
         /* section information for modules */
-        . = ALIGN(4);
+        . = ALIGN(8);
         __rtmsymtab_start = .;
         KEEP(*(RTMSymTab))
         __rtmsymtab_end = .;
 
         /* section information for initialization */
-        . = ALIGN(4);
+        . = ALIGN(8);
         __rt_init_start = .;
         KEEP(*(SORT(.rti_fn*)))
         __rt_init_end = .;
@@ -56,20 +56,20 @@ SECTIONS
     .rodata   : { *(.rodata) *(.rodata.*) }
     __rodata_end = .;
 
-    . = ALIGN(4);
+    . = ALIGN(8);
     .ctors :
     {
         PROVIDE(__ctors_start__ = .);
-        KEEP(*(SORT(.ctors.*)))
-        KEEP(*(.ctors))
+        KEEP(*(SORT(.init_array.*)))
+        KEEP(*(.init_array))
         PROVIDE(__ctors_end__ = .);
     }
 
     .dtors :
     {
         PROVIDE(__dtors_start__ = .);
-        KEEP(*(SORT(.dtors.*)))
-        KEEP(*(.dtors))
+        KEEP(*(SORT(.fini_array.*)))
+        KEEP(*(.fini_array))
         PROVIDE(__dtors_end__ = .);
     }
 
@@ -89,9 +89,9 @@ SECTIONS
     *(.bss)
     *(.bss.*)
     *(COMMON)
-    . = ALIGN(4);
+    . = ALIGN(8);
     }
-    . = ALIGN(4);
+    . = ALIGN(8);
     __bss_end = .;
 
     /* Stabs debugging sections.  */
