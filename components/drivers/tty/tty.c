@@ -14,6 +14,7 @@
 #include <rtthread.h>
 #include <tty.h>
 #include <tty_ldisc.h>
+
 #if defined(RT_USING_POSIX)
 #include <posix_termios.h>
 #endif
