@@ -38,9 +38,6 @@
 #include <dfs_posix.h>
 #include <dfs_poll.h>
 
-#include <posix_termios.h>
-
-
 /* it's possible the 'getc/putc' is defined by stdio.h in gcc/newlib. */
 #ifdef getc
 #undef getc
