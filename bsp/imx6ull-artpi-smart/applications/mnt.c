@@ -17,17 +17,28 @@
 int mnt_init(void)
 {
 #ifdef RT_USING_SDIO2
-    int part_id = 1;
     rt_thread_mdelay(500);
 
-    if (dfs_mount("emmc","/","ext",0,(void *)part_id) != 0)
+    int part_id = 3;
+    if (dfs_mount("emmc","/","elm",0,(void *)part_id) != 0)
     {
-        rt_kprintf("Dir / mount failed!\n");
+        rt_kprintf("Dir / emmc mount failed!\n");
         return -1;
     }
     else
     {
-        rt_kprintf("file system initialization done!\n");
+        rt_kprintf("emmc file system initialization done!\n");
+    }
+
+    part_id = 1;
+    if (dfs_mount("sd0","/sd","elm",0,(void *)part_id) != 0)
+    {
+        rt_kprintf("Dir / sd0 mount failed!\n");
+        return -1;
+    }
+    else
+    {
+        rt_kprintf("sd0 file system initialization done!\n");
     }
 #else
     rt_thread_mdelay(500);
@@ -37,12 +48,10 @@ int mnt_init(void)
         return -1;
     }
 
-    sd_task();
     rt_kprintf("file system initialization done!\n");
 #endif
     return 0;
 }
 INIT_APP_EXPORT(mnt_init);
-
 
 #endif

@@ -1,4 +1,14 @@
+/*
+ * Copyright (c) 2006-2022, RT-Thread Development Team
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Change Logs:
+ * Date           Author       Notes
+ */
 #include <rtthread.h>
+
+#if defined(RT_USING_DFS)
 
 #include <dfs_fs.h>
 #include <ioremap.h>
@@ -21,6 +31,7 @@ static void _sdcard_mount(void)
         rt_thread_mdelay(10);
         device = rt_device_find("sd0");
     }
+
     if (device != RT_NULL)
     {
         if (dfs_mount("sd0", "/mnt", "elm", 0, 0) == RT_EOK)
@@ -45,11 +56,13 @@ static void _sdcard_unmount(void)
     mmcsd_wait_cd_changed(RT_WAITING_FOREVER);
 }
 
-static void sd_mount(void *parameter)
+static void sd_task_entry(void *parameter)
 {
     volatile unsigned int *IN_STATUS;
+
     IN_STATUS = (volatile unsigned int *)rt_ioremap((void *)0x2190030, 4);
-    rt_thread_mdelay(20);
+
+    rt_thread_mdelay(200);
     if (dfs_mount("sd0", "/mnt", "elm", 0, 0) == RT_EOK)
     {
         LOG_I("sd card mount to '/mnt'");
@@ -58,6 +71,7 @@ static void sd_mount(void *parameter)
     {
         LOG_W("sd card mount to '/mnt' failed!");
     }
+
     while (1)
     {
         rt_thread_mdelay(200);
@@ -75,11 +89,10 @@ static void sd_mount(void *parameter)
     }
 }
 
-int sd_task(void)
+int sd_task_init(void)
 {
-
     rt_thread_t tid;
-    tid = rt_thread_create("sd_mount", sd_mount, RT_NULL,
+    tid = rt_thread_create("tsdcard", sd_task_entry, RT_NULL,
                            2048, RT_THREAD_PRIORITY_MAX - 2, 20);
     if (tid != RT_NULL)
     {
@@ -87,8 +100,11 @@ int sd_task(void)
     }
     else
     {
-        LOG_E("create sd_mount thread err!");
+        LOG_E("create sd mount task error!");
     }
+
     return RT_EOK;
 }
+INIT_APP_EXPORT(sd_task_init);
 
+#endif
