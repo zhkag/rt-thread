@@ -324,6 +324,7 @@ struct rt_lwp* lwp_new(void)
     lwp = (struct rt_lwp *)rt_malloc(sizeof(struct rt_lwp));
     if (lwp == RT_NULL)
     {
+        lwp_pid_put(pid);
         LOG_E("no memory for lwp struct!\n");
         goto out;
     }
