@@ -12,6 +12,16 @@
 
 #include <armv8.h>
 
+#ifdef RT_USING_SMP
+typedef union {
+    unsigned long slock;
+    struct __arch_tickets {
+        unsigned short owner;
+        unsigned short next;
+    } tickets;
+} rt_hw_spinlock_t;
+#endif
+
 rt_inline void rt_hw_isb(void)
 {
     asm volatile ("isb":::"memory");

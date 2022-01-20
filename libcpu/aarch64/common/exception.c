@@ -3,12 +3,16 @@
 static void data_abort(unsigned long far, unsigned long iss)
 {
     rt_kprintf("fault addr = 0x%016lx\n", far);
-    if (iss & 0x40) {
+    if (iss & 0x40)
+    {
         rt_kprintf("abort caused by write instruction\n");
-    } else {
+    }
+    else
+    {
         rt_kprintf("abort caused by read instruction\n");
     }
-    switch (iss & 0x3f) {
+    switch (iss & 0x3f)
+    {
     case 0b000000:
         rt_kprintf("Address size fault, zeroth level of translation or translation table base register\n");
         break;
@@ -142,12 +146,13 @@ void process_exception(unsigned long esr, unsigned long epc)
     unsigned long fault_addr;
     rt_kprintf("\nexception info:\n");
     ec = (unsigned char)((esr >> 26) & 0x3fU);
-    iss = (unsigned int )(esr & 0x00ffffffU);
+    iss = (unsigned int)(esr & 0x00ffffffU);
     rt_kprintf("esr.EC :0x%02x\n", ec);
     rt_kprintf("esr.IL :0x%02x\n", (unsigned char)((esr >> 25) & 0x01U));
     rt_kprintf("esr.ISS:0x%08x\n", iss);
     rt_kprintf("epc    :0x%016p\n", (void *)epc);
-    switch (ec) {
+    switch (ec)
+    {
     case 0x00:
         rt_kprintf("Exceptions with an unknow reason\n");
         break;
@@ -210,13 +215,13 @@ void process_exception(unsigned long esr, unsigned long epc)
 
     case 0x24:
         rt_kprintf("Data abort from a lower Exception level\n");
-        __asm__ volatile ("mrs %0, far_el1":"=r"(fault_addr));
+        __asm__ volatile("mrs %0, far_el1":"=r"(fault_addr));
         data_abort(fault_addr, iss);
         break;
 
     case 0x25:
         rt_kprintf("Data abort\n");
-        __asm__ volatile ("mrs %0, far_el1":"=r"(fault_addr));
+        __asm__ volatile("mrs %0, far_el1":"=r"(fault_addr));
         data_abort(fault_addr, iss);
         break;
 

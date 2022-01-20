@@ -14,59 +14,53 @@
 #include <board.h>
 #include "cp15.h"
 
-int rt_hw_cpu_id(void)
-{
-    int cpu_id;
-    rt_base_t value;
-
-    __asm__ volatile (
-            "mrs %0, mpidr_el1"
-            :"=r"(value)
-            );
-    cpu_id = value & 0xf;
-    return cpu_id;
-};
-
 #ifdef RT_USING_SMP
 void rt_hw_spin_lock_init(rt_hw_spinlock_t *lock)
 {
     lock->slock = 0;
 }
 
+#define TICKET_SHIFT    16
 void rt_hw_spin_lock(rt_hw_spinlock_t *lock)
 {
-    unsigned long tmp;
-    unsigned long newval;
-    rt_hw_spinlock_t lockval;
-    __asm__ __volatile__(
-            "pld [%0]"
-            ::"r"(&lock->slock)
-            );
+    unsigned int tmp;
+    struct __arch_tickets lockval, newval;
 
-    __asm__ __volatile__(
-            "1: ldrex   %0, [%3]\n"
-            "   add %1, %0, %4\n"
-            "   strex   %2, %1, [%3]\n"
-            "   teq %2, #0\n"
-            "   bne 1b"
-            : "=&r" (lockval), "=&r" (newval), "=&r" (tmp)
-            : "r" (&lock->slock), "I" (1 << 16)
-            : "cc");
-
-    while (lockval.tickets.next != lockval.tickets.owner) {
-        __WFE();
-        lockval.tickets.owner = *(volatile unsigned short *)(&lock->tickets.owner);
-    }
-
-    __DMB();
+    asm volatile(
+        /* Atomically increment the next ticket. */
+        "   prfm    pstl1strm, %3\n"
+        "1: ldaxr   %w0, %3\n"
+        "   add %w1, %w0, %w5\n"
+        "   stxr    %w2, %w1, %3\n"
+        "   cbnz    %w2, 1b\n"
+        /* Did we get the lock? */
+        "   eor %w1, %w0, %w0, ror #16\n"
+        "   cbz %w1, 3f\n"
+        /*
+         * No: spin on the owner. Send a local event to avoid missing an
+         * unlock before the exclusive load.
+         */
+        "   sevl\n"
+        "2: wfe\n"
+        "   ldaxrh  %w2, %4\n"
+        "   eor %w1, %w2, %w0, lsr #16\n"
+        "   cbnz    %w1, 2b\n"
+        /* We got the lock. Critical section starts here. */
+        "3:"
+        : "=&r"(lockval), "=&r"(newval), "=&r"(tmp), "+Q"(*lock)
+        : "Q"(lock->tickets.owner), "I"(1 << TICKET_SHIFT)
+        : "memory");
+    rt_hw_dmb();
 }
 
 void rt_hw_spin_unlock(rt_hw_spinlock_t *lock)
 {
-    __DMB();
-    lock->tickets.owner++;
-    __DSB();
-    __SEV();
+    rt_hw_dmb();
+    asm volatile(
+        "   stlrh   %w1, %0\n"
+        : "=Q"(lock->tickets.owner)
+        : "r"(lock->tickets.owner + 1)
+        : "memory");
 }
 #endif /*RT_USING_SMP*/
 

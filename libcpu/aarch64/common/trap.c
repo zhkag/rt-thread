@@ -58,7 +58,7 @@ int check_user_stack(unsigned long esr, struct rt_hw_exp_stack *regs)
     case 0x20:
     case 0x21:
     case 0x24:
-        asm volatile ("mrs %0, far_el1":"=r"(dfar));
+        asm volatile("mrs %0, far_el1":"=r"(dfar));
         if (arch_expand_user_stack(dfar))
         {
             ret = 1;
@@ -186,7 +186,7 @@ void rt_hw_trap_irq(void)
     }
 #else
     void *param;
-    int ir;
+    int ir, ir_self;
     rt_isr_handler_t isr_func;
     extern struct rt_irq_desc isr_table[];
 
@@ -198,17 +198,20 @@ void rt_hw_trap_irq(void)
         return;
     }
 
+    /* bit 10~12 is cpuid, bit 0~9 is interrupt id */
+    ir_self = ir & 0x3ffUL;
+
     /* get interrupt service routine */
-    isr_func = isr_table[ir].handler;
+    isr_func = isr_table[ir_self].handler;
 #ifdef RT_USING_INTERRUPT_INFO
-    isr_table[ir].counter++;
+    isr_table[ir_self].counter++;
 #endif
     if (isr_func)
     {
         /* Interrupt for myself. */
-        param = isr_table[ir].param;
+        param = isr_table[ir_self].param;
         /* turn to interrupt service routine */
-        isr_func(ir, param);
+        isr_func(ir_self, param);
     }
 
     /* end of interrupt */
@@ -219,18 +222,21 @@ void rt_hw_trap_irq(void)
 void rt_hw_trap_fiq(void)
 {
     void *param;
-    int ir;
+    int ir, ir_self;
     rt_isr_handler_t isr_func;
     extern struct rt_irq_desc isr_table[];
 
     ir = rt_hw_interrupt_get_irq();
 
+    /* bit 10~12 is cpuid, bit 0~9 is interrup id */
+    ir_self = ir & 0x3ffUL;
+
     /* get interrupt service routine */
-    isr_func = isr_table[ir].handler;
-    param = isr_table[ir].param;
+    isr_func = isr_table[ir_self].handler;
+    param = isr_table[ir_self].param;
 
     /* turn to interrupt service routine */
-    isr_func(ir, param);
+    isr_func(ir_self, param);
 
     /* end of interrupt */
     rt_hw_interrupt_ack(ir);
@@ -243,7 +249,7 @@ void rt_hw_trap_exception(struct rt_hw_exp_stack *regs)
     unsigned long esr;
     unsigned char ec;
 
-    asm volatile ("mrs %0, esr_el1":"=r"(esr));
+    asm volatile("mrs %0, esr_el1":"=r"(esr));
     ec = (unsigned char)((esr >> 26) & 0x3fU);
 
     if (ec == 0x15) /* is 64bit syscall ? */
