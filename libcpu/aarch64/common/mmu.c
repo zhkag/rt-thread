@@ -12,7 +12,6 @@
 #include <rthw.h>
 #include <board.h>
 
-#include "cp15.h"
 #include "mmu.h"
 
 #ifdef RT_USING_USERSPACE
@@ -35,7 +34,7 @@
 #define MMU_TBL_PAGE_4k_LEVEL  3
 #define MMU_TBL_LEVEL_NR       4
 
-void *_rt_hw_mmu_v2p(rt_mmu_info *mmu_info, void* v_addr);
+void *_rt_hw_mmu_v2p(rt_mmu_info *mmu_info, void *v_addr);
 
 struct page_table
 {
@@ -48,13 +47,12 @@ unsigned long get_free_page(void)
 {
     if (!__init_page_array)
     {
-        __init_page_array = (struct page_table *)(((unsigned long)HEAP_BEGIN + ARCH_PAGE_MASK) & ~(ARCH_PAGE_MASK));
+        unsigned long temp_page_start;
+        asm volatile("mov %0, sp":"=r"(temp_page_start));
+        __init_page_array = (struct page_table *)(temp_page_start & ~(ARCH_SECTION_MASK));
+        __page_off = 2; /* 0, 1 for ttbr0, ttrb1 */
     }
     __page_off++;
-    if (__init_page_array + __page_off > (struct page_table *)HEAP_END)
-    {
-        return 0;
-    }
     return (unsigned long)(__init_page_array[__page_off - 1].page);
 }
 
@@ -66,10 +64,10 @@ void mmu_memset(char *dst, char v,  size_t len)
     }
 }
 
-static int _map_single_page_2M(unsigned long* lv0_tbl, unsigned long va, unsigned long pa, unsigned long attr)
+static int _map_single_page_2M(unsigned long *lv0_tbl, unsigned long va, unsigned long pa, unsigned long attr)
 {
     int level;
-    unsigned long* cur_lv_tbl = lv0_tbl;
+    unsigned long *cur_lv_tbl = lv0_tbl;
     unsigned long page;
     unsigned long off;
     int level_shift = MMU_ADDRESS_BITS;
@@ -99,21 +97,21 @@ static int _map_single_page_2M(unsigned long* lv0_tbl, unsigned long va, unsigne
         page = cur_lv_tbl[off];
         if ((page & MMU_TYPE_MASK) == MMU_TYPE_BLOCK)
         {
-            //is block! error!
+            /* is block! error! */
             return MMU_MAP_ERROR_CONFLICT;
         }
-        cur_lv_tbl = (unsigned long*)(page & MMU_ADDRESS_MASK);
+        cur_lv_tbl = (unsigned long *)(page & MMU_ADDRESS_MASK);
         level_shift -= MMU_LEVEL_SHIFT;
     }
     attr &= MMU_ATTRIB_MASK;
-    pa |= (attr | MMU_TYPE_BLOCK); //block
+    pa |= (attr | MMU_TYPE_BLOCK); /* block */
     off = (va >> ARCH_SECTION_SHIFT);
     off &= MMU_LEVEL_MASK;
     cur_lv_tbl[off] = pa;
     return 0;
 }
 
-int armv8_init_map_2M(unsigned long* lv0_tbl, unsigned long va, unsigned long pa, unsigned long count, unsigned long attr)
+int armv8_init_map_2M(unsigned long *lv0_tbl, unsigned long va, unsigned long pa, unsigned long count, unsigned long attr)
 {
     unsigned long i;
     int ret;
@@ -139,10 +137,10 @@ int armv8_init_map_2M(unsigned long* lv0_tbl, unsigned long va, unsigned long pa
     return 0;
 }
 
-static int _kenrel_map_2M(unsigned long* lv0_tbl, unsigned long va, unsigned long pa, unsigned long attr)
+static int _kenrel_map_2M(unsigned long *lv0_tbl, unsigned long va, unsigned long pa, unsigned long attr)
 {
     int level;
-    unsigned long* cur_lv_tbl = lv0_tbl;
+    unsigned long *cur_lv_tbl = lv0_tbl;
     unsigned long page;
     unsigned long off;
     int level_shift = MMU_ADDRESS_BITS;
@@ -182,7 +180,7 @@ static int _kenrel_map_2M(unsigned long* lv0_tbl, unsigned long va, unsigned lon
         page = cur_lv_tbl[off];
         if ((page & MMU_TYPE_MASK) == MMU_TYPE_BLOCK)
         {
-            //is block! error!
+            /* is block! error! */
             return MMU_MAP_ERROR_CONFLICT;
         }
         cur_lv_tbl = (unsigned long *)(page & MMU_ADDRESS_MASK);
@@ -190,11 +188,12 @@ static int _kenrel_map_2M(unsigned long* lv0_tbl, unsigned long va, unsigned lon
         level_shift -= MMU_LEVEL_SHIFT;
     }
     attr &= MMU_ATTRIB_MASK;
-    pa |= (attr | MMU_TYPE_BLOCK); //block
+    pa |= (attr | MMU_TYPE_BLOCK); /* block */
     off = (va >> ARCH_SECTION_SHIFT);
     off &= MMU_LEVEL_MASK;
     cur_lv_tbl[off] = pa;
     rt_hw_cpu_dcache_ops(RT_HW_CACHE_FLUSH, cur_lv_tbl + off, sizeof(void *));
+
     return 0;
 }
 
@@ -204,11 +203,11 @@ struct mmu_level_info
     void *page;
 };
 
-static void _kenrel_unmap_4K(unsigned long* lv0_tbl, void* v_addr)
+static void _kenrel_unmap_4K(unsigned long *lv0_tbl, void *v_addr)
 {
     int level;
     unsigned long va = (unsigned long)v_addr;
-    unsigned long* cur_lv_tbl = lv0_tbl;
+    unsigned long *cur_lv_tbl = lv0_tbl;
     unsigned long page;
     unsigned long off;
     struct mmu_level_info level_info[4];
@@ -216,7 +215,7 @@ static void _kenrel_unmap_4K(unsigned long* lv0_tbl, void* v_addr)
     int level_shift = MMU_ADDRESS_BITS;
     unsigned long *pos;
 
-    rt_memset(level_info, 0 , sizeof level_info);
+    rt_memset(level_info, 0, sizeof level_info);
     for (level = 0; level < MMU_TBL_LEVEL_NR; level++)
     {
         off = (va >> level_shift);
@@ -231,7 +230,7 @@ static void _kenrel_unmap_4K(unsigned long* lv0_tbl, void* v_addr)
             break;
         }
         level_info[level].pos = cur_lv_tbl + off;
-        cur_lv_tbl = (unsigned long*)(page & MMU_ADDRESS_MASK);
+        cur_lv_tbl = (unsigned long *)(page & MMU_ADDRESS_MASK);
         cur_lv_tbl = (unsigned long *)((unsigned long)cur_lv_tbl - PV_OFFSET);
         level_info[level].page = cur_lv_tbl;
         level_shift -= MMU_LEVEL_SHIFT;
@@ -241,7 +240,7 @@ static void _kenrel_unmap_4K(unsigned long* lv0_tbl, void* v_addr)
     pos = level_info[level].pos;
     if (pos)
     {
-        *pos = RT_NULL;
+        *pos = (unsigned long)RT_NULL;
         rt_hw_cpu_dcache_ops(RT_HW_CACHE_FLUSH, pos, sizeof(void *));
     }
     level--;
@@ -255,7 +254,7 @@ static void _kenrel_unmap_4K(unsigned long* lv0_tbl, void* v_addr)
             ref = rt_page_ref_get(cur_page, 0);
             if (ref == 1)
             {
-                *pos = RT_NULL;
+                *pos = (unsigned long)RT_NULL;
                 rt_hw_cpu_dcache_ops(RT_HW_CACHE_FLUSH, pos, sizeof(void *));
             }
             rt_pages_free(cur_page, 0);
@@ -266,11 +265,11 @@ static void _kenrel_unmap_4K(unsigned long* lv0_tbl, void* v_addr)
     return;
 }
 
-static int _kenrel_map_4K(unsigned long* lv0_tbl, unsigned long va, unsigned long pa, unsigned long attr)
+static int _kenrel_map_4K(unsigned long *lv0_tbl, unsigned long va, unsigned long pa, unsigned long attr)
 {
     int ret = 0;
     int level;
-    unsigned long* cur_lv_tbl = lv0_tbl;
+    unsigned long *cur_lv_tbl = lv0_tbl;
     unsigned long page;
     unsigned long off;
     int level_shift = MMU_ADDRESS_BITS;
@@ -311,7 +310,7 @@ static int _kenrel_map_4K(unsigned long* lv0_tbl, unsigned long va, unsigned lon
         page = cur_lv_tbl[off];
         if ((page & MMU_TYPE_MASK) == MMU_TYPE_BLOCK)
         {
-            //is block! error!
+            /* is block! error! */
             ret = MMU_MAP_ERROR_CONFLICT;
             goto err;
         }
@@ -319,12 +318,12 @@ static int _kenrel_map_4K(unsigned long* lv0_tbl, unsigned long va, unsigned lon
         cur_lv_tbl = (unsigned long *)((unsigned long)cur_lv_tbl - PV_OFFSET);
         level_shift -= MMU_LEVEL_SHIFT;
     }
-    //now is level page
+    /* now is level page */
     attr &= MMU_ATTRIB_MASK;
-    pa |= (attr | MMU_TYPE_PAGE); //page
+    pa |= (attr | MMU_TYPE_PAGE); /* page */
     off = (va >> ARCH_PAGE_SHIFT);
     off &= MMU_LEVEL_MASK;
-    cur_lv_tbl[off] = pa; //page
+    cur_lv_tbl[off] = pa; /* page */
     rt_hw_cpu_dcache_ops(RT_HW_CACHE_FLUSH, cur_lv_tbl + off, sizeof(void *));
     return ret;
 err:
@@ -332,7 +331,7 @@ err:
     return ret;
 }
 
-int kernel_map_fixed(unsigned long* lv0_tbl, unsigned long va, unsigned long pa, unsigned long count, unsigned long attr)
+int kernel_map_fixed(unsigned long *lv0_tbl, unsigned long va, unsigned long pa, unsigned long count, unsigned long attr)
 {
     unsigned long i;
     int ret;
@@ -365,33 +364,33 @@ int kernel_map_fixed(unsigned long* lv0_tbl, unsigned long va, unsigned long pa,
   index 1 : memory nocache
   index 2 : device nGnRnE
  *****************************************************/
-void mmu_tcr_init(void *tbl0, void *tbl1)
+void mmu_tcr_init(void)
 {
     unsigned long val64;
 
     val64 = 0x00447fUL;
     __asm__ volatile("msr MAIR_EL1, %0\n dsb sy\n"::"r"(val64));
 
-    //TCR_EL1
-    val64 = (16UL << 0)  //t0sz 48bit
-        | (0x0UL << 6)   //reserved
-        | (0x0UL << 7)   //epd0
-        | (0x3UL << 8)   //t0 wb cacheable
-        | (0x3UL << 10)  //inner shareable
-        | (0x2UL << 12)  //t0 outer shareable
-        | (0x0UL << 14)  //t0 4K
-        | (16UL << 16)   //t1sz 48bit
-        | (0x0UL << 22)  //define asid use ttbr0.asid
-        | (0x0UL << 23)  //epd1
-        | (0x3UL << 24)  //t1 inner wb cacheable
-        | (0x3UL << 26)  //t1 outer wb cacheable
-        | (0x2UL << 28)  //t1 outer shareable
-        | (0x2UL << 30)  //t1 4k
-        | (0x1UL << 32)  //001b 64GB PA
-        | (0x0UL << 35)  //reserved
-        | (0x1UL << 36)  //as: 0:8bit 1:16bit
-        | (0x0UL << 37)  //tbi0
-        | (0x0UL << 38); //tbi1
+    /* TCR_EL1 */
+    val64 = (16UL << 0)  /* t0sz 48bit */
+            | (0x0UL << 6)   /* reserved */
+            | (0x0UL << 7)   /* epd0 */
+            | (0x3UL << 8)   /* t0 wb cacheable */
+            | (0x3UL << 10)  /* inner shareable */
+            | (0x2UL << 12)  /* t0 outer shareable */
+            | (0x0UL << 14)  /* t0 4K */
+            | (16UL << 16)   /* t1sz 48bit */
+            | (0x0UL << 22)  /* define asid use ttbr0.asid */
+            | (0x0UL << 23)  /* epd1 */
+            | (0x3UL << 24)  /* t1 inner wb cacheable */
+            | (0x3UL << 26)  /* t1 outer wb cacheable */
+            | (0x2UL << 28)  /* t1 outer shareable */
+            | (0x2UL << 30)  /* t1 4k */
+            | (0x1UL << 32)  /* 001b 64GB PA */
+            | (0x0UL << 35)  /* reserved */
+            | (0x1UL << 36)  /* as: 0:8bit 1:16bit */
+            | (0x0UL << 37)  /* tbi0 */
+            | (0x0UL << 38); /* tbi1 */
     __asm__ volatile("msr TCR_EL1, %0\n"::"r"(val64));
 }
 
@@ -404,11 +403,11 @@ void rt_hw_cpu_dump_page_table(rt_uint32_t *ptb)
 {
 }
 
-volatile unsigned long MMUTable[512] __attribute__((aligned(4*1024)));
+volatile unsigned long MMUTable[512] __attribute__((aligned(4 * 1024)));
 void rt_hw_mmu_setmtt(unsigned long vaddrStart,
-        unsigned long vaddrEnd,
-        unsigned long paddrStart,
-        unsigned long attr)
+                      unsigned long vaddrEnd,
+                      unsigned long paddrStart,
+                      unsigned long attr)
 {
     unsigned long count;
 
@@ -438,7 +437,7 @@ void rt_hw_mmu_setmtt(unsigned long vaddrStart,
     kernel_map_fixed((unsigned long *)MMUTable, vaddrStart, paddrStart, count, attr);
 }
 
-static void kernel_mmu_switch(unsigned long tbl)
+void kernel_mmu_switch(unsigned long tbl)
 {
     tbl += PV_OFFSET;
     __asm__ volatile("msr TTBR1_EL1, %0\n dsb sy\nisb"::"r"(tbl):"memory");
@@ -449,20 +448,28 @@ static void kernel_mmu_switch(unsigned long tbl)
 void rt_hw_mmu_setup(struct mem_desc *mdesc, int desc_nr)
 {
     /* set page table */
-    for(; desc_nr > 0; desc_nr--)
+    for (; desc_nr > 0; desc_nr--)
     {
         rt_hw_mmu_setmtt(mdesc->vaddr_start, mdesc->vaddr_end,
-                mdesc->paddr_start, mdesc->attr);
+                         mdesc->paddr_start, mdesc->attr);
         mdesc++;
     }
     rt_hw_cpu_dcache_ops(RT_HW_CACHE_FLUSH, (void *)MMUTable, sizeof MMUTable);
     kernel_mmu_switch((unsigned long)MMUTable);
 }
 
-/*
-   mem map
-   */
-int rt_hw_mmu_map_init(rt_mmu_info *mmu_info, void* v_address, size_t size, size_t *vtable, size_t pv_off)
+/**
+ * This function will initialize rt_mmu_info structure.
+ *
+ * @param mmu_info   rt_mmu_info structure
+ * @param v_address  virtual address
+ * @param size       map size
+ * @param vtable     mmu table
+ * @param pv_off     pv offset in kernel space
+ *
+ * @return 0 on successful and -1 for fail
+ */
+int rt_hw_mmu_map_init(rt_mmu_info *mmu_info, void *v_address, size_t size, size_t *vtable, size_t pv_off)
 {
     rt_base_t level;
     size_t va_s, va_e;
@@ -475,7 +482,7 @@ int rt_hw_mmu_map_init(rt_mmu_info *mmu_info, void* v_address, size_t size, size
     va_s = (size_t)v_address;
     va_e = (size_t)v_address + size - 1;
 
-    if ( va_e < va_s)
+    if (va_e < va_s)
     {
         return -1;
     }
@@ -500,7 +507,7 @@ int rt_hw_mmu_map_init(rt_mmu_info *mmu_info, void* v_address, size_t size, size
     return 0;
 }
 
-int rt_hw_mmu_ioremap_init(rt_mmu_info *mmu_info, void* v_address, size_t size)
+int rt_hw_mmu_ioremap_init(rt_mmu_info *mmu_info, void *v_address, size_t size)
 {
     return 0;
 }
@@ -587,7 +594,7 @@ static int check_vaddr(rt_mmu_info *mmu_info, void *va, int pages)
 }
 #endif
 
-static void __rt_hw_mmu_unmap(rt_mmu_info *mmu_info, void* v_addr, size_t npages)
+static void __rt_hw_mmu_unmap(rt_mmu_info *mmu_info, void *v_addr, size_t npages)
 {
     size_t loop_va = (size_t)v_addr & ~ARCH_PAGE_MASK;
 
@@ -603,23 +610,33 @@ static void __rt_hw_mmu_unmap(rt_mmu_info *mmu_info, void* v_addr, size_t npages
     }
 }
 
-static int __rt_hw_mmu_map(rt_mmu_info *mmu_info, void* v_addr, void* p_addr, size_t npages, size_t attr)
+static int __rt_hw_mmu_map(rt_mmu_info *mmu_info, void *v_addr, void *p_addr, size_t npages, size_t attr)
 {
+    int ret = -1;
     size_t loop_va = (size_t)v_addr & ~ARCH_PAGE_MASK;
     size_t loop_pa = (size_t)p_addr & ~ARCH_PAGE_MASK;
+    size_t unmap_va = loop_va;
 
-    if (!mmu_info)
+    if (mmu_info)
     {
-        return -1;
+        while (npages--)
+        {
+            ret = _kenrel_map_4K(mmu_info->vtable, loop_va, loop_pa, attr);
+            if (ret != 0)
+            {
+                /* error, undo map */
+                while (unmap_va != loop_va)
+                {
+                    _kenrel_unmap_4K(mmu_info->vtable, (void *)unmap_va);
+                    unmap_va += ARCH_PAGE_SIZE;
+                }
+                break;
+            }
+            loop_va += ARCH_PAGE_SIZE;
+            loop_pa += ARCH_PAGE_SIZE;
+        }
     }
-
-    while (npages--)
-    {
-        _kenrel_map_4K(mmu_info->vtable, loop_va, loop_pa, attr);
-        loop_va += ARCH_PAGE_SIZE;
-        loop_pa += ARCH_PAGE_SIZE;
-    }
-    return 0;
+    return ret;
 }
 
 static void rt_hw_cpu_tlb_invalidate(void)
@@ -628,7 +645,7 @@ static void rt_hw_cpu_tlb_invalidate(void)
 }
 
 #ifdef RT_USING_USERSPACE
-void *_rt_hw_mmu_map(rt_mmu_info *mmu_info, void *v_addr, void* p_addr, size_t size, size_t attr)
+void *_rt_hw_mmu_map(rt_mmu_info *mmu_info, void *v_addr, void *p_addr, size_t size, size_t attr)
 {
     size_t pa_s, pa_e;
     size_t vaddr;
@@ -653,7 +670,7 @@ void *_rt_hw_mmu_map(rt_mmu_info *mmu_info, void *v_addr, void* p_addr, size_t s
             return 0;
         }
         vaddr &= ~ARCH_PAGE_MASK;
-        if (check_vaddr(mmu_info, (void*)vaddr, pages) != 0)
+        if (check_vaddr(mmu_info, (void *)vaddr, pages) != 0)
         {
             return 0;
         }
@@ -662,12 +679,13 @@ void *_rt_hw_mmu_map(rt_mmu_info *mmu_info, void *v_addr, void* p_addr, size_t s
     {
         vaddr = find_vaddr(mmu_info, pages);
     }
-    if (vaddr) {
-        ret = __rt_hw_mmu_map(mmu_info, (void*)vaddr, p_addr, pages, attr);
+    if (vaddr)
+    {
+        ret = __rt_hw_mmu_map(mmu_info, (void *)vaddr, p_addr, pages, attr);
         if (ret == 0)
         {
             rt_hw_cpu_tlb_invalidate();
-            return (void*)(vaddr + ((size_t)p_addr & ARCH_PAGE_MASK));
+            return (void *)(vaddr + ((size_t)p_addr & ARCH_PAGE_MASK));
         }
     }
     return 0;
@@ -699,7 +717,7 @@ void *_rt_hw_mmu_map(rt_mmu_info *mmu_info, void* p_addr, size_t size, size_t at
 #endif
 
 #ifdef RT_USING_USERSPACE
-static int __rt_hw_mmu_map_auto(rt_mmu_info *mmu_info, void* v_addr, size_t npages, size_t attr)
+static int __rt_hw_mmu_map_auto(rt_mmu_info *mmu_info, void *v_addr, size_t npages, size_t attr)
 {
     size_t loop_va = (size_t)v_addr & ~ARCH_PAGE_MASK;
     size_t loop_pa;
@@ -727,13 +745,13 @@ err:
         int i;
         void *va, *pa;
 
-        va = (void*)((size_t)v_addr & ~ARCH_PAGE_MASK);
+        va = (void *)((size_t)v_addr & ~ARCH_PAGE_MASK);
         for (i = 0; i < npages; i++)
         {
             pa = rt_hw_mmu_v2p(mmu_info, va);
-            pa = (void*)((char*)pa - mmu_info->pv_off);
+            pa = (void *)((char *)pa - mmu_info->pv_off);
             rt_pages_free(pa, 0);
-            va = (void*)((char*)va + ARCH_PAGE_SIZE);
+            va = (void *)((char *)va + ARCH_PAGE_SIZE);
         }
 
         __rt_hw_mmu_unmap(mmu_info, v_addr, npages);
@@ -759,7 +777,7 @@ void *_rt_hw_mmu_map_auto(rt_mmu_info *mmu_info, void *v_addr, size_t size, size
     {
         vaddr = (size_t)v_addr;
         vaddr &= ~ARCH_PAGE_MASK;
-        if (check_vaddr(mmu_info, (void*)vaddr, pages) != 0)
+        if (check_vaddr(mmu_info, (void *)vaddr, pages) != 0)
         {
             return 0;
         }
@@ -768,19 +786,20 @@ void *_rt_hw_mmu_map_auto(rt_mmu_info *mmu_info, void *v_addr, size_t size, size
     {
         vaddr = find_vaddr(mmu_info, pages);
     }
-    if (vaddr) {
-        ret = __rt_hw_mmu_map_auto(mmu_info, (void*)vaddr, pages, attr);
+    if (vaddr)
+    {
+        ret = __rt_hw_mmu_map_auto(mmu_info, (void *)vaddr, pages, attr);
         if (ret == 0)
         {
             rt_hw_cpu_tlb_invalidate();
-            return (void*)((char*)vaddr + offset);
+            return (void *)((char *)vaddr + offset);
         }
     }
     return 0;
 }
 #endif
 
-void _rt_hw_mmu_unmap(rt_mmu_info *mmu_info, void* v_addr, size_t size)
+void _rt_hw_mmu_unmap(rt_mmu_info *mmu_info, void *v_addr, size_t size)
 {
     size_t va_s, va_e;
     int pages;
@@ -795,7 +814,7 @@ void _rt_hw_mmu_unmap(rt_mmu_info *mmu_info, void* v_addr, size_t size)
 }
 
 #ifdef RT_USING_USERSPACE
-void *rt_hw_mmu_map(rt_mmu_info *mmu_info, void *v_addr, void* p_addr, size_t size, size_t attr)
+void *rt_hw_mmu_map(rt_mmu_info *mmu_info, void *v_addr, void *p_addr, size_t size, size_t attr)
 {
     void *ret;
     rt_base_t level;
@@ -818,7 +837,7 @@ void *rt_hw_mmu_map_auto(rt_mmu_info *mmu_info, void *v_addr, size_t size, size_
 }
 #endif
 
-void rt_hw_mmu_unmap(rt_mmu_info *mmu_info, void* v_addr, size_t size)
+void rt_hw_mmu_unmap(rt_mmu_info *mmu_info, void *v_addr, size_t size)
 {
     rt_base_t level;
 
@@ -827,12 +846,12 @@ void rt_hw_mmu_unmap(rt_mmu_info *mmu_info, void* v_addr, size_t size)
     rt_hw_interrupt_enable(level);
 }
 
-void *_rt_hw_mmu_v2p(rt_mmu_info *mmu_info, void* v_addr)
+void *_rt_hw_mmu_v2p(rt_mmu_info *mmu_info, void *v_addr)
 {
     int level;
     unsigned long va = (unsigned long)v_addr;
     unsigned long pa;
-    unsigned long* cur_lv_tbl;
+    unsigned long *cur_lv_tbl;
     unsigned long page;
     unsigned long off;
     unsigned long off_addr;
@@ -840,7 +859,7 @@ void *_rt_hw_mmu_v2p(rt_mmu_info *mmu_info, void* v_addr)
 
     if (!mmu_info)
     {
-        return (void*)0;
+        return (void *)0;
     }
     cur_lv_tbl = mmu_info->vtable;
     for (level = 0; level < MMU_TBL_PAGE_4k_LEVEL; level++)
@@ -859,11 +878,11 @@ void *_rt_hw_mmu_v2p(rt_mmu_info *mmu_info, void* v_addr)
             pa += off_addr;
             return (void *)pa;
         }
-        cur_lv_tbl = (unsigned long*)(page & MMU_ADDRESS_MASK);
+        cur_lv_tbl = (unsigned long *)(page & MMU_ADDRESS_MASK);
         cur_lv_tbl = (unsigned long *)((unsigned long)cur_lv_tbl - PV_OFFSET);
         level_shift -= MMU_LEVEL_SHIFT;
     }
-    //now is level MMU_TBL_PAGE_4k_LEVEL
+    /* now is level MMU_TBL_PAGE_4k_LEVEL */
     off = (va >> ARCH_PAGE_SHIFT);
     off &= MMU_LEVEL_MASK;
     page = cur_lv_tbl[off];
@@ -876,7 +895,7 @@ void *_rt_hw_mmu_v2p(rt_mmu_info *mmu_info, void* v_addr)
     return (void *)pa;
 }
 
-void *rt_hw_mmu_v2p(rt_mmu_info *mmu_info, void* v_addr)
+void *rt_hw_mmu_v2p(rt_mmu_info *mmu_info, void *v_addr)
 {
     void *ret;
     rt_base_t level;
@@ -895,10 +914,11 @@ void rt_hw_mmu_setup_early(unsigned long *tbl0, unsigned long *tbl1, unsigned lo
     unsigned long count = (size + ARCH_SECTION_MASK) >> ARCH_SECTION_SHIFT;
     unsigned long normal_attr = MMU_MAP_CUSTOM(MMU_AP_KAUN, NORMAL_MEM);
 
-    mmu_memset((char *)tbl0, 0, sizeof(struct page_table));
-    mmu_memset((char *)tbl1, 0, sizeof(struct page_table));
+    /* clean the first two pages */
+    mmu_memset((char *)tbl0, 0, ARCH_PAGE_SIZE);
+    mmu_memset((char *)tbl1, 0, ARCH_PAGE_SIZE);
 
-    ret = armv8_init_map_2M(tbl1 , va, va + pv_off, count, normal_attr);
+    ret = armv8_init_map_2M(tbl1, va, va + pv_off, count, normal_attr);
     if (ret != 0)
     {
         while (1);

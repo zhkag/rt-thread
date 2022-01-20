@@ -324,6 +324,7 @@ struct rt_lwp* lwp_new(void)
     lwp = (struct rt_lwp *)rt_malloc(sizeof(struct rt_lwp));
     if (lwp == RT_NULL)
     {
+        lwp_pid_put(pid);
         LOG_E("no memory for lwp struct!\n");
         goto out;
     }
@@ -923,7 +924,7 @@ void lwp_request_thread_exit(rt_thread_t thread_to_exit)
         }
         if ((thread->stat & RT_THREAD_SUSPEND_MASK) == RT_THREAD_SUSPEND_MASK)
         {
-            thread->error = RT_EINTR;
+            thread->error = -RT_EINTR;
             rt_hw_dsb();
             rt_thread_wakeup(thread);
         }

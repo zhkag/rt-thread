@@ -18,27 +18,28 @@ system_vectors:
 .align 11
     .set    VBAR, system_vectors
     .org    VBAR
-    // Exception from CurrentEL (EL1) with SP_EL0 (SPSEL=1)
-    .org (VBAR + 0x00 + 0)
-    B vector_serror      // 			Synchronous
-    .org (VBAR + 0x80 + 0)
-    B vector_serror        //          IRQ/vIRQ
-    .org (VBAR + 0x100 + 0)
-    B vector_serror        //          FIQ/vFIQ
-    .org (VBAR + 0x180 + 0)
-    B vector_serror      //         Error/vError
 
-    // Exception from CurrentEL (EL1) with SP_ELn
+    /*  Exception from CurrentEL (EL1) with SP_EL0 (SPSEL=1) */
+    .org (VBAR + 0x00 + 0)
+    B vector_serror                     /* Synchronous */
+    .org (VBAR + 0x80 + 0)
+    B vector_serror                     /* IRQ/vIRQ */
+    .org (VBAR + 0x100 + 0)
+    B vector_serror                     /* FIQ/vFIQ */
+    .org (VBAR + 0x180 + 0)
+    B vector_serror                     /* Error/vError */
+
+    /*  Exception from CurrentEL (EL1) with SP_ELn */
     .org (VBAR + 0x200 + 0)
-    B vector_exception      // 			Synchronous
+    B vector_exception                  /* Synchronous */
     .org (VBAR + 0x280 + 0)
-    B vector_irq    	// 			IRQ/vIRQ
+    B vector_irq    	                /* IRQ/vIRQ */
     .org (VBAR + 0x300 + 0)
-    B vector_fiq        //          FIQ/vFIQ
+    B vector_fiq                        /* FIQ/vFIQ */
     .org (VBAR + 0x380 + 0)
     B vector_serror
 
-    // Exception from lower EL, aarch64
+    /* Exception from lower EL, aarch64 */
     .org (VBAR + 0x400 + 0)
     B vector_exception
     .org (VBAR + 0x480 + 0)
@@ -48,7 +49,7 @@ system_vectors:
     .org (VBAR + 0x580 + 0)
     B vector_serror
 
-    // Exception from lower EL, aarch32
+    /* Exception from lower EL, aarch32 */
     .org (VBAR + 0x600 + 0)
     B vector_serror
     .org (VBAR + 0x680 + 0)
