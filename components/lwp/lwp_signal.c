@@ -139,7 +139,7 @@ int lwp_suspend_sigcheck(rt_thread_t thread, int suspend_flag)
             {
                 break;
             }
-            if (thread->lwp && lwp_sigismember(&thread->signal, SIGKILL))
+            if (thread->lwp && lwp_sigismember(&lwp->signal, SIGKILL))
             {
                 break;
             }
