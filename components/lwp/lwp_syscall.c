@@ -57,6 +57,8 @@
 #include <tty.h>
 #include "lwp_ipc_internal.h"
 
+#include <sys/random.h>
+
 #define SET_ERRNO(no) rt_set_errno(-(no))
 #define GET_ERRNO() ((rt_get_errno() > 0) ? (-rt_get_errno()) : rt_get_errno())
 struct musl_sockaddr
@@ -3911,6 +3913,60 @@ int sys_setsid(void)
 
 int sys_cacheflush(void *addr, int len, int cache);
 
+int sys_getrandom(void *buf, size_t buflen, unsigned int flags)
+{
+    int ret = -1;
+    int count = 0;
+    void *kmem = RT_NULL;
+    rt_device_t rd_dev = RT_NULL;
+
+    if (flags & GRND_RANDOM)
+        rd_dev = rt_device_find("random");
+    else
+        rd_dev = rt_device_find("urandom");
+
+    if (rd_dev == RT_NULL)
+    {
+        return -EFAULT;
+    }
+    
+    if (rt_device_open(rd_dev, RT_DEVICE_OFLAG_RDONLY) != RT_EOK)
+    {
+        return -EFAULT;
+    }
+
+    if (!lwp_user_accessable(buf, buflen))
+    {
+        rt_device_close(rd_dev);
+        return -EFAULT;
+    }
+
+    kmem = kmem_get(buflen);
+    if (!kmem)
+    {
+        rt_device_close(rd_dev);
+        return -ENOMEM;
+    }
+
+    while (count < buflen)
+    {
+        ret = rt_device_read(rd_dev, count, kmem + count, buflen - count);
+        if (ret <= 0)
+            break;
+        count += ret;
+    }
+    rt_device_close(rd_dev);
+
+    ret = count;
+    if (count > 0)
+    {
+        ret = lwp_put_to_user(buf, kmem, count);
+    }
+    kmem_put(kmem);
+
+    return ret;
+}
+
 const static void* func_table[] =
 {
     (void *)sys_exit,            /* 01 */
@@ -4095,6 +4151,7 @@ const static void* func_table[] =
     (void *)sys_getrlimit,
     (void *)sys_setrlimit,
     (void *)sys_setsid,
+    (void *)sys_getrandom,
 };
 
 const void *lwp_get_sys_api(rt_uint32_t number)
