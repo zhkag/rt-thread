@@ -281,6 +281,7 @@ enable_mmu:
 
 .global set_process_id
 set_process_id:
+    LSL r0, r0, #8
     MCR p15, 0, r0, c13, c0, 1
     mov pc, lr
 

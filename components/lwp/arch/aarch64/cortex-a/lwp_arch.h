@@ -36,6 +36,11 @@ int arch_expand_user_stack(void *addr);
 
 unsigned long ffz(unsigned long x);
 
+rt_inline void icache_invalid_all(void)
+{
+    asm volatile ("ic ialluis\n\tisb sy":::"memory");
+}
+
 #ifdef __cplusplus
 }
 #endif
