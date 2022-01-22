@@ -57,7 +57,13 @@
 #include <tty.h>
 #include "lwp_ipc_internal.h"
 
-#include <sys/random.h>
+#ifndef GRND_NONBLOCK
+#define GRND_NONBLOCK	0x0001
+#endif /* GRND_NONBLOCK */
+
+#ifndef GRND_RANDOM
+#define GRND_RANDOM	0x0002
+#endif /*GRND_RANDOM */
 
 #define SET_ERRNO(no) rt_set_errno(-(no))
 #define GET_ERRNO() ((rt_get_errno() > 0) ? (-rt_get_errno()) : rt_get_errno())
