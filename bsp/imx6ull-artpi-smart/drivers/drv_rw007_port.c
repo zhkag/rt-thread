@@ -22,8 +22,10 @@
 
 extern void spi_wifi_isr(int vector);
 
-static void rw007_gpio_init(void)
+static int rw007_gpio_init(void)
 {
+    int ret = 0;
+    uint8_t errorCnt = 10;
     /* Configure IO */
     rt_pin_mode(RW007_RST_PIN, PIN_MODE_OUTPUT);
     rt_pin_mode(RW007_INT_BUSY_PIN, PIN_MODE_INPUT_PULLDOWN);
@@ -36,19 +38,32 @@ static void rw007_gpio_init(void)
     /* Wait rw007 ready(exit busy stat) */
     while(!rt_pin_read(RW007_INT_BUSY_PIN))
     {
-        rt_thread_delay(5);
+        rt_thread_delay(rt_tick_from_millisecond(100));
+        if (errorCnt)
+        {
+            errorCnt--;
+        }
+        else
+        {
+            ret = -1;
+            break;
+        }
     }
 
     rt_thread_delay(rt_tick_from_millisecond(200));
     rt_pin_mode(RW007_INT_BUSY_PIN, PIN_MODE_INPUT_PULLUP);
+    return ret;
 }
 
 int wifi_spi_device_init(void)
 {
     char sn_version[32];
     
-    rw007_gpio_init();
-    
+    if (rw007_gpio_init() == -1)
+    {
+        rt_hw_wifi_init("rw007 gpio init fault!\n");
+        return -1;
+    }
     rt_hw_spi_device_attach(RW007_SPI_BUS_NAME, "rw007", RW007_CS_PIN);
     rt_hw_wifi_init("rw007");
 
