@@ -39,6 +39,12 @@ SECTIONS
         __rt_init_start = .;
         KEEP(*(SORT(.rti_fn*)))
         __rt_init_end = .;
+
+        /* section information for uRPC */
+        . = ALIGN(4);
+        __uRPCSvcTab_start = .;
+        KEEP(*(uRPCSvcTab))
+        __uRPCSvcTab_end = .;
     } =0
     __text_end = .;
 
