@@ -180,7 +180,7 @@ static rt_err_t imx6ull_pwm_set(struct rt_device_pwm *device, struct rt_pwm_conf
     base->PWMSAR = duty_cycles;
     base->PWMPR = period_cycles;
 
-    cr = (prescale << 4) |
+    cr = ((prescale -1 ) << 4) |
          MX3_PWMCR_STOPEN | MX3_PWMCR_DOZEN | MX3_PWMCR_WAITEN | MX3_PWMCR_CLKSRC | MX3_PWMCR_DBGEN;
 
     cr |= MX3_PWMCR_EN;
