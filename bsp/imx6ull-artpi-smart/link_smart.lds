@@ -48,6 +48,12 @@ SECTIONS
         __rt_init_end = .;
         . = ALIGN(16);
 
+        /* section information for uRPC */
+        . = ALIGN(4);
+        __uRPCSvcTab_start = .;
+        KEEP(*(uRPCSvcTab))
+        __uRPCSvcTab_end = .;
+
         . = ALIGN(16);
         _etext = .;
     }
