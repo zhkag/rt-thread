@@ -146,7 +146,7 @@ endmenu
 menu "Select RTC Driver"
     if RT_USING_RTC
         config BSP_USING_ONCHIP_RTC
-            bool "Enable On-Chip rtc"
+            bool "Enable On-Chip RTC"
             default y
     endif
 endmenu
@@ -213,7 +213,7 @@ endmenu
 
 menu "Select USB Driver"
     config BSP_USING_USB_DEVICE
-        bool "Enable ENET1"
+        bool "Enable USB device"
         default y
 endmenu
 
