@@ -11,10 +11,6 @@
 #error "please select rw007 latest version."
 #endif
 
-#ifdef RW007_USING_STM32_DRIVERS
-#error "please select not use example driver, porting by myself."
-#endif
-
 #define RW007_SPI_BUS_NAME    "spi2"
 #define RW007_CS_PIN          GET_PIN(1, 29) /* IOMUXC_UART4_RX_DATA_ECSPI2_SS0 IOMUXC_UART4_RX_DATA_GPIO1_IO29 */
 #define RW007_INT_BUSY_PIN    GET_PIN(5, 0)  /* IOMUXC_SNVS_SNVS_TAMPER0_GPIO5_IO00 */
