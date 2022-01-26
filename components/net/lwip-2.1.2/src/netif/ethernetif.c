@@ -84,10 +84,10 @@ struct eth_tx_msg
 static struct rt_mailbox eth_tx_thread_mb;
 static struct rt_thread eth_tx_thread;
 #ifndef RT_LWIP_ETHTHREAD_MBOX_SIZE
-static char eth_tx_thread_mb_pool[32 * 4];
+static char eth_tx_thread_mb_pool[32 * sizeof(void *)];
 static char eth_tx_thread_stack[512];
 #else
-static char eth_tx_thread_mb_pool[RT_LWIP_ETHTHREAD_MBOX_SIZE * 4];
+static char eth_tx_thread_mb_pool[RT_LWIP_ETHTHREAD_MBOX_SIZE * sizeof(void *)];
 static char eth_tx_thread_stack[RT_LWIP_ETHTHREAD_STACKSIZE];
 #endif
 #endif
@@ -96,10 +96,10 @@ static char eth_tx_thread_stack[RT_LWIP_ETHTHREAD_STACKSIZE];
 static struct rt_mailbox eth_rx_thread_mb;
 static struct rt_thread eth_rx_thread;
 #ifndef RT_LWIP_ETHTHREAD_MBOX_SIZE
-static char eth_rx_thread_mb_pool[48 * 4];
+static char eth_rx_thread_mb_pool[48 * sizeof(void *)];
 static char eth_rx_thread_stack[1024];
 #else
-static char eth_rx_thread_mb_pool[RT_LWIP_ETHTHREAD_MBOX_SIZE * 4];
+static char eth_rx_thread_mb_pool[RT_LWIP_ETHTHREAD_MBOX_SIZE * sizeof(void *)];
 static char eth_rx_thread_stack[RT_LWIP_ETHTHREAD_STACKSIZE];
 #endif
 #endif
@@ -632,7 +632,6 @@ rt_err_t eth_device_linkchange(struct eth_device* dev, rt_bool_t up)
 static void eth_tx_thread_entry(void* parameter)
 {
     struct eth_tx_msg* msg;
-
     while (1)
     {
         if (rt_mb_recv(&eth_tx_thread_mb, (rt_ubase_t *)&msg, RT_WAITING_FOREVER) == RT_EOK)
@@ -664,7 +663,6 @@ static void eth_tx_thread_entry(void* parameter)
 static void eth_rx_thread_entry(void* parameter)
 {
     struct eth_device* device;
-
     while (1)
     {
         if (rt_mb_recv(&eth_rx_thread_mb, (rt_ubase_t *)&device, RT_WAITING_FOREVER) == RT_EOK)
@@ -723,7 +721,6 @@ int eth_system_device_init(void)
 {
     return 0;
 }
-
 int eth_system_device_init_private(void)
 {
     rt_err_t result = RT_EOK;
@@ -732,7 +729,7 @@ int eth_system_device_init_private(void)
 #ifndef LWIP_NO_RX_THREAD
     /* initialize mailbox and create Ethernet Rx thread */
     result = rt_mb_init(&eth_rx_thread_mb, "erxmb",
-                        &eth_rx_thread_mb_pool[0], sizeof(eth_rx_thread_mb_pool)/4,
+                        &eth_rx_thread_mb_pool[0], sizeof(eth_rx_thread_mb_pool)/sizeof(void *),
                         RT_IPC_FLAG_FIFO);
     RT_ASSERT(result == RT_EOK);
 
@@ -748,7 +745,7 @@ int eth_system_device_init_private(void)
 #ifndef LWIP_NO_TX_THREAD
     /* initialize mailbox and create Ethernet Tx thread */
     result = rt_mb_init(&eth_tx_thread_mb, "etxmb",
-                        &eth_tx_thread_mb_pool[0], sizeof(eth_tx_thread_mb_pool)/4,
+                        &eth_tx_thread_mb_pool[0], sizeof(eth_tx_thread_mb_pool)/sizeof(void *),
                         RT_IPC_FLAG_FIFO);
     RT_ASSERT(result == RT_EOK);
 
@@ -758,9 +755,9 @@ int eth_system_device_init_private(void)
     RT_ASSERT(result == RT_EOK);
 
     result = rt_thread_startup(&eth_tx_thread);
+    
     RT_ASSERT(result == RT_EOK);
 #endif
-
     return (int)result;
 }
 

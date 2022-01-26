@@ -327,9 +327,9 @@ u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout)
 /** Check if a semaphore is valid/allocated:
  *  return 1 for valid, 0 for invalid
  */
-int sys_sem_valid(sys_sem_t *sem)
+rt_ubase_t sys_sem_valid(sys_sem_t *sem)
 {
-    return (int)(*sem);
+    return (rt_ubase_t)(*sem);
 }
 #endif
 
@@ -403,9 +403,9 @@ void sys_mutex_free(sys_mutex_t *mutex)
 /** Check if a mutex is valid/allocated:
  *  return 1 for valid, 0 for invalid
  */
-int sys_mutex_valid(sys_mutex_t *mutex)
+rt_ubase_t sys_mutex_valid(sys_mutex_t *mutex)
 {
-    return (int)(*mutex);
+    return (rt_ubase_t)(*mutex);
 }
 #endif
 
@@ -567,9 +567,9 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
 /** Check if an mbox is valid/allocated:
  *  return 1 for valid, 0 for invalid
  */
-int sys_mbox_valid(sys_mbox_t *mbox)
+rt_ubase_t sys_mbox_valid(sys_mbox_t *mbox)
 {
-    return (int)(*mbox);
+    return (rt_ubase_t)(*mbox);
 }
 #endif
 
