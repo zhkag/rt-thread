@@ -161,7 +161,7 @@ void sys_mutex_free(sys_mutex_t *mutex);
  * When directly using OS structures, implementing this may be more complex.
  * This may also be a define, in which case the function is not prototyped.
  */
-int sys_mutex_valid(sys_mutex_t *mutex);
+rt_ubase_t sys_mutex_valid(sys_mutex_t *mutex);
 #endif
 #ifndef sys_mutex_set_invalid
 /**
@@ -233,7 +233,7 @@ void sys_sem_free(sys_sem_t *sem);
  * When directly using OS structures, implementing this may be more complex.
  * This may also be a define, in which case the function is not prototyped.
  */
-int sys_sem_valid(sys_sem_t *sem);
+rt_ubase_t sys_sem_valid(sys_sem_t *sem);
 #endif
 #ifndef sys_sem_set_invalid
 /**
@@ -376,7 +376,7 @@ void sys_mbox_free(sys_mbox_t *mbox);
  * When directly using OS structures, implementing this may be more complex.
  * This may also be a define, in which case the function is not prototyped.
  */
-int sys_mbox_valid(sys_mbox_t *mbox);
+rt_ubase_t sys_mbox_valid(sys_mbox_t *mbox);
 #endif
 #ifndef sys_mbox_set_invalid
 /**
