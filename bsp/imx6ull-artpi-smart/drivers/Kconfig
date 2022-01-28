@@ -171,6 +171,26 @@ menu "Select PWM Driver"
     endif
 endmenu
 
+menu "Select ADC Driver"
+     config RT_USING_ADC
+        bool "Enable ADC"
+        default n
+    if RT_USING_ADC
+        config BSP_USING_ADC1_1
+            bool "Enable ADC1 CH1"
+            default n
+        config BSP_USING_ADC1_2
+            bool "Enable ADC1 CH2"
+            default n
+		config BSP_USING_ADC1_3
+            bool "Enable ADC1 CH3"
+            default n
+		config BSP_USING_ADC1_4
+            bool "Enable ADC1 CH4"
+            default n
+    endif
+endmenu
+
 menu "Select WDT Driver"
     if RT_USING_WDT
         config RT_USING_WDT1
