@@ -15,7 +15,7 @@
 struct rt_hw_exp_stack
 {
 	unsigned long pc;
-	unsigned long spsr;
+	unsigned long cpsr;
 	unsigned long sp_el0;
 	unsigned long x30;
     unsigned long fpcr;

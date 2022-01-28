@@ -1300,7 +1300,14 @@ void lwp_user_setting_restore(rt_thread_t thread)
     {
         struct rt_lwp *l = (struct rt_lwp *)thread->lwp;
 
-        set_process_id((uint32_t)(size_t)l);
+        if (l != 0)
+        {
+            set_process_id((size_t)l->pid);
+        }
+        else
+        {
+            set_process_id(0);
+        }
         if (l && l->debug)
         {
             uint32_t step_type = 0;

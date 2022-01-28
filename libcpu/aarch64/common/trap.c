@@ -31,10 +31,103 @@ extern long list_thread(void);
 #include <lwp_core_dump.h>
 #endif
 
+#ifdef RT_USING_GDBSERVER
+#include <lwp_gdbserver.h>
+#include <hw_breakpoint.h>
+
+gdb_thread_info wp_thread_info = {
+    RT_NULL,
+    GDB_NOTIFIY_NR,
+    0, RT_NULL, 0
+};
+
+static int check_debug_event(struct rt_hw_exp_stack *regs, unsigned long esr)
+{
+    uint32_t elx = regs->cpsr & 0x1fUL;
+    unsigned char ec;
+
+    ec = (unsigned char)((esr >> 26) & 0x3fU);
+    if (elx == 0x00) /* is EL0 */
+    {
+        struct rt_channel_msg msg;
+        gdb_thread_info thread_info;
+        int ret;
+
+        if (ec == 0x3c || ec == 0x30 /* breakpoint event */
+                || ec == 0x32) /* step event */
+        {
+            if (wp_thread_info.notify_type == GDB_NOTIFIY_WATCHPOINT)
+            {
+                thread_info.watch_addr = (uint32_t *)regs->pc;
+                thread_info.rw = wp_thread_info.rw;
+                thread_info.notify_type = GDB_NOTIFIY_WATCHPOINT;
+                wp_thread_info.notify_type = GDB_NOTIFIY_NR;
+                ret = 2;
+            }
+            else
+            {
+                /* is breakpoint event */
+                do {
+                    struct rt_lwp *gdb_lwp = gdb_get_dbg_lwp();
+                    struct rt_lwp *lwp;
+
+                    if (!gdb_lwp)
+                    {
+                        break;
+                    }
+                    lwp = lwp_self();
+                    if (lwp == gdb_lwp)
+                    {
+                        break;
+                    }
+                    *(uint32_t *)regs->pc = lwp->bak_first_ins;
+                    rt_hw_cpu_dcache_ops(RT_HW_CACHE_FLUSH, (void *)regs->pc, 4);
+                    icache_invalid_all();
+                    lwp->debug = 0;
+                    return 1;
+                } while (0);
+
+                thread_info.notify_type = GDB_NOTIFIY_BREAKPOINT;
+                thread_info.abt_ins = *(uint32_t *)regs->pc;
+                ret = 1;
+            }
+        }
+        else if (ec == 0x35 || ec == 0x34) /* watchpoint event */
+        {
+            /* is watchpoint event */
+            arch_deactivate_breakpoints();
+            arch_activate_step();
+            wp_thread_info.rw = (esr >> 6) & 1UL;
+            wp_thread_info.notify_type = GDB_NOTIFIY_WATCHPOINT;
+            return 3;
+        }
+        else
+        {
+            return 0; /* not support */
+        }
+        thread_info.thread = rt_thread_self();
+        thread_info.thread->regs = regs;
+        msg.u.d = (void *)&thread_info;
+        rt_hw_dmb();
+        thread_info.thread->debug_suspend = 1;
+        rt_hw_dsb();
+        rt_thread_suspend_with_flag(thread_info.thread, RT_UNINTERRUPTIBLE);
+        rt_raw_channel_send(gdb_get_server_channel(), &msg);
+        rt_schedule();
+        while (thread_info.thread->debug_suspend)
+        {
+            rt_thread_suspend_with_flag(thread_info.thread, RT_UNINTERRUPTIBLE);
+            rt_schedule();
+        }
+        return ret;
+    }
+    return 0;
+}
+#endif
 void sys_exit(int value);
 void check_user_fault(struct rt_hw_exp_stack *regs, uint32_t pc_adj, char *info)
 {
-    uint32_t mode = regs->spsr;
+    uint32_t mode = regs->cpsr;
 
     if ((mode & 0x1f) == 0x00)
     {
@@ -88,36 +181,8 @@ void rt_hw_show_register(struct rt_hw_exp_stack *regs)
     rt_kprintf("X24:0x%16.16p X25:0x%16.16p X26:0x%16.16p X27:0x%16.16p\n", (void *)regs->x24, (void *)regs->x25, (void *)regs->x26, (void *)regs->x27);
     rt_kprintf("X28:0x%16.16p X29:0x%16.16p X30:0x%16.16p\n", (void *)regs->x28, (void *)regs->x29, (void *)regs->x30);
     rt_kprintf("SP_EL0:0x%16.16p\n", (void *)regs->sp_el0);
-    rt_kprintf("SPSR  :0x%16.16p\n", (void *)regs->spsr);
+    rt_kprintf("SPSR  :0x%16.16p\n", (void *)regs->cpsr);
     rt_kprintf("EPC   :0x%16.16p\n", (void *)regs->pc);
-}
-
-/**
- * An abort indicates that the current memory access cannot be completed,
- * which occurs during an instruction prefetch.
- *
- * @param regs system registers
- *
- * @note never invoke this function in application
- */
-void rt_hw_trap_pabt(struct rt_hw_exp_stack *regs)
-{
-#ifdef RT_USING_LWP
-#ifdef RT_USING_GDBSERVER
-    if (check_debug_event(regs, 4))
-    {
-        return;
-    }
-#endif
-    check_user_fault(regs, 4, "User prefetch abort");
-#endif
-    rt_unwind(regs, 4);
-    rt_kprintf("prefetch abort:\n");
-    rt_hw_show_register(regs);
-#ifdef RT_USING_FINSH
-    list_thread();
-#endif
-    rt_hw_cpu_shutdown();
 }
 
 void rt_hw_trap_irq(void)
@@ -140,9 +205,9 @@ void rt_hw_trap_irq(void)
             if (int_source & 0x08)
             {
                 isr_func = isr_table[IRQ_ARM_TIMER].handler;
-                #ifdef RT_USING_INTERRUPT_INFO
-                            isr_table[IRQ_ARM_TIMER].counter++;
-                #endif
+#ifdef RT_USING_INTERRUPT_INFO
+                isr_table[IRQ_ARM_TIMER].counter++;
+#endif
                 if (isr_func)
                 {
                     param = isr_table[IRQ_ARM_TIMER].param;
@@ -252,6 +317,15 @@ void rt_hw_trap_exception(struct rt_hw_exp_stack *regs)
     asm volatile("mrs %0, esr_el1":"=r"(esr));
     ec = (unsigned char)((esr >> 26) & 0x3fU);
 
+#ifdef RT_USING_LWP
+#ifdef RT_USING_GDBSERVER
+    if (check_debug_event(regs, esr))
+    {
+        return;
+    }
+    else
+#endif
+#endif
     if (ec == 0x15) /* is 64bit syscall ? */
     {
         SVC_Handler(regs);

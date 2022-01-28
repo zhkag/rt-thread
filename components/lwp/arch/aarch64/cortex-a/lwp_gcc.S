@@ -214,6 +214,12 @@ SVC_Handler:
     and x0, x8, #0xf000
     cmp x0, #0xe000
     beq lwp_signal_quit
+
+#ifdef RT_USING_GDBSERVER
+    cmp x0, #0xf000
+    beq ret_from_user
+#endif
+
     uxtb x0, w8
     bl lwp_get_sys_api
     cmp x0, xzr
@@ -258,10 +264,34 @@ ret_to_user:
     stp x4, x5, [sp, #-0x10]!
     stp x6, x7, [sp, #-0x10]!
     stp x8, x9, [sp, #-0x10]!
+    stp x10, x11, [sp, #-0x10]!
+    stp x12, x13, [sp, #-0x10]!
+    stp x14, x15, [sp, #-0x10]!
+    stp x16, x17, [sp, #-0x10]!
+    stp x18, x19, [sp, #-0x10]!
+    stp x20, x21, [sp, #-0x10]!
+    stp x22, x23, [sp, #-0x10]!
+    stp x24, x25, [sp, #-0x10]!
+    stp x26, x27, [sp, #-0x10]!
+    stp x28, x29, [sp, #-0x10]!
+
     mrs x0, fpcr
     mrs x1, fpsr
     stp x0, x1, [sp, #-0x10]!
     stp x29, x30, [sp, #-0x10]!
+
+#ifdef RT_USING_GDBSERVER
+    bl thread_is_in_debug
+    mov x1, #(1 << 21)
+    mrs x2, spsr_el1
+    cbz w0, 1f
+    orr x2, x2, x1
+    b 2f
+1:
+    bic x2, x2, x1
+2:
+    msr spsr_el1, x2
+#endif
 
     bl lwp_signal_check
     cmp x0, xzr
@@ -270,6 +300,17 @@ ret_to_user:
     ldp x0, x1, [sp], #0x10
     msr fpcr, x0
     msr fpsr, x1
+
+    ldp x28, x29, [sp], #0x10
+    ldp x26, x27, [sp], #0x10
+    ldp x24, x25, [sp], #0x10
+    ldp x22, x23, [sp], #0x10
+    ldp x20, x21, [sp], #0x10
+    ldp x18, x19, [sp], #0x10
+    ldp x16, x17, [sp], #0x10
+    ldp x14, x15, [sp], #0x10
+    ldp x12, x13, [sp], #0x10
+    ldp x10, x11, [sp], #0x10
     ldp x8, x9, [sp], #0x10
     ldp x6, x7, [sp], #0x10
     ldp x4, x5, [sp], #0x10
@@ -278,6 +319,51 @@ ret_to_user:
     RESTORE_FPU sp
 
     bne user_do_signal
+
+#ifdef RT_USING_GDBSERVER
+    SAVE_FPU sp
+    stp x0, x1, [sp, #-0x10]!
+    stp x2, x3, [sp, #-0x10]!
+    stp x4, x5, [sp, #-0x10]!
+    stp x6, x7, [sp, #-0x10]!
+    stp x8, x9, [sp, #-0x10]!
+    stp x10, x11, [sp, #-0x10]!
+    stp x12, x13, [sp, #-0x10]!
+    stp x14, x15, [sp, #-0x10]!
+    stp x16, x17, [sp, #-0x10]!
+    stp x18, x19, [sp, #-0x10]!
+    stp x20, x21, [sp, #-0x10]!
+    stp x22, x23, [sp, #-0x10]!
+    stp x24, x25, [sp, #-0x10]!
+    stp x26, x27, [sp, #-0x10]!
+    stp x28, x29, [sp, #-0x10]!
+    mrs x0, fpcr
+    mrs x1, fpsr
+    stp x0, x1, [sp, #-0x10]!
+    stp x29, x30, [sp, #-0x10]!
+    mrs x0, elr_el1
+    bl lwp_check_debug_attach_req
+    ldp x29, x30, [sp], #0x10
+    ldp x0, x1, [sp], #0x10
+    msr fpcr, x0
+    msr fpsr, x1
+    ldp x28, x29, [sp], #0x10
+    ldp x26, x27, [sp], #0x10
+    ldp x24, x25, [sp], #0x10
+    ldp x22, x23, [sp], #0x10
+    ldp x20, x21, [sp], #0x10
+    ldp x18, x19, [sp], #0x10
+    ldp x16, x17, [sp], #0x10
+    ldp x14, x15, [sp], #0x10
+    ldp x12, x13, [sp], #0x10
+    ldp x10, x11, [sp], #0x10
+    ldp x8, x9, [sp], #0x10
+    ldp x6, x7, [sp], #0x10
+    ldp x4, x5, [sp], #0x10
+    ldp x2, x3, [sp], #0x10
+    ldp x0, x1, [sp], #0x10
+    RESTORE_FPU sp
+#endif
     eret
 
 .global lwp_check_exit
@@ -287,6 +373,16 @@ lwp_check_exit:
     stp x2, x3, [sp, #-0x10]!
     stp x4, x5, [sp, #-0x10]!
     stp x6, x7, [sp, #-0x10]!
+    stp x10, x11, [sp, #-0x10]!
+    stp x12, x13, [sp, #-0x10]!
+    stp x14, x15, [sp, #-0x10]!
+    stp x16, x17, [sp, #-0x10]!
+    stp x18, x19, [sp, #-0x10]!
+    stp x20, x21, [sp, #-0x10]!
+    stp x22, x23, [sp, #-0x10]!
+    stp x24, x25, [sp, #-0x10]!
+    stp x26, x27, [sp, #-0x10]!
+    stp x28, x29, [sp, #-0x10]!
     mrs x0, fpcr
     mrs x1, fpsr
     stp x0, x1, [sp, #-0x10]!
@@ -299,6 +395,16 @@ lwp_check_exit:
     ldp x0, x1, [sp], #0x10
     msr fpcr, x0
     msr fpsr, x1
+    ldp x28, x29, [sp], #0x10
+    ldp x26, x27, [sp], #0x10
+    ldp x24, x25, [sp], #0x10
+    ldp x22, x23, [sp], #0x10
+    ldp x20, x21, [sp], #0x10
+    ldp x18, x19, [sp], #0x10
+    ldp x16, x17, [sp], #0x10
+    ldp x14, x15, [sp], #0x10
+    ldp x12, x13, [sp], #0x10
+    ldp x10, x11, [sp], #0x10
     ldp x6, x7, [sp], #0x10
     ldp x4, x5, [sp], #0x10
     ldp x2, x3, [sp], #0x10
@@ -309,6 +415,138 @@ lwp_check_exit:
 1:
     mov x0, xzr
     b sys_exit
+
+/*
+struct rt_hw_exp_stack
+{
+    unsigned long pc;     0
+    unsigned long cpsr;
+    unsigned long sp_el0; 0x10
+    unsigned long x30;
+    unsigned long fpcr;   0x20
+    unsigned long fpsr;
+    unsigned long x28;    0x30
+    unsigned long x29;
+    unsigned long x26;    0x40
+    unsigned long x27;
+    unsigned long x24;    0x50
+    unsigned long x25;
+    unsigned long x22;    0x60
+    unsigned long x23;
+    unsigned long x20;    0x70
+    unsigned long x21;
+    unsigned long x18;    0x80
+    unsigned long x19;
+    unsigned long x16;    0x90
+    unsigned long x17;
+    unsigned long x14;    0xa0
+    unsigned long x15;
+    unsigned long x12;    0xb0
+    unsigned long x13;
+    unsigned long x10;    0xc0
+    unsigned long x11;
+    unsigned long x8;     0xd0
+    unsigned long x9;
+    unsigned long x6;     0xe0
+    unsigned long x7;
+    unsigned long x4;     0xf0
+    unsigned long x5;
+    unsigned long x2;     0x100
+    unsigned long x3;
+    unsigned long x0;     0x110
+    unsigned long x1;
+
+    unsigned long long fpu[16]; 0x120
+                                0x220 = 0x120 + 0x10 * 0x10
+};
+*/
+#ifdef RT_USING_GDBSERVER
+.global lwp_check_debug
+lwp_check_debug:
+    SAVE_FPU sp
+    stp x0, x1, [sp, #-0x10]!
+    stp x2, x3, [sp, #-0x10]!
+    stp x4, x5, [sp, #-0x10]!
+    stp x6, x7, [sp, #-0x10]!
+    stp x10, x11, [sp, #-0x10]!
+    stp x12, x13, [sp, #-0x10]!
+    stp x14, x15, [sp, #-0x10]!
+    stp x16, x17, [sp, #-0x10]!
+    stp x18, x19, [sp, #-0x10]!
+    stp x20, x21, [sp, #-0x10]!
+    stp x22, x23, [sp, #-0x10]!
+    stp x24, x25, [sp, #-0x10]!
+    stp x26, x27, [sp, #-0x10]!
+    stp x28, x29, [sp, #-0x10]!
+
+    mrs x0, fpcr
+    mrs x1, fpsr
+    stp x0, x1, [sp, #-0x10]!
+    stp x29, x30, [sp, #-0x10]!
+
+    bl lwp_check_debug_suspend
+    cmp w0, wzr
+    beq lwp_check_debug_quit
+
+    mrs x2, sp_el0
+    sub x2, x2, #8
+    mov x3, x2
+    msr sp_el0, x2
+    ldr x0, =lwp_debugreturn
+    ldr w1, [x0]
+    str w1, [x2]
+    ldr w1, [x0, #4]
+    str w1, [x2, #4]
+
+    dc cvau, x2
+    add x2, x2, #4
+    dc cvau, x2
+
+    dsb sy
+    isb sy
+
+    ic ialluis
+    isb sy
+
+    msr elr_el1, x3 /* lwp_debugreturn */
+    mrs x1, spsr_el1
+    stp x0, x1, [sp, #-0x10]!
+    mov x1, #(SPSR_Mode(0) | SPSR_A64)
+    msr spsr_el1, x1
+    eret
+ret_from_user:
+    /* sp_el0 += 8 for drop ins lwp_debugreturn */
+    mrs x0, sp_el0
+    add x0, x0, #8
+    msr sp_el0, x0
+    /* now is el1, sp is pos(empty) - sizeof(context) */
+    mov x0, sp
+    add x0, x0, #0x220 /* sizeof(context) */
+    mov sp, x0
+    ldp x0, x1, [sp], #0x10  /* x0 is origin spsr_el1 */
+    msr spsr_el1, x0
+lwp_check_debug_quit:
+    ldp x29, x30, [sp], #0x10
+    ldp x0, x1, [sp], #0x10
+    msr fpcr, x0
+    msr fpsr, x1
+    ldp x28, x29, [sp], #0x10
+    ldp x26, x27, [sp], #0x10
+    ldp x24, x25, [sp], #0x10
+    ldp x22, x23, [sp], #0x10
+    ldp x20, x21, [sp], #0x10
+    ldp x18, x19, [sp], #0x10
+    ldp x16, x17, [sp], #0x10
+    ldp x14, x15, [sp], #0x10
+    ldp x12, x13, [sp], #0x10
+    ldp x10, x11, [sp], #0x10
+    ldp x6, x7, [sp], #0x10
+    ldp x4, x5, [sp], #0x10
+    ldp x2, x3, [sp], #0x10
+    ldp x0, x1, [sp], #0x10
+    RESTORE_FPU sp
+    ret
+#endif
 
 lwp_signal_quit:
     msr daifset, #3
@@ -383,7 +621,7 @@ user_do_signal:
     ldr w1, [x0, #4]
     str w1, [sp, #4]
 
-    mov x9, sp /* lwp_sigreturn */
+    mov x20, sp /* lwp_sigreturn */
     mov x0, sp
 
     dc cvau, x0
@@ -397,16 +635,22 @@ user_do_signal:
     mrs x2, spsr_el1
     bl lwp_signal_backup
     /* x0 is signal */
-    mov x8, x0
+    mov x19, x0
     bl lwp_sighandler_get
     adds x1, x0, xzr
-    mov x0, x8
+    mov x0, x19
     bne 1f
-    mov x1, x9
+    mov x1, x20
 1:
     msr elr_el1, x1
-    mov x30, x9
+    mov x30, x20
     eret
+
+#ifdef RT_USING_GDBSERVER
+lwp_debugreturn:
+    mov x9, 0xf000
+    svc #0
+#endif
 
 lwp_sigreturn:
     mov x8, #0xe000

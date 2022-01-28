@@ -30,6 +30,14 @@ rt_hw_cpu_id:
    mrs x0, tpidr_el1           /* MPIDR_EL1: Multi-Processor Affinity Register */
    ret
 
+/*
+void set_process_id(size_t id)
+*/
+.global set_process_id
+set_process_id:
+    msr CONTEXTIDR_EL1, x0
+    ret
+
   /*
  *enable gtimer
  */
@@ -136,6 +144,10 @@ rt_hw_get_gtimer_frq:
     /* Set the SP to point to the stack of the task being restored. */
     MOV     SP, X0
 
+#ifdef RT_USING_GDBSERVER
+    bl lwp_check_debug
+#endif
+
     BL      lwp_check_exit
 
     LDP     X2, X3, [SP], #0x10  /* SPSR and ELR. */
@@ -174,6 +186,10 @@ rt_hw_get_gtimer_frq:
 .macro RESTORE_CONTEXT
     /* Set the SP to point to the stack of the task being restored. */
     MOV     SP, X0
+
+#ifdef RT_USING_LWP
+    bl      lwp_check_exit
+#endif
 
     BL      lwp_check_exit
 
