@@ -205,6 +205,7 @@ enum _imx_interrupts
 #include "fsl_i2c.h"
 #include "fsl_ecspi.h"
 #include "fsl_snvs_hp.h"
+#include "fsl_adc.h"
 
 #define IMX6ULL_PERIPH_SIZE         (16 * 1024)
 
