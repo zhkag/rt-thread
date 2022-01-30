@@ -1267,15 +1267,17 @@ pid_t lwp_execve(char *filename, int argc, char **argv, char **envp)
     return -RT_ERROR;
 }
 
+extern char **__environ;
+
 #ifdef RT_USING_GDBSERVER
 pid_t exec(char *filename, int debug, int argc, char **argv)
 {
-    return lwp_execve(filename, debug, argc, argv, 0);
+    return lwp_execve(filename, debug, argc, argv, __environ);
 }
 #else
 pid_t exec(char *filename, int argc, char **argv)
 {
-    return lwp_execve(filename, argc, argv, 0);
+    return lwp_execve(filename, argc, argv, __environ);
 }
 #endif
 
