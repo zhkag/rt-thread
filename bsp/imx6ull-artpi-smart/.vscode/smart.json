@@ -1,0 +1,57 @@
+{
+    "env": {
+        "windows": {
+            "VENV_MODE": true,
+            "RTT_CC": "gcc",
+            "RTT_CC_PREFIX": "arm-linux-musleabi-",
+            "RTT_EXEC_PATH": "${SDK_ROOT}/tools/gnu_gcc/arm-linux-musleabi_for_i686-w64-mingw32/bin",
+            "PATH": "%RTT_EXEC_PATH%;%ENV_ROOT%/tools/gnu_gcc/arm_gcc/mingw/bin;%PATH%"
+        },
+        "linux": {
+            "RTT_CC": "gcc",
+            "RTT_CC_PREFIX": "arm-linux-musleabi-",
+            "RTT_EXEC_PATH": "${SDK_ROOT}/tools/gnu_gcc/arm-linux-musleabi_for_x86_64-pc-linux-gnu/bin",
+            "PATH": "$PATH:$RTT_EXEC_PATH"
+        }
+    },
+    "statusBarItem": {
+        "build": {
+            "icon": "$(zap)",
+            "enable": true,
+            "commands": [
+                "scons -j 8"
+            ],
+            "label": "编译",
+            "tooltip": "编译 RT-Thread Smart 工程"
+        },
+        "clean": {
+            "icon": "$(clear-all)",
+            "enable": true,
+            "commands": [
+                "scons -c"
+            ],
+            "label": "清理",
+            "tooltip": "清理 RT-Thread Smart 工程"
+        },
+        "download": {
+            "icon": "$(cloud-download)",
+            "enable": true,
+            "commands": [
+                "udb tcp ${SERVER_IP} 5555",
+                "udb devices",
+                "udb push ${EXECUTABLE_PROGRAM} ${TARGET_PATH}"
+            ],
+            "label": "下载",
+            "tooltip": "下载 RT-Thread Smart 工程"
+        },
+        "refresh": {
+            "icon": "$(sync)",
+            "enable": true,
+            "commands": [
+                "scons --target=vsc -s"
+            ],
+            "label": "刷新 ",
+            "tooltip": "刷新工程"
+        }
+    }
+}
