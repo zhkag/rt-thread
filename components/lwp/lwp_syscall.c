@@ -1005,19 +1005,11 @@ int sys_settimeofday(const struct timeval *tv, const struct timezone *tzp)
     return 0;
 }
 
-#ifdef RT_USING_GDBSERVER
 int lwp_execve(char *filename, int debug, int argc, char **argv, char **envp);
-#else
-int lwp_execve(char *filename, int argc, char **argv, char **envp);
-#endif
 
 int sys_exec(char *filename, int argc, char **argv, char **envp)
 {
-#ifdef RT_USING_GDBSERVER
     return lwp_execve(filename, 0, argc, argv, envp);
-#else
-    return lwp_execve(filename, argc, argv, envp);
-#endif
 }
 
 int sys_kill(int pid, int sig)

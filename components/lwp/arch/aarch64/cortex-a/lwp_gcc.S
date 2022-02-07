@@ -215,10 +215,8 @@ SVC_Handler:
     cmp x0, #0xe000
     beq lwp_signal_quit
 
-#ifdef RT_USING_GDBSERVER
     cmp x0, #0xf000
     beq ret_from_user
-#endif
 
     uxtb x0, w8
     bl lwp_get_sys_api
@@ -280,8 +278,10 @@ ret_to_user:
     stp x0, x1, [sp, #-0x10]!
     stp x29, x30, [sp, #-0x10]!
 
-#ifdef RT_USING_GDBSERVER
-    bl thread_is_in_debug
+    ldr x0, =rt_dbg_ops
+    ldr x0, [x0]
+    cbz x0, 3f
+    bl dbg_thread_in_debug
     mov x1, #(1 << 21)
     mrs x2, spsr_el1
     cbz w0, 1f
@@ -291,7 +291,7 @@ ret_to_user:
     bic x2, x2, x1
 2:
     msr spsr_el1, x2
-#endif
+3:
 
     bl lwp_signal_check
     cmp x0, xzr
@@ -320,7 +320,12 @@ ret_to_user:
 
     bne user_do_signal
 
-#ifdef RT_USING_GDBSERVER
+    stp x0, x1, [sp, #-0x10]!
+    ldr x0, =rt_dbg_ops
+    ldr x0, [x0]
+    cmp x0, xzr
+    ldp x0, x1, [sp], #0x10
+    beq 1f
     SAVE_FPU sp
     stp x0, x1, [sp, #-0x10]!
     stp x2, x3, [sp, #-0x10]!
@@ -342,7 +347,7 @@ ret_to_user:
     stp x0, x1, [sp, #-0x10]!
     stp x29, x30, [sp, #-0x10]!
     mrs x0, elr_el1
-    bl lwp_check_debug_attach_req
+    bl dbg_attach_req
     ldp x29, x30, [sp], #0x10
     ldp x0, x1, [sp], #0x10
     msr fpcr, x0
@@ -363,7 +368,7 @@ ret_to_user:
     ldp x2, x3, [sp], #0x10
     ldp x0, x1, [sp], #0x10
     RESTORE_FPU sp
-#endif
+1:
     eret
 
 .global lwp_check_exit
@@ -460,9 +465,13 @@ struct rt_hw_exp_stack
                                 0x220 = 0x120 + 0x10 * 0x10
 };
 */
-#ifdef RT_USING_GDBSERVER
 .global lwp_check_debug
 lwp_check_debug:
+    ldr x0, =rt_dbg_ops
+    ldr x0, [x0]
+    cbnz x0, 1f
+    ret
+1:
     SAVE_FPU sp
     stp x0, x1, [sp, #-0x10]!
     stp x2, x3, [sp, #-0x10]!
@@ -484,7 +493,7 @@ lwp_check_debug:
     stp x0, x1, [sp, #-0x10]!
     stp x29, x30, [sp, #-0x10]!
 
-    bl lwp_check_debug_suspend
+    bl dbg_check_suspend
     cmp w0, wzr
     beq lwp_check_debug_quit
 
@@ -546,7 +555,6 @@ lwp_check_debug_quit:
     ldp x0, x1, [sp], #0x10
     RESTORE_FPU sp
     ret
-#endif
 
 lwp_signal_quit:
     msr daifset, #3
@@ -646,11 +654,9 @@ user_do_signal:
     mov x30, x20
     eret
 
-#ifdef RT_USING_GDBSERVER
 lwp_debugreturn:
     mov x9, 0xf000
     svc #0
-#endif
 
 lwp_sigreturn:
     mov x8, #0xe000

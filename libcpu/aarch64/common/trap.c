@@ -31,99 +31,6 @@ extern long list_thread(void);
 #include <lwp_core_dump.h>
 #endif
 
-#ifdef RT_USING_GDBSERVER
-#include <lwp_gdbserver.h>
-#include <hw_breakpoint.h>
-
-gdb_thread_info wp_thread_info = {
-    RT_NULL,
-    GDB_NOTIFIY_NR,
-    0, RT_NULL, 0
-};
-
-static int check_debug_event(struct rt_hw_exp_stack *regs, unsigned long esr)
-{
-    uint32_t elx = regs->cpsr & 0x1fUL;
-    unsigned char ec;
-
-    ec = (unsigned char)((esr >> 26) & 0x3fU);
-    if (elx == 0x00) /* is EL0 */
-    {
-        struct rt_channel_msg msg;
-        gdb_thread_info thread_info;
-        int ret;
-
-        if (ec == 0x3c || ec == 0x30 /* breakpoint event */
-                || ec == 0x32) /* step event */
-        {
-            if (wp_thread_info.notify_type == GDB_NOTIFIY_WATCHPOINT)
-            {
-                thread_info.watch_addr = (uint32_t *)regs->pc;
-                thread_info.rw = wp_thread_info.rw;
-                thread_info.notify_type = GDB_NOTIFIY_WATCHPOINT;
-                wp_thread_info.notify_type = GDB_NOTIFIY_NR;
-                ret = 2;
-            }
-            else
-            {
-                /* is breakpoint event */
-                do {
-                    struct rt_lwp *gdb_lwp = gdb_get_dbg_lwp();
-                    struct rt_lwp *lwp;
-
-                    if (!gdb_lwp)
-                    {
-                        break;
-                    }
-                    lwp = lwp_self();
-                    if (lwp == gdb_lwp)
-                    {
-                        break;
-                    }
-                    *(uint32_t *)regs->pc = lwp->bak_first_ins;
-                    rt_hw_cpu_dcache_ops(RT_HW_CACHE_FLUSH, (void *)regs->pc, 4);
-                    icache_invalid_all();
-                    lwp->debug = 0;
-                    return 1;
-                } while (0);
-
-                thread_info.notify_type = GDB_NOTIFIY_BREAKPOINT;
-                thread_info.abt_ins = *(uint32_t *)regs->pc;
-                ret = 1;
-            }
-        }
-        else if (ec == 0x35 || ec == 0x34) /* watchpoint event */
-        {
-            /* is watchpoint event */
-            arch_deactivate_breakpoints();
-            arch_activate_step();
-            wp_thread_info.rw = (esr >> 6) & 1UL;
-            wp_thread_info.notify_type = GDB_NOTIFIY_WATCHPOINT;
-            return 3;
-        }
-        else
-        {
-            return 0; /* not support */
-        }
-        thread_info.thread = rt_thread_self();
-        thread_info.thread->regs = regs;
-        msg.u.d = (void *)&thread_info;
-        rt_hw_dmb();
-        thread_info.thread->debug_suspend = 1;
-        rt_hw_dsb();
-        rt_thread_suspend_with_flag(thread_info.thread, RT_UNINTERRUPTIBLE);
-        rt_raw_channel_send(gdb_get_server_channel(), &msg);
-        rt_schedule();
-        while (thread_info.thread->debug_suspend)
-        {
-            rt_thread_suspend_with_flag(thread_info.thread, RT_UNINTERRUPTIBLE);
-            rt_schedule();
-        }
-        return ret;
-    }
-    return 0;
-}
-#endif
 void sys_exit(int value);
 void check_user_fault(struct rt_hw_exp_stack *regs, uint32_t pc_adj, char *info)
 {
@@ -318,13 +225,11 @@ void rt_hw_trap_exception(struct rt_hw_exp_stack *regs)
     ec = (unsigned char)((esr >> 26) & 0x3fU);
 
 #ifdef RT_USING_LWP
-#ifdef RT_USING_GDBSERVER
-    if (check_debug_event(regs, esr))
+    if (dbg_check_event(regs, esr))
     {
         return;
     }
     else
-#endif
 #endif
     if (ec == 0x15) /* is 64bit syscall ? */
     {

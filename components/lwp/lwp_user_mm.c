@@ -23,11 +23,6 @@
 #include <lwp_user_mm.h>
 #include <lwp_arch.h>
 
-#ifdef RT_USING_GDBSERVER
-#include <lwp_gdbserver.h>
-#include <hw_breakpoint.h>
-#endif
-
 int lwp_user_space_init(struct rt_lwp *lwp)
 {
     return arch_user_space_init(lwp);

@@ -15,12 +15,6 @@
 
 #ifdef RT_USING_USERSPACE
 #include "lwp_user_mm.h"
-
-#ifdef RT_USING_GDBSERVER
-#include <hw_breakpoint.h>
-#include <lwp_gdbserver.h>
-#endif
-
 #endif
 
 #define DBG_TAG    "LWP_TID"

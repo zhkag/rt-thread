@@ -113,10 +113,8 @@ struct rt_lwp
 
     struct lwp_avl_struct *address_search_head; /* for addressed object fast rearch */
     char working_directory[DFS_PATH_MAX];
-#ifdef RT_USING_GDBSERVER
     int debug;
     uint32_t bak_first_ins;
-#endif
 };
 
 struct rt_lwp *lwp_self(void);
@@ -262,5 +260,32 @@ struct lwp_args_info
     int envc;
     int size;
 };
+
+struct dbg_ops_t
+{
+    int (*dbg)(int argc, char **argv);
+    uint32_t (*arch_get_ins)(void);
+    void (*arch_activate_step)(void);
+    void (*arch_deactivate_step)(void);
+    int (*check_debug_event)(struct rt_hw_exp_stack *regs, unsigned long esr);
+    rt_channel_t (*gdb_get_server_channel)(void);
+    int (*gdb_get_step_type)(void);
+    void (*lwp_check_debug_attach_req)(void *pc);
+    int (*lwp_check_debug_suspend)(void);
+};
+extern struct dbg_ops_t *rt_dbg_ops;
+
+int dbg_thread_in_debug(void);
+void dbg_register(struct dbg_ops_t *dbg_ops);
+
+uint32_t dbg_get_ins(void);
+void dbg_activate_step(void);
+void dbg_deactivate_step(void);
+int dbg_check_event(struct rt_hw_exp_stack *regs, unsigned long arg);
+rt_channel_t gdb_server_channel(void);
+int dbg_step_type(void);
+void dbg_attach_req(void *pc);
+int dbg_check_suspend(void);
+void set_process_id(int pid);
 
 #endif

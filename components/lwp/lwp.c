@@ -30,11 +30,6 @@
 #include <rtdbg.h>
 
 #ifdef RT_USING_USERSPACE
-#ifdef RT_USING_GDBSERVER
-#include <hw_breakpoint.h>
-#include <lwp_gdbserver.h>
-#endif
-
 #include <lwp_mm_area.h>
 #include <lwp_user_mm.h>
 #endif /* end of RT_USING_USERSPACE */
@@ -1059,15 +1054,13 @@ static void lwp_thread_entry(void *parameter)
     tid->cleanup = lwp_cleanup;
     tid->user_stack = RT_NULL;
 
-#ifdef RT_USING_GDBSERVER
     if (lwp->debug)
     {
         lwp->bak_first_ins = *(uint32_t *)lwp->text_entry;
-        *(uint32_t *)lwp->text_entry = INS_BREAK_CONNECT;
+        *(uint32_t *)lwp->text_entry = dbg_get_ins();
         rt_hw_cpu_dcache_ops(RT_HW_CACHE_FLUSH, lwp->text_entry, sizeof(uint32_t));
         icache_invalid_all();
     }
-#endif
 
 #ifdef ARCH_MM_MMU
     lwp_user_entry(lwp->args, lwp->text_entry, (void *)USER_STACK_VEND, tid->stack_addr + tid->stack_size);
@@ -1089,11 +1082,7 @@ struct rt_lwp *lwp_self(void)
     return RT_NULL;
 }
 
-#ifdef RT_USING_GDBSERVER
 pid_t lwp_execve(char *filename, int debug, int argc, char **argv, char **envp)
-#else
-pid_t lwp_execve(char *filename, int argc, char **argv, char **envp)
-#endif
 {
     int result;
     rt_base_t level;
@@ -1248,12 +1237,10 @@ pid_t lwp_execve(char *filename, int argc, char **argv, char **envp)
 #endif /* not defined ARCH_MM_MMU */
             rt_list_insert_after(&lwp->t_grp, &thread->sibling);
 
-#ifdef RT_USING_GDBSERVER
-            if (debug)
+            if (debug && rt_dbg_ops)
             {
                 lwp->debug = debug;
             }
-#endif
             rt_hw_interrupt_enable(level);
 
             rt_thread_startup(thread);
@@ -1273,17 +1260,10 @@ extern char **__environ;
 char __environ = 0;
 #endif
 
-#ifdef RT_USING_GDBSERVER
 pid_t exec(char *filename, int debug, int argc, char **argv)
 {
     return lwp_execve(filename, debug, argc, argv, __environ);
 }
-#else
-pid_t exec(char *filename, int argc, char **argv)
-{
-    return lwp_execve(filename, argc, argv, __environ);
-}
-#endif
 
 #ifdef ARCH_MM_MMU
 void lwp_user_setting_save(rt_thread_t thread)
@@ -1302,7 +1282,7 @@ void lwp_user_setting_restore(rt_thread_t thread)
     }
     rt_cpu_set_thread_idr(thread->thread_idr);
 
-#ifdef RT_USING_GDBSERVER
+    if (rt_dbg_ops)
     {
         struct rt_lwp *l = (struct rt_lwp *)thread->lwp;
 
@@ -1318,18 +1298,17 @@ void lwp_user_setting_restore(rt_thread_t thread)
         {
             uint32_t step_type = 0;
 
-            step_type = gdb_get_step_type();
+            step_type = dbg_step_type();
 
             if ((step_type == 2) || (thread->step_exec && (step_type == 1)))
             {
-                arch_activate_step();
+                dbg_activate_step();
             }
             else
             {
-                arch_deactivate_step();
+                dbg_deactivate_step();
             }
         }
     }
-#endif
 }
 #endif /* ARCH_MM_MMU */

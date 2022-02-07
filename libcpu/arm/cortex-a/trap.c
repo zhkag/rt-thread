@@ -27,99 +27,6 @@ extern long list_thread(void);
 #include <lwp_core_dump.h>
 #endif
 
-#ifdef RT_USING_GDBSERVER
-#include <lwp_gdbserver.h>
-#include <hw_breakpoint.h>
-
-static int check_debug_event(struct rt_hw_exp_stack *regs, uint32_t pc_adj)
-{
-    uint32_t mode = regs->cpsr;
-
-    if ((mode & 0x1f) == 0x10) /* is user mode */
-    {
-        struct rt_channel_msg msg;
-        gdb_thread_info thread_info;
-        uint32_t ifsr, dfar, dfsr;
-        int ret;
-
-        if (pc_adj == 4) /* pabt */
-        {
-            /* check breakpoint event */
-            asm volatile ("MRC p15, 0, %0, c5, c0, 1":"=r"(ifsr));
-            ifsr &= ((1UL << 12) | 0x3fUL); /* status */
-            if (ifsr == 0x2UL)
-            {
-                /* is breakpoint event */
-                regs->pc -= pc_adj;
-                do {
-                    struct rt_lwp *gdb_lwp = gdb_get_dbg_lwp();
-                    struct rt_lwp *lwp;
-
-                    if (!gdb_lwp)
-                    {
-                        break;
-                    }
-                    lwp = lwp_self();
-                    if (lwp == gdb_lwp)
-                    {
-                        break;
-                    }
-                    *(uint32_t *)regs->pc = lwp->bak_first_ins;
-                    rt_hw_cpu_dcache_ops(RT_HW_CACHE_FLUSH, (void *)regs->pc, 4);
-                    icache_invalid_all();
-                    lwp->debug = 0;
-                    return 1;
-                } while (0);
-
-                thread_info.notify_type = GDB_NOTIFIY_BREAKPOINT;
-                thread_info.abt_ins = *(uint32_t *)regs->pc;
-                ret = 1;
-            }
-            else
-            {
-                return 0; /* not debug pabt */
-            }
-        }
-        else
-        {
-            /* watchpoing event */
-            asm volatile ("MRC p15, 0, %0, c5, c0, 0":"=r"(dfsr));
-            dfsr = (((dfsr & (1UL << 10)) >> 6) | (dfsr & 0xfUL)); /* status */
-            if (dfsr == 0x2UL)
-            {
-                /* is watchpoint event */
-                regs->pc -= pc_adj;
-                asm volatile ("MRC p15, 0, %0, c6, c0, 0":"=r"(dfar));
-                thread_info.watch_addr = (void *)dfar;
-                thread_info.rw = (1UL << (((~*(uint32_t *)regs->pc) >> 20) & 1UL));
-                thread_info.notify_type = GDB_NOTIFIY_WATCHPOINT;
-                ret =  2;
-            }
-            else
-            {
-                return 0; /* not debug dabt */
-            }
-        }
-        thread_info.thread = rt_thread_self();
-        thread_info.thread->regs = regs;
-        msg.u.d = (void *)&thread_info;
-        rt_hw_dmb();
-        thread_info.thread->debug_suspend = 1;
-        rt_hw_dsb();
-        rt_thread_suspend_with_flag(thread_info.thread, RT_UNINTERRUPTIBLE);
-        rt_raw_channel_send(gdb_get_server_channel(), &msg);
-        rt_schedule();
-        while (thread_info.thread->debug_suspend)
-        {
-            rt_thread_suspend_with_flag(thread_info.thread, RT_UNINTERRUPTIBLE);
-            rt_schedule();
-        }
-        return ret;
-    }
-    return 0;
-}
-#endif
-
 void sys_exit(int value);
 void check_user_fault(struct rt_hw_exp_stack *regs, uint32_t pc_adj, char *info)
 {
@@ -263,12 +170,10 @@ void rt_hw_trap_swi(struct rt_hw_exp_stack *regs)
 void rt_hw_trap_pabt(struct rt_hw_exp_stack *regs)
 {
 #ifdef RT_USING_LWP
-#ifdef RT_USING_GDBSERVER
-    if (check_debug_event(regs, 4))
+    if (dbg_check_event(regs, 4))
     {
         return;
     }
-#endif
     check_user_fault(regs, 4, "User prefetch abort");
 #endif
     rt_unwind(regs, 4);
@@ -291,12 +196,10 @@ void rt_hw_trap_pabt(struct rt_hw_exp_stack *regs)
 void rt_hw_trap_dabt(struct rt_hw_exp_stack *regs)
 {
 #ifdef RT_USING_LWP
-#ifdef RT_USING_GDBSERVER
-    if (check_debug_event(regs, 8))
+    if (dbg_check_event(regs, 8))
     {
         return;
     }
-#endif
     if (check_user_stack(regs))
     {
         return;

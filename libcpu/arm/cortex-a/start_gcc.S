@@ -505,9 +505,7 @@ rt_hw_context_switch_interrupt_do:
     ldmfd   sp!, {r4}        /* pop new task's cpsr to spsr */
     msr     spsr_cxsf, r4
 
-#ifdef RT_USING_GDBSERVER
     bl      lwp_check_debug
-#endif
 
 #ifdef RT_USING_LWP
     bl      lwp_check_exit

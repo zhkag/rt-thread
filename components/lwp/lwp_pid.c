@@ -19,12 +19,6 @@
 
 #ifdef RT_USING_USERSPACE
 #include "lwp_user_mm.h"
-
-#ifdef RT_USING_GDBSERVER
-#include <hw_breakpoint.h>
-#include <lwp_gdbserver.h>
-#endif
-
 #endif
 
 #define DBG_TAG    "LWP_PID"
@@ -503,15 +497,13 @@ void lwp_ref_dec(struct rt_lwp *lwp)
         ref = lwp->ref;
         if (!ref)
         {
-#ifdef RT_USING_GDBSERVER
             struct rt_channel_msg msg;
 
             if (lwp->debug)
             {
                 memset(&msg, 0, sizeof msg);
-                rt_raw_channel_send(gdb_get_server_channel(), &msg);
+                rt_raw_channel_send(gdb_server_channel(), &msg);
             }
-#endif /* RT_USING_GDBSERVER */
 
 #ifndef ARCH_MM_MMU
 #ifdef RT_LWP_USING_SHM
