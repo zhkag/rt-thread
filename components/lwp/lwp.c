@@ -1267,7 +1267,11 @@ pid_t lwp_execve(char *filename, int argc, char **argv, char **envp)
     return -RT_ERROR;
 }
 
+#ifdef RT_USING_MUSL
 extern char **__environ;
+#else
+char __environ = 0;
+#endif
 
 #ifdef RT_USING_GDBSERVER
 pid_t exec(char *filename, int debug, int argc, char **argv)

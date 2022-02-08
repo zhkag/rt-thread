@@ -3917,8 +3917,6 @@ int sys_setsid(void)
     return (ret < 0 ? GET_ERRNO() : ret);
 }
 
-int sys_cacheflush(void *addr, int len, int cache);
-
 int sys_getrandom(void *buf, size_t buflen, unsigned int flags)
 {
     int ret = -1;
@@ -3947,6 +3945,7 @@ int sys_getrandom(void *buf, size_t buflen, unsigned int flags)
         return -EFAULT;
     }
 
+#ifdef RT_USING_USERSPACE
     kmem = kmem_get(buflen);
     if (!kmem)
     {
@@ -3969,7 +3968,18 @@ int sys_getrandom(void *buf, size_t buflen, unsigned int flags)
         ret = lwp_put_to_user(buf, kmem, count);
     }
     kmem_put(kmem);
+#else
+    while (count < buflen)
+    {
+        ret = rt_device_read(rd_dev, count, kmem + count, buflen - count);
+        if (ret <= 0)
+            break;
+        count += ret;
+    }
+    rt_device_close(rd_dev);
 
+    ret = count;
+#endif
     return ret;
 }
 
