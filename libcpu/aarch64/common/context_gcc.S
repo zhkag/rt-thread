@@ -144,9 +144,7 @@ rt_hw_get_gtimer_frq:
     /* Set the SP to point to the stack of the task being restored. */
     MOV     SP, X0
 
-#ifdef RT_USING_GDBSERVER
-    bl lwp_check_debug
-#endif
+    bl      lwp_check_debug
 
     BL      lwp_check_exit
 

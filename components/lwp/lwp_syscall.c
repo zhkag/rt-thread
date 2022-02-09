@@ -1005,19 +1005,11 @@ int sys_settimeofday(const struct timeval *tv, const struct timezone *tzp)
     return 0;
 }
 
-#ifdef RT_USING_GDBSERVER
 int lwp_execve(char *filename, int debug, int argc, char **argv, char **envp);
-#else
-int lwp_execve(char *filename, int argc, char **argv, char **envp);
-#endif
 
 int sys_exec(char *filename, int argc, char **argv, char **envp)
 {
-#ifdef RT_USING_GDBSERVER
     return lwp_execve(filename, 0, argc, argv, envp);
-#else
-    return lwp_execve(filename, argc, argv, envp);
-#endif
 }
 
 int sys_kill(int pid, int sig)
@@ -3933,7 +3925,7 @@ int sys_getrandom(void *buf, size_t buflen, unsigned int flags)
     {
         return -EFAULT;
     }
-    
+
     if (rt_device_open(rd_dev, RT_DEVICE_OFLAG_RDONLY) != RT_EOK)
     {
         return -EFAULT;
@@ -3955,7 +3947,7 @@ int sys_getrandom(void *buf, size_t buflen, unsigned int flags)
 
     while (count < buflen)
     {
-        ret = rt_device_read(rd_dev, count, kmem + count, buflen - count);
+        ret = rt_device_read(rd_dev, count, (char *)kmem + count, buflen - count);
         if (ret <= 0)
             break;
         count += ret;
@@ -3971,7 +3963,7 @@ int sys_getrandom(void *buf, size_t buflen, unsigned int flags)
 #else
     while (count < buflen)
     {
-        ret = rt_device_read(rd_dev, count, kmem + count, buflen - count);
+        ret = rt_device_read(rd_dev, count, (char *)kmem + count, buflen - count);
         if (ret <= 0)
             break;
         count += ret;

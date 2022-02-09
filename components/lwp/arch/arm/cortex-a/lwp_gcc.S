@@ -169,10 +169,8 @@ vector_swi:
     cmp r0, #0xe000
     beq lwp_signal_quit
 
-#ifdef RT_USING_GDBSERVER
     cmp r0, #0xf000
     beq ret_from_user
-#endif
     and r0, r7, #0xff
     bl lwp_get_sys_api
     cmp r0, #0           /* r0 = api */
@@ -195,12 +193,18 @@ ret_to_user:
     cmp r0, #0
     pop {r0-r3, r12, lr}
     bne user_do_signal
-#ifdef RT_USING_GDBSERVER
+
+    push {r0}
+    ldr r0, =rt_dbg_ops
+    ldr r0, [r0]
+    cmp r0, #0
+    pop  {r0}
+    beq 1f
     push {r0-r3, r12, lr}
     mov r0, lr
-    bl lwp_check_debug_attach_req
+    bl dbg_attach_req
     pop {r0-r3, r12, lr}
-#endif
+1:
     movs pc, lr
 
 #ifdef RT_USING_LWP
@@ -216,11 +220,16 @@ lwp_check_exit:
     pop {r0 - r12, pc}
 #endif
 
-#ifdef RT_USING_GDBSERVER
 .global lwp_check_debug
 lwp_check_debug:
+    ldr r0, =rt_dbg_ops
+    ldr r0, [r0]
+    cmp r0, #0
+    bne 1f
+    bx  lr
+1:
     push {r0 - r12, lr}
-    bl lwp_check_debug_suspend
+    bl dbg_check_suspend
     cmp r0, #0
     beq lwp_check_debug_quit
 
@@ -263,7 +272,6 @@ ret_from_user:
     msr spsr_cxsf, r4
 lwp_check_debug_quit:
     pop {r0 - r12, pc}
-#endif
 
 lwp_signal_quit:
     cpsid i
