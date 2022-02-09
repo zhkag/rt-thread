@@ -3925,7 +3925,7 @@ int sys_getrandom(void *buf, size_t buflen, unsigned int flags)
     {
         return -EFAULT;
     }
-    
+
     if (rt_device_open(rd_dev, RT_DEVICE_OFLAG_RDONLY) != RT_EOK)
     {
         return -EFAULT;
@@ -3947,7 +3947,7 @@ int sys_getrandom(void *buf, size_t buflen, unsigned int flags)
 
     while (count < buflen)
     {
-        ret = rt_device_read(rd_dev, count, kmem + count, buflen - count);
+        ret = rt_device_read(rd_dev, count, (char *)kmem + count, buflen - count);
         if (ret <= 0)
             break;
         count += ret;
@@ -3963,7 +3963,7 @@ int sys_getrandom(void *buf, size_t buflen, unsigned int flags)
 #else
     while (count < buflen)
     {
-        ret = rt_device_read(rd_dev, count, kmem + count, buflen - count);
+        ret = rt_device_read(rd_dev, count, (char *)kmem + count, buflen - count);
         if (ret <= 0)
             break;
         count += ret;
