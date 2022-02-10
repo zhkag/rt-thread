@@ -3975,6 +3975,20 @@ int sys_getrandom(void *buf, size_t buflen, unsigned int flags)
     return ret;
 }
 
+#ifdef RT_USING_USERSPACE
+/* memory allocation */
+void *sys_mremap(void *old_address, size_t old_size,
+             size_t new_size, int flags, void *new_address)
+{
+    return -1;
+}
+
+int sys_madvise(void *addr, size_t len, int behav)
+{
+    return -ENOSYS;
+}
+#endif
+
 const static void* func_table[] =
 {
     (void *)sys_exit,            /* 01 */
@@ -4160,6 +4174,9 @@ const static void* func_table[] =
     (void *)sys_setrlimit,
     (void *)sys_setsid,
     (void *)sys_getrandom,
+    (void *)sys_notimpl,    // (void *)sys_readlink     /* 145 */
+    SYSCALL_USPACE(sys_mremap),
+    SYSCALL_USPACE(sys_madvise),
 };
 
 const void *lwp_get_sys_api(rt_uint32_t number)
