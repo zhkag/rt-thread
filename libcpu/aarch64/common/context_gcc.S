@@ -144,9 +144,10 @@ rt_hw_get_gtimer_frq:
     /* Set the SP to point to the stack of the task being restored. */
     MOV     SP, X0
 
+#ifdef RT_USING_LWP
     bl      lwp_check_debug
-
     BL      lwp_check_exit
+#endif
 
     LDP     X2, X3, [SP], #0x10  /* SPSR and ELR. */
 
@@ -186,6 +187,7 @@ rt_hw_get_gtimer_frq:
     MOV     SP, X0
 
 #ifdef RT_USING_LWP
+    bl      lwp_check_debug
     bl      lwp_check_exit
 #endif
 
