@@ -278,21 +278,26 @@ ret_to_user:
     stp x0, x1, [sp, #-0x10]!
     stp x29, x30, [sp, #-0x10]!
 
+    bl lwp_check_debug
+    bl lwp_check_exit_request
+    cbz w0, 1f
+    mov x0, xzr
+    b sys_exit
+1:
     ldr x0, =rt_dbg_ops
     ldr x0, [x0]
     cbz x0, 3f
     bl dbg_thread_in_debug
     mov x1, #(1 << 21)
     mrs x2, spsr_el1
-    cbz w0, 1f
+    cbz w0, 2f
     orr x2, x2, x1
-    b 2f
-1:
-    bic x2, x2, x1
+    msr spsr_el1, x2
+    b 3f
 2:
+    bic x2, x2, x1
     msr spsr_el1, x2
 3:
-
     bl lwp_signal_check
     cmp x0, xzr
 
@@ -422,37 +427,12 @@ lwp_check_debug:
     cbnz x0, 1f
     ret
 1:
-    SAVE_FPU sp
-    stp x0, x1, [sp, #-0x10]!
-    stp x2, x3, [sp, #-0x10]!
-    stp x4, x5, [sp, #-0x10]!
-    stp x6, x7, [sp, #-0x10]!
-    stp x10, x11, [sp, #-0x10]!
-    stp x12, x13, [sp, #-0x10]!
-    stp x14, x15, [sp, #-0x10]!
-    stp x16, x17, [sp, #-0x10]!
-    stp x18, x19, [sp, #-0x10]!
-    stp x20, x21, [sp, #-0x10]!
-    stp x22, x23, [sp, #-0x10]!
-    stp x24, x25, [sp, #-0x10]!
-    stp x26, x27, [sp, #-0x10]!
-    stp x28, x29, [sp, #-0x10]!
-
-    mrs x0, fpcr
-    mrs x1, fpsr
-    stp x0, x1, [sp, #-0x10]!
     stp x29, x30, [sp, #-0x10]!
-
-    bl lwp_check_exit_request
-    cbz x0, 1f
-    mov x0, xzr
-    b sys_exit
-1:
     bl dbg_check_suspend
     cbz w0, lwp_check_debug_quit
 
     mrs x2, sp_el0
-    sub x2, x2, #8
+    sub x2, x2, #0x10
     mov x3, x2
     msr sp_el0, x2
     ldr x0, =lwp_debugreturn
@@ -471,43 +451,28 @@ lwp_check_debug:
     ic ialluis
     isb sy
 
-    msr elr_el1, x3 /* lwp_debugreturn */
+    mrs x0, elr_el1
     mrs x1, spsr_el1
     stp x0, x1, [sp, #-0x10]!
+    msr elr_el1, x3 /* lwp_debugreturn */
     mov x1, #(SPSR_Mode(0) | SPSR_A64)
+    orr x1, x1, #(1 << 21)
     msr spsr_el1, x1
     eret
 ret_from_user:
-    /* sp_el0 += 8 for drop ins lwp_debugreturn */
+    /* sp_el0 += 16 for drop ins lwp_debugreturn */
     mrs x0, sp_el0
-    add x0, x0, #8
+    add x0, x0, #0x10
     msr sp_el0, x0
     /* now is el1, sp is pos(empty) - sizeof(context) */
     mov x0, sp
-    add x0, x0, #0x220 /* sizeof(context) */
+    add x0, x0, #0x220
     mov sp, x0
-    ldp x0, x1, [sp], #0x10  /* x0 is origin spsr_el1 */
-    msr spsr_el1, x0
+    ldp x0, x1, [sp], #0x10  /* x1 is origin spsr_el1 */
+    msr elr_el1, x0          /* x0 is origin elr_el1 */
+    msr spsr_el1, x1
 lwp_check_debug_quit:
     ldp x29, x30, [sp], #0x10
-    ldp x0, x1, [sp], #0x10
-    msr fpcr, x0
-    msr fpsr, x1
-    ldp x28, x29, [sp], #0x10
-    ldp x26, x27, [sp], #0x10
-    ldp x24, x25, [sp], #0x10
-    ldp x22, x23, [sp], #0x10
-    ldp x20, x21, [sp], #0x10
-    ldp x18, x19, [sp], #0x10
-    ldp x16, x17, [sp], #0x10
-    ldp x14, x15, [sp], #0x10
-    ldp x12, x13, [sp], #0x10
-    ldp x10, x11, [sp], #0x10
-    ldp x6, x7, [sp], #0x10
-    ldp x4, x5, [sp], #0x10
-    ldp x2, x3, [sp], #0x10
-    ldp x0, x1, [sp], #0x10
-    RESTORE_FPU sp
     ret
 
 lwp_signal_quit:
@@ -609,7 +574,7 @@ user_do_signal:
     eret
 
 lwp_debugreturn:
-    mov x9, 0xf000
+    mov x8, 0xf000
     svc #0
 
 lwp_sigreturn:

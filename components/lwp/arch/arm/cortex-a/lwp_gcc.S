@@ -189,6 +189,13 @@ svc_exit:
 .global ret_to_user
 ret_to_user:
     push {r0-r3, r12, lr}
+    bl lwp_check_debug
+    bl lwp_check_exit_request
+    cmp r0, #0
+    beq 1f
+    mov r0, #0
+    b sys_exit
+1:
     bl lwp_signal_check
     cmp r0, #0
     pop {r0-r3, r12, lr}
@@ -199,12 +206,12 @@ ret_to_user:
     ldr r0, [r0]
     cmp r0, #0
     pop  {r0}
-    beq 1f
+    beq 2f
     push {r0-r3, r12, lr}
     mov r0, lr
     bl dbg_attach_req
     pop {r0-r3, r12, lr}
-1:
+2:
     movs pc, lr
 
 #ifdef RT_USING_LWP
@@ -216,13 +223,7 @@ lwp_check_debug:
     bne 1f
     bx  lr
 1:
-    push {r0 - r12, lr}
-    bl lwp_check_exit_request
-    cmp r0, #0
-    beq 2f
-    mov r0, #0
-    bl sys_exit
-2:
+    push {lr}
     bl dbg_check_suspend
     cmp r0, #0
     beq lwp_check_debug_quit
@@ -265,7 +266,7 @@ ret_from_user:
     pop {r4}
     msr spsr_cxsf, r4
 lwp_check_debug_quit:
-    pop {r0 - r12, pc}
+    pop {pc}
 
 lwp_signal_quit:
     cpsid i

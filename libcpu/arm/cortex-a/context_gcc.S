@@ -247,10 +247,6 @@ rt_hw_context_switch_exit:
     msr     spsr_cxsf, r1        /* original mode */
 
 #ifdef RT_USING_LWP
-    bl lwp_check_debug
-#endif
-
-#ifdef RT_USING_LWP
     and r1, #0x1f
     cmp r1, #0x10
     bne 1f

@@ -144,10 +144,6 @@ rt_hw_get_gtimer_frq:
     /* Set the SP to point to the stack of the task being restored. */
     MOV     SP, X0
 
-#ifdef RT_USING_LWP
-    BL      lwp_check_debug
-#endif
-
     LDP     X2, X3, [SP], #0x10  /* SPSR and ELR. */
 
     TST     X3, #0x1f
@@ -184,10 +180,6 @@ rt_hw_get_gtimer_frq:
 .macro RESTORE_CONTEXT
     /* Set the SP to point to the stack of the task being restored. */
     MOV     SP, X0
-
-#ifdef RT_USING_LWP
-    bl      lwp_check_debug
-#endif
 
     BL      rt_thread_self
     MOV     X19, X0
@@ -231,10 +223,6 @@ rt_hw_get_gtimer_frq:
 
 .macro RESTORE_CONTEXT_WITHOUT_MMU_SWITCH
     /* the SP is already ok */
-#ifdef RT_USING_LWP
-    bl      lwp_check_debug
-#endif
-
     LDP     X2, X3, [SP], #0x10  /* SPSR and ELR. */
 
     TST     X3, #0x1f
