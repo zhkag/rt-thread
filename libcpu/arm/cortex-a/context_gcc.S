@@ -248,7 +248,6 @@ rt_hw_context_switch_exit:
 
 #ifdef RT_USING_LWP
     bl lwp_check_debug
-    bl lwp_check_exit
 #endif
 
 #ifdef RT_USING_LWP
