@@ -3980,7 +3980,7 @@ int sys_getrandom(void *buf, size_t buflen, unsigned int flags)
 void *sys_mremap(void *old_address, size_t old_size,
              size_t new_size, int flags, void *new_address)
 {
-    return -1;
+    return (void *)-1;
 }
 
 int sys_madvise(void *addr, size_t len, int behav)
