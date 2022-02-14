@@ -371,56 +371,6 @@ ret_to_user:
 1:
     eret
 
-.global lwp_check_exit
-lwp_check_exit:
-    SAVE_FPU sp
-    stp x0, x1, [sp, #-0x10]!
-    stp x2, x3, [sp, #-0x10]!
-    stp x4, x5, [sp, #-0x10]!
-    stp x6, x7, [sp, #-0x10]!
-    stp x10, x11, [sp, #-0x10]!
-    stp x12, x13, [sp, #-0x10]!
-    stp x14, x15, [sp, #-0x10]!
-    stp x16, x17, [sp, #-0x10]!
-    stp x18, x19, [sp, #-0x10]!
-    stp x20, x21, [sp, #-0x10]!
-    stp x22, x23, [sp, #-0x10]!
-    stp x24, x25, [sp, #-0x10]!
-    stp x26, x27, [sp, #-0x10]!
-    stp x28, x29, [sp, #-0x10]!
-    mrs x0, fpcr
-    mrs x1, fpsr
-    stp x0, x1, [sp, #-0x10]!
-    stp x29, x30, [sp, #-0x10]!
-
-    bl lwp_check_exit_request
-    cmp x0, xzr
-    bne 1f
-    ldp x29, x30, [sp], #0x10
-    ldp x0, x1, [sp], #0x10
-    msr fpcr, x0
-    msr fpsr, x1
-    ldp x28, x29, [sp], #0x10
-    ldp x26, x27, [sp], #0x10
-    ldp x24, x25, [sp], #0x10
-    ldp x22, x23, [sp], #0x10
-    ldp x20, x21, [sp], #0x10
-    ldp x18, x19, [sp], #0x10
-    ldp x16, x17, [sp], #0x10
-    ldp x14, x15, [sp], #0x10
-    ldp x12, x13, [sp], #0x10
-    ldp x10, x11, [sp], #0x10
-    ldp x6, x7, [sp], #0x10
-    ldp x4, x5, [sp], #0x10
-    ldp x2, x3, [sp], #0x10
-    ldp x0, x1, [sp], #0x10
-    RESTORE_FPU sp
-
-    br x30
-1:
-    mov x0, xzr
-    b sys_exit
-
 /*
 struct rt_hw_exp_stack
 {
@@ -493,9 +443,13 @@ lwp_check_debug:
     stp x0, x1, [sp, #-0x10]!
     stp x29, x30, [sp, #-0x10]!
 
+    bl lwp_check_exit_request
+    cbz x0, 1f
+    mov x0, xzr
+    b sys_exit
+1:
     bl dbg_check_suspend
-    cmp w0, wzr
-    beq lwp_check_debug_quit
+    cbz w0, lwp_check_debug_quit
 
     mrs x2, sp_el0
     sub x2, x2, #8

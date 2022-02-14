@@ -208,18 +208,6 @@ ret_to_user:
     movs pc, lr
 
 #ifdef RT_USING_LWP
-.global lwp_check_exit
-lwp_check_exit:
-    push {r0 - r12, lr}
-    bl lwp_check_exit_request
-    cmp r0, #0
-    beq 1f
-    mov r0, #0
-    bl sys_exit
-1:
-    pop {r0 - r12, pc}
-#endif
-
 .global lwp_check_debug
 lwp_check_debug:
     ldr r0, =rt_dbg_ops
@@ -229,6 +217,12 @@ lwp_check_debug:
     bx  lr
 1:
     push {r0 - r12, lr}
+    bl lwp_check_exit_request
+    cmp r0, #0
+    beq 2f
+    mov r0, #0
+    bl sys_exit
+2:
     bl dbg_check_suspend
     cmp r0, #0
     beq lwp_check_debug_quit
@@ -342,6 +336,7 @@ lwp_thread_return:
     mov r0, #0
     mov r7, #0x01
     svc #0
+#endif
 
 .global check_vfp
 check_vfp:

@@ -145,8 +145,7 @@ rt_hw_get_gtimer_frq:
     MOV     SP, X0
 
 #ifdef RT_USING_LWP
-    bl      lwp_check_debug
-    BL      lwp_check_exit
+    BL      lwp_check_debug
 #endif
 
     LDP     X2, X3, [SP], #0x10  /* SPSR and ELR. */
@@ -188,10 +187,7 @@ rt_hw_get_gtimer_frq:
 
 #ifdef RT_USING_LWP
     bl      lwp_check_debug
-    bl      lwp_check_exit
 #endif
-
-    BL      lwp_check_exit
 
     BL      rt_thread_self
     MOV     X19, X0
@@ -235,7 +231,9 @@ rt_hw_get_gtimer_frq:
 
 .macro RESTORE_CONTEXT_WITHOUT_MMU_SWITCH
     /* the SP is already ok */
-    BL      lwp_check_exit
+#ifdef RT_USING_LWP
+    bl      lwp_check_debug
+#endif
 
     LDP     X2, X3, [SP], #0x10  /* SPSR and ELR. */
 

@@ -407,7 +407,7 @@ vector_irq:
     mrs     r4, spsr
     sub     r5, lr, #4
     cps     #Mode_SVC
-    bl      lwp_check_exit
+    bl      lwp_check_debug
     and     r6, r4, #0x1f
     cmp     r6, #0x10
     bne     1f
@@ -507,7 +507,6 @@ rt_hw_context_switch_interrupt_do:
 
 #ifdef RT_USING_LWP
     bl      lwp_check_debug
-    bl      lwp_check_exit
 #endif
 
 #ifdef RT_USING_LWP
