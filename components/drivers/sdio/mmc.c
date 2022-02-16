@@ -321,12 +321,15 @@ static int mmc_select_bus_width(struct rt_mmcsd_card *card, rt_uint8_t *ext_csd)
     * bail out early if corresponding bus capable wasn't
     * set by drivers.
     */
-     if ((!(host->flags & MMCSD_BUSWIDTH_8) &&
+
+     if (!(((host->flags & MMCSD_BUSWIDTH_8) &&
       ext_csd_bits[idx] == EXT_CSD_BUS_WIDTH_8) ||
-         (!(host->flags & MMCSD_BUSWIDTH_4) &&
-      (ext_csd_bits[idx] == EXT_CSD_BUS_WIDTH_4 ||
-      ext_csd_bits[idx] == EXT_CSD_BUS_WIDTH_8)))
-         continue;
+         ((host->flags & MMCSD_BUSWIDTH_4) &&
+      ext_csd_bits[idx] == EXT_CSD_BUS_WIDTH_4) ||
+      !(ext_csd_bits[idx] == EXT_CSD_BUS_WIDTH_8)))
+    {
+         continue;      
+    }
 
     err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
                      EXT_CSD_BUS_WIDTH,

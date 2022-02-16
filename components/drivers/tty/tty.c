@@ -79,11 +79,13 @@ int __tty_check_change(struct tty_struct *tty, int sig)
     level = rt_hw_interrupt_disable();
     if (current == RT_NULL)
     {
+        rt_hw_interrupt_enable(level);
         return 0;
     }
 
     if (current->tty != tty)
     {
+        rt_hw_interrupt_enable(level);
         return 0;
     }
 
