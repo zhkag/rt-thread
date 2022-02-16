@@ -300,12 +300,134 @@ static int _msh_exec_cmd(char *cmd, rt_size_t length, int *retp)
 pid_t exec(char*, int, int, char**);
 
 #if defined(RT_USING_LWP) && defined(RT_USING_DFS)
+/* check whether a file of the given path exits */
+static rt_bool_t _msh_lwp_cmd_exists(const char *path)
+{
+    int fd = -1;
+    fd = open(path, O_RDONLY, 0);
+    if (fd < 0)
+    {
+        return RT_FALSE;
+    }
+    close(fd);
+    return RT_TRUE;
+}
+
+/*
+ * search for the file named "pg_name" or "pg_name.elf" at the given directory,
+ * and return its path. return NULL when not found.
+ */
+static char *_msh_exec_search_path(const char *path, const char *pg_name)
+{
+    char *path_buffer = RT_NULL;
+    ssize_t pg_len = strlen(pg_name);
+    ssize_t base_len = 0;
+
+    if (path)
+    {
+        base_len = strlen(path);
+    }
+
+    path_buffer = rt_malloc(base_len + pg_len + 6);
+    if (path_buffer == RT_NULL)
+    {
+        return RT_NULL; /* no mem */
+    }
+
+    if (base_len > 0)
+    {
+        memcpy(path_buffer, path, base_len);
+        path_buffer[base_len] = '/';
+        path_buffer[base_len + 1] = '\0';
+    }
+    else
+    {
+        *path_buffer = '\0';
+    }
+    strcat(path_buffer, pg_name);
+    
+    if (_msh_lwp_cmd_exists(path_buffer))
+    {
+        return path_buffer;
+    }
+
+    if (strstr(path_buffer, ".elf") != NULL)
+    {
+        goto not_found;
+    }
+
+    strcat(path_buffer, ".elf");
+    if (_msh_lwp_cmd_exists(path_buffer))
+    {
+        return path_buffer;
+    }
+
+not_found:
+    rt_free(path_buffer);
+    return RT_NULL;
+}
+
+/*
+ * search for the file named "pg_name" or "pg_name.elf" at each env path,
+ * and return its path. return NULL when not found.
+ */
+static char *_msh_exec_search_env(const char *pg_name)
+{
+    char *result = RT_NULL;
+    char *exec_path = RT_NULL;
+    char *search_path = RT_NULL;
+    char *pos = RT_NULL;
+    char tmp_ch = '\0';
+
+    if (!(exec_path = getenv("PATH")))
+    {
+        return RT_NULL;
+    }
+
+    /* exec path may need to be modified */
+    if (!(exec_path = strdup(exec_path)))
+    {
+        return RT_NULL;
+    }
+
+    pos = exec_path;
+    search_path = exec_path;
+
+    /* walk through the entire exec_path until finding the program wanted
+       or hitting its end */
+    while (1)
+    {
+        /* env paths are seperated by ':' */
+        if (*pos == ':' || *pos == '\0')
+        {
+            tmp_ch = *pos;
+            *pos = '\0';
+
+            result = _msh_exec_search_path(search_path, pg_name);
+            if (result || tmp_ch == '\0')
+            {
+                goto ret;
+            }
+
+            pos++;
+            search_path = pos;
+            continue;
+        }
+
+        pos++;
+    }
+
+    /* release the duplicated exec_path and return */
+ret:
+    rt_free(exec_path);
+    return result;
+}
+
 int _msh_exec_lwp(int debug, char *cmd, rt_size_t length)
 {
     int argc;
     int cmd0_size = 0;
     char *argv[FINSH_ARG_MAX];
-    int fd = -1;
     char *pg_name;
     int ret;
 
@@ -321,45 +443,41 @@ int _msh_exec_lwp(int debug, char *cmd, rt_size_t length)
     if (argc == 0)
         return -1;
 
-    pg_name = argv[0];
-    /* try to open program */
-    fd = open(pg_name, O_RDONLY, 0);
-    if (fd < 0)
+    /* try to find program in working directory */
+    pg_name = _msh_exec_search_path("", argv[0]);
+    if (pg_name)
     {
-        /* try to open *.elf file */
-        pg_name = rt_malloc(strlen(argv[0]) + 64);
-        if (pg_name)
-        {
-            strcpy(pg_name, argv[0]);
-            strcat(pg_name, ".elf");
-
-            fd = open(pg_name, O_RDONLY, 0);
-
-            /* try it in /bin */
-            if (fd < 0)
-            {
-                if (strstr(argv[0], "elf") != NULL)
-                    snprintf(pg_name, 64, "/bin/%s", argv[0]);
-                else
-                    snprintf(pg_name, 64, "/bin/%s.elf", argv[0]);
-                fd = open(pg_name, O_RDONLY, 0);
-            }
-
-            if (fd < 0)
-            {
-                rt_free(pg_name);
-                return -1;
-            }
-        }
-        else return -1; /* out of memory */
+        goto found_program;
     }
 
-    /* found program */
-    close(fd);
+    /* only check these paths when the first argument doesn't contain path 
+       seperator */
+    if (strstr(argv[0], "/"))
+    {
+        return -1;
+    }
 
+    /* try to find program in /bin */
+    pg_name = _msh_exec_search_path("/bin", argv[0]);
+    if (pg_name)
+    {
+        goto found_program;
+    }
+
+    /* try to find program in dirs registered to env path */
+    pg_name = _msh_exec_search_env(argv[0]);
+    if (pg_name)
+    {
+        goto found_program;
+    }
+
+    /* not found in anywhere */
+    return -1;
+
+    /* found program */
+found_program:
     ret = exec(pg_name, debug, argc, argv);
-    if (pg_name != argv[0])
-        rt_free(pg_name);
+    rt_free(pg_name);
 
     return ret;
 }
