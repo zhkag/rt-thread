@@ -791,7 +791,8 @@ static size_t __process_echoes(struct tty_struct *tty)
     size_t tail = 0;
     unsigned char c = 0;
     char ch = 0;
-
+    unsigned char num_chars = 0, num_bs = 0;
+    
     tail = ldata->echo_tail;
     while (ldata->echo_commit != tail)
     {
@@ -809,8 +810,6 @@ static size_t __process_echoes(struct tty_struct *tty)
 
             switch (op)
             {
-                unsigned char num_chars = 0, num_bs = 0;
-
             case ECHO_OP_ERASE_TAB:
                 num_chars = echo_buf(ldata, tail + 2);
 
@@ -1846,6 +1845,7 @@ static int n_tty_read(struct dfs_fd *fd, void *buf, size_t count)
     c = job_control(tty);
     if (c < 0)
     {
+        rt_hw_interrupt_enable(level);
         return c;
     }
 
