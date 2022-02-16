@@ -959,6 +959,53 @@ static void netdev_list_if(void)
     }
 }
 
+#ifdef RT_LWIP_DHCP
+struct netif;
+void dhcp_stop(struct netif *netif);
+int dhcp_start(struct netif *netif);
+int netdev_dhcp_open(char* netdev_name)
+{
+    struct netdev *netdev = RT_NULL;
+    int ret;
+    netdev = netdev_get_by_name(netdev_name);
+    if (netdev == RT_NULL)
+    {
+        rt_kprintf("bad network interface device name(%s).\n", netdev_name);
+        return -1;
+    }    
+    if (!netdev_is_dhcp_enabled(netdev))
+    {
+        ret = dhcp_start(netdev->user_data);
+        if(ret != 0)
+        {
+            LOG_E("dhcp start failed\n");
+        }
+        netdev_low_level_set_dhcp_status(netdev, RT_TRUE);
+    }
+
+    return 0;
+}
+
+int netdev_dhcp_close(char* netdev_name)
+{
+    struct netdev *netdev = RT_NULL;
+
+    netdev = netdev_get_by_name(netdev_name);
+    if (netdev == RT_NULL)
+    {
+        rt_kprintf("bad network interface device name(%s).\n", netdev_name);
+        return -1;
+    }
+    if (netdev_is_dhcp_enabled(netdev))
+    {
+        dhcp_stop(netdev->user_data);    
+        netdev_low_level_set_dhcp_status(netdev, RT_FALSE);
+    }
+    
+    return 0;
+}
+#endif
+
 static void netdev_set_if(char* netdev_name, char* ip_addr, char* gw_addr, char* nm_addr)
 {
     struct netdev *netdev = RT_NULL;
@@ -970,6 +1017,10 @@ static void netdev_set_if(char* netdev_name, char* ip_addr, char* gw_addr, char*
         rt_kprintf("bad network interface device name(%s).\n", netdev_name);
         return;
     }
+
+#ifdef RT_LWIP_DHCP
+    netdev_dhcp_close(netdev_name);
+#endif
 
     /* set IP address */
     if ((ip_addr != RT_NULL) && inet_aton(ip_addr, &addr))
@@ -996,6 +1047,15 @@ int netdev_ifconfig(int argc, char **argv)
     {
         netdev_list_if();
     }
+#ifdef RT_LWIP_DHCP    
+    else if(argc == 3)
+    {
+        if (!strcmp(argv[2], "dhcp"))
+        {
+            netdev_dhcp_open(argv[1]);    
+        }
+    }
+#endif    
     else if (argc == 5)
     {
         rt_kprintf("config : %s\n", argv[1]);
@@ -1007,6 +1067,9 @@ int netdev_ifconfig(int argc, char **argv)
     else
     {
         rt_kprintf("bad parameter! e.g: ifconfig e0 192.168.1.30 192.168.1.1 255.255.255.0\n");
+#ifdef RT_LWIP_DHCP        
+        rt_kprintf("bad parameter! e.g: ifconfig e0 dhcp\n");
+#endif        
     }
 
     return 0;
