@@ -162,6 +162,14 @@ static int lwip_netdev_set_dns_server(struct netdev *netif, uint8_t dns_num, ip_
 #ifdef RT_LWIP_DHCP
 static int lwip_netdev_set_dhcp(struct netdev *netif, rt_bool_t is_enabled)
 {
+    if(RT_TRUE == is_enabled)
+    {
+        dhcp_start((struct netif *)netif->user_data);
+    }
+    else
+    {
+        dhcp_stop((struct netif *)netif->user_data);
+    }
     netdev_low_level_set_dhcp_status(netif, is_enabled);
     return ERR_OK;
 }
