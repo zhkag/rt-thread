@@ -960,29 +960,16 @@ static void netdev_list_if(void)
 }
 
 #ifdef RT_LWIP_DHCP
-struct netif;
-void dhcp_stop(struct netif *netif);
-int dhcp_start(struct netif *netif);
 int netdev_dhcp_open(char* netdev_name)
 {
     struct netdev *netdev = RT_NULL;
-    int ret;
     netdev = netdev_get_by_name(netdev_name);
     if (netdev == RT_NULL)
     {
         rt_kprintf("bad network interface device name(%s).\n", netdev_name);
         return -1;
     }    
-    if (!netdev_is_dhcp_enabled(netdev))
-    {
-        ret = dhcp_start(netdev->user_data);
-        if(ret != 0)
-        {
-            LOG_E("dhcp start failed\n");
-        }
-        netdev_low_level_set_dhcp_status(netdev, RT_TRUE);
-    }
-
+    netdev_dhcp_enabled(netdev,RT_TRUE);
     return 0;
 }
 
@@ -996,12 +983,7 @@ int netdev_dhcp_close(char* netdev_name)
         rt_kprintf("bad network interface device name(%s).\n", netdev_name);
         return -1;
     }
-    if (netdev_is_dhcp_enabled(netdev))
-    {
-        dhcp_stop(netdev->user_data);    
-        netdev_low_level_set_dhcp_status(netdev, RT_FALSE);
-    }
-    
+    netdev_dhcp_enabled(netdev,RT_FALSE);
     return 0;
 }
 #endif
