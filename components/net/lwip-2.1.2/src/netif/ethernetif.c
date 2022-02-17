@@ -111,39 +111,39 @@ static char eth_rx_thread_stack[RT_LWIP_ETHTHREAD_STACKSIZE];
 #include "lwip/netdb.h"
 #include <netdev.h>
 
-static int lwip_netdev_set_up(struct netdev *netdev)
+static int lwip_netdev_set_up(struct netdev *netif)
 {
-    netif_set_up((struct netif *)netdev->user_data);
+    netif_set_up((struct netif *)netif->user_data);
     return ERR_OK;
 }
 
-static int lwip_netdev_set_down(struct netdev *netdev)
+static int lwip_netdev_set_down(struct netdev *netif)
 {
-    netif_set_down((struct netif *)netdev->user_data);
+    netif_set_down((struct netif *)netif->user_data);
     return ERR_OK;
 }
 
-static int lwip_netdev_set_addr_info(struct netdev *netdev, ip_addr_t *ip_addr, ip_addr_t *netmask, ip_addr_t *gw)
+static int lwip_netdev_set_addr_info(struct netdev *netif, ip_addr_t *ip_addr, ip_addr_t *netmask, ip_addr_t *gw)
 {
     if (ip_addr && netmask && gw)
     {
-        netif_set_addr((struct netif *)netdev->user_data, ip_2_ip4(ip_addr), ip_2_ip4(netmask), ip_2_ip4(gw));
+        netif_set_addr((struct netif *)netif->user_data, ip_2_ip4(ip_addr), ip_2_ip4(netmask), ip_2_ip4(gw));
     }
     else
     {
         if (ip_addr)
         {
-            netif_set_ipaddr((struct netif *)netdev->user_data, ip_2_ip4(ip_addr));
+            netif_set_ipaddr((struct netif *)netif->user_data, ip_2_ip4(ip_addr));
         }
 
         if (netmask)
         {
-            netif_set_netmask((struct netif *)netdev->user_data, ip_2_ip4(netmask));
+            netif_set_netmask((struct netif *)netif->user_data, ip_2_ip4(netmask));
         }
 
         if (gw)
         {
-            netif_set_gw((struct netif *)netdev->user_data, ip_2_ip4(gw));
+            netif_set_gw((struct netif *)netif->user_data, ip_2_ip4(gw));
         }
     }
 
@@ -151,7 +151,7 @@ static int lwip_netdev_set_addr_info(struct netdev *netdev, ip_addr_t *ip_addr, 
 }
 
 #ifdef RT_LWIP_DNS
-static int lwip_netdev_set_dns_server(struct netdev *netdev, uint8_t dns_num, ip_addr_t *dns_server)
+static int lwip_netdev_set_dns_server(struct netdev *netif, uint8_t dns_num, ip_addr_t *dns_server)
 {
     extern void dns_setserver(uint8_t dns_num, const ip_addr_t *dns_server);
     dns_setserver(dns_num, dns_server);
@@ -160,18 +160,17 @@ static int lwip_netdev_set_dns_server(struct netdev *netdev, uint8_t dns_num, ip
 #endif /* RT_LWIP_DNS */
 
 #ifdef RT_LWIP_DHCP
-static int lwip_netdev_set_dhcp(struct netdev *netdev, rt_bool_t is_enabled)
+static int lwip_netdev_set_dhcp(struct netdev *netif, rt_bool_t is_enabled)
 {
     if(RT_TRUE == is_enabled)
     {
-        dhcp_start((struct netif *)netdev->user_data);
+        dhcp_start((struct netif *)netif->user_data);
     }
     else
     {
-        dhcp_stop((struct netif *)netdev->user_data);
+        dhcp_stop((struct netif *)netif->user_data);
     }
-
-    netdev_low_level_set_dhcp_status(netdev, is_enabled);
+    netdev_low_level_set_dhcp_status(netif, is_enabled);
     return ERR_OK;
 }
 #endif /* RT_LWIP_DHCP */
@@ -181,7 +180,7 @@ static int lwip_netdev_set_dhcp(struct netdev *netdev, rt_bool_t is_enabled)
 extern int lwip_ping_recv(int s, int *ttl);
 extern err_t lwip_ping_send(int s, ip_addr_t *addr, int size);
 
-int lwip_netdev_ping(struct netdev *netdev, const char *host, size_t data_len, 
+int lwip_netdev_ping(struct netdev *netif, const char *host, size_t data_len, 
                         uint32_t timeout, struct netdev_ping_resp *ping_resp)
 {
     int s, ttl, recv_len, result = 0;
@@ -197,7 +196,7 @@ int lwip_netdev_ping(struct netdev *netdev, const char *host, size_t data_len,
     struct sockaddr_in *h = RT_NULL;
     struct in_addr ina;
     
-    RT_ASSERT(netdev);
+    RT_ASSERT(netif);
     RT_ASSERT(host);
     RT_ASSERT(ping_resp);
 
@@ -254,7 +253,7 @@ __exit:
 #endif /* RT_LWIP_USING_PING */
 
 #if defined (RT_LWIP_TCP) || defined (RT_LWIP_UDP)
-void lwip_netdev_netstat(struct netdev *netdev)
+void lwip_netdev_netstat(struct netdev *netif)
 {
     extern void list_tcps(void);
     extern void list_udps(void);
@@ -269,9 +268,9 @@ void lwip_netdev_netstat(struct netdev *netdev)
 #endif /* RT_LWIP_TCP || RT_LWIP_UDP */
 #endif /* RT_USING_FINSH */
 
-static int lwip_netdev_set_default(struct netdev *netdev)
+static int lwip_netdev_set_default(struct netdev *netif)
 {
-    netif_set_default((struct netif *)netdev->user_data);
+    netif_set_default((struct netif *)netif->user_data);
     return ERR_OK;
 }
 
