@@ -133,6 +133,11 @@ enum {
 #define MBOX_TAG_NOTIFY_REBOOT         0x00030048
 #define MBOX_TAG_NOTIFY_XHCI_RESET     0x00030058
 
+/*
+* touch
+*/
+#define MBOX_TAG_GET_TOUCHBUF          (0x0004000F)
+
 #define MBOX_ADDR 0x08000000
 extern size_t mbox_addr;
 
@@ -149,6 +154,7 @@ extern size_t mbox_addr;
 #define    PWM_CLK_ID           (0x00000000a)
 
 int mbox_call(unsigned char ch, int mmu_enable);
+int bcm271x_mbox_get_touch(void);
 int bcm271x_notify_reboot(void);
 int bcm271x_notify_xhci_reset(void);
 int bcm271x_gpu_enable(void);

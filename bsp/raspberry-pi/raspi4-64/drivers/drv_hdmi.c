@@ -10,6 +10,12 @@
 
 #include <stdint.h>
 #include <rtthread.h>
+#include <ioremap.h>
+#include <lwp.h>
+#include <lwp_user_mm.h>
+
+#include <hypercall.h>
+
 #include "mbox.h"
 #include "drv_hdmi.h"
 
@@ -89,26 +95,50 @@ rt_size_t hdmi_fb_write(rt_device_t dev, rt_off_t pos, const void *buffer, rt_si
 
 rt_err_t hdmi_fb_control(rt_device_t dev, int cmd, void *args)
 {
+    static unsigned long smem_start = 0;
+    static unsigned long smem_len = 0;
     struct rt_hdmi_fb_device *lcd = LCD_DEVICE(dev);
+
     switch (cmd)
     {
     case RTGRAPHIC_CTRL_RECT_UPDATE:
         {
-            struct rt_device_rect_info *info = (struct rt_device_rect_info*)args;
-            info = info;
+            if (smem_start != 0)
+            {
+                extern void rt_hw_cpu_dcache_clean_and_invalidate(void *addr, int size);
+
+                rt_hw_cpu_dcache_clean_and_invalidate((void *)smem_start, smem_len);
+            }
         }
         break;
-
     case RTGRAPHIC_CTRL_GET_INFO:
         {
-           struct rt_device_graphic_info* info = (struct rt_device_graphic_info*)args;
+            struct rt_device_graphic_info *lcd_info = (struct rt_device_graphic_info *)args;
+            lcd_info->bits_per_pixel = 32;
+            lcd_info->pixel_format = RTGRAPHIC_PIXEL_FORMAT_ARGB888; /* should be coherent to adding layers */
+            lcd_info->width = lcd->width;
+            lcd_info->height = lcd->height;
+            lcd_info->framebuffer = (void *)lwp_map_user_phy(lwp_self(), RT_NULL, lcd->fb, lcd->width * lcd->height * sizeof(rt_uint32_t), 1);
+        }
+        break;
+#define FBIOGET_FSCREENINFO 0x4602
+    case FBIOGET_FSCREENINFO:
+        {
+            struct fb_fix_screeninfo
+            {
+                char id[16];
+                unsigned long smem_start;
+                uint32_t smem_len;
 
-            RT_ASSERT(info != RT_NULL);
-            info->pixel_format  = RTGRAPHIC_PIXEL_FORMAT_RGB888;
-            info->bits_per_pixel= LCD_DEPTH;
-            info->width         = lcd->width;
-            info->height        = lcd->height;
-            info->framebuffer   = lcd->fb;
+                uint32_t line_length;
+            } *info = (struct fb_fix_screeninfo *)args;
+            rt_strncpy(info->id, "lcd", sizeof(info->id));
+            info->smem_len = lcd->width * lcd->height * sizeof(rt_uint32_t);
+            info->smem_start = (size_t)lwp_map_user_phy(lwp_self(), RT_NULL, lcd->fb, info->smem_len, 1);
+            info->line_length = lcd->width * sizeof(rt_uint32_t);
+            rt_memset((void *)info->smem_start, 0, info->smem_len);
+            smem_start = info->smem_start;
+            smem_len = info->smem_len;
         }
         break;
     }
@@ -291,6 +321,21 @@ void *bcm271x_mbox_fb_alloc(int width, int height, int bpp, int nrender)
 int hdmi_fb_init(void)
 {
     _hdmi.fb = (rt_uint8_t *)bcm271x_mbox_fb_alloc(LCD_WIDTH, LCD_HEIGHT, LCD_BPP, 1);
+
+    if (_hdmi.fb == RT_NULL)
+    {
+        rt_kprintf("init hdmi fb err!\n");
+        return -RT_ERROR;
+    }
+
+#ifdef BSP_USING_VM_MODE
+    if (rt_hv_stage2_map((unsigned long)_hdmi.fb, 0x1400000))
+    {
+        rt_kprintf("alloc mmio from hyper fail!\n");
+        return -RT_ERROR;
+    }
+#endif
+
     bcm271x_mbox_fb_setoffset(0, 0);
     bcm271x_mbox_fb_set_porder(0);
     _hdmi.width = LCD_WIDTH;

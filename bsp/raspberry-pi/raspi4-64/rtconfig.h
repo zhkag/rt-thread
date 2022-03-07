@@ -48,6 +48,8 @@
 #define RT_VER_NUM 0x50000
 #define ARCH_CPU_64BIT
 #define RT_USING_CACHE
+#define ARCH_MM_MMU
+#define ARCH_ARM
 #define ARCH_ARM_MMU
 #define RT_USING_USERSPACE
 #define KERNEL_VADDR_START 0xffff000000000000
@@ -68,6 +70,7 @@
 
 #define RT_USING_FINSH
 #define RT_USING_MSH
+#define FINSH_USING_MSH
 #define FINSH_THREAD_NAME "tshell"
 #define FINSH_USING_HISTORY
 #define FINSH_HISTORY_LINES 5
@@ -103,12 +106,14 @@
 /* Device Drivers */
 
 #define RT_USING_DEVICE_IPC
+#define RT_UNAMED_PIPE_NUMBER 64
 #define RT_PIPE_BUFSZ 512
 #define RT_USING_SYSTEM_WORKQUEUE
 #define RT_SYSTEM_WORKQUEUE_STACKSIZE 8192
 #define RT_SYSTEM_WORKQUEUE_PRIORITY 23
 #define RT_USING_SERIAL
 #define RT_SERIAL_RB_BUFSZ 64
+#define RT_USING_TTY
 #define RT_USING_HWTIMER
 #define RT_USING_I2C
 #define RT_USING_I2C_BITOPS
@@ -126,6 +131,7 @@
 #define RT_MMCSD_MAX_PARTITION 16
 #define RT_USING_SPI
 #define RT_USING_WDT
+#define RT_USING_TOUCH
 
 /* Using USB */
 
@@ -136,7 +142,6 @@
 #define RT_USING_MUSL
 #define RT_USING_POSIX
 #define RT_USING_POSIX_MMAP
-#define RT_USING_POSIX_TERMIOS
 #define RT_USING_POSIX_AIO
 #define RT_POSIX_AIO_THREAD_STACK_SIZE 8192
 #define RT_USING_POSIX_CLOCKTIME
@@ -219,9 +224,9 @@
 #define RT_LWP_MAX_NR 30
 #define LWP_TASK_STACK_SIZE 16384
 #define RT_CH_MSG_MAX_NR 1024
-#define RT_LWP_SHM_MAX_NR 64
 #define LWP_CONSOLE_INPUT_BUFFER_SIZE 1024
 #define LWP_TID_MAX_NR 64
+#define RT_LWP_SHM_MAX_NR 64
 
 /* RT-Thread online packages */
 
@@ -247,11 +252,21 @@
 
 /* multimedia packages */
 
+/* LVGL: powerful and easy-to-use embedded GUI library */
+
+
+/* u8g2: a monochrome graphic library */
+
 
 /* tools packages */
 
 
 /* system packages */
+
+/* acceleration: Assembly language or algorithmic acceleration packages */
+
+
+/* CMSIS: ARM Cortex-M Microcontroller Software Interface Standard */
 
 
 /* Micrium: Micrium software products porting for RT-Thread */
@@ -260,19 +275,15 @@
 /* peripheral libraries and drivers */
 
 
-/* miscellaneous packages */
+/* AI packages */
 
+
+/* miscellaneous packages */
 
 /* samples: kernel and components samples */
 
 
-/* games: games run on RT-Thread console */
-
-
-/* Privated Packages of RealThread */
-
-
-/* Network Utilities */
+/* entertainment: terminal games and other interesting software packages */
 
 #define BCM2711_SOC
 
