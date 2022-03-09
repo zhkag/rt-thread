@@ -3,6 +3,10 @@ config BSP_SUPPORT_FPU
     bool "Using Float"
     default n
 
+menuconfig BSP_USING_VM_MODE
+    bool "Enable VM mode"
+    default n
+
 menu "Hardware Drivers Config"
     menu "BCM Peripheral Drivers"
         menuconfig BSP_USING_UART
@@ -128,5 +132,9 @@ menu "Hardware Drivers Config"
                 bool "HDMI DISPLAY"
                 default n
         endif
+
+        menuconfig BSP_USING_TOUCH
+            bool "Enable Touch"
+            default n
     endmenu
 endmenu
