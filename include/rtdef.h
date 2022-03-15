@@ -1029,32 +1029,34 @@ enum rt_device_class_type
 
 /**
  * general device commands
+ * 0x01 - 0x1F general device control commands
+ * 0x20 - 0x3F udevice control commands
+ * 0x40 -      special device control commands
  */
 #define RT_DEVICE_CTRL_RESUME           0x01            /**< resume device */
 #define RT_DEVICE_CTRL_SUSPEND          0x02            /**< suspend device */
 #define RT_DEVICE_CTRL_CONFIG           0x03            /**< configure device */
 #define RT_DEVICE_CTRL_CLOSE            0x04            /**< close device */
 #define RT_DEVICE_CTRL_NOTIFY_SET       0x05            /**< set notify func */
-#define RT_DEVICE_CTRL_CONSOLE_OFLAG    0x06            /**< get console open flag */
-
-#define RT_DEVICE_CTRL_SET_INT          0x10            /**< set interrupt */
-#define RT_DEVICE_CTRL_CLR_INT          0x11            /**< clear interrupt */
-#define RT_DEVICE_CTRL_GET_INT          0x12            /**< get interrupt status */
+#define RT_DEVICE_CTRL_SET_INT          0x06            /**< set interrupt */
+#define RT_DEVICE_CTRL_CLR_INT          0x07            /**< clear interrupt */
+#define RT_DEVICE_CTRL_GET_INT          0x08            /**< get interrupt status */
+#define RT_DEVICE_CTRL_MASK             0x1f            /**< mask for contrl commands */
 
 /**
  * special device commands
  */
-#define RT_DEVICE_CTRL_CHAR_STREAM      0x10            /**< stream mode on char device */
-#define RT_DEVICE_CTRL_BLK_GETGEOME     0x10            /**< get geometry information   */
-#define RT_DEVICE_CTRL_BLK_SYNC         0x11            /**< flush data to block device */
-#define RT_DEVICE_CTRL_BLK_ERASE        0x12            /**< erase block on block device */
-#define RT_DEVICE_CTRL_BLK_AUTOREFRESH  0x13            /**< block device : enter/exit auto refresh mode */
-#define RT_DEVICE_CTRL_NETIF_GETMAC     0x10            /**< get mac address */
-#define RT_DEVICE_CTRL_MTD_FORMAT       0x10            /**< format a MTD device */
-#define RT_DEVICE_CTRL_RTC_GET_TIME     0x10            /**< get time */
-#define RT_DEVICE_CTRL_RTC_SET_TIME     0x11            /**< set time */
-#define RT_DEVICE_CTRL_RTC_GET_ALARM    0x12            /**< get alarm */
-#define RT_DEVICE_CTRL_RTC_SET_ALARM    0x13            /**< set alarm */
+/* console device */
+#define RT_DEVICE_CTRL_CONSOLE_OFLAG    0x40            /**< get console open flag */
+/* character device */
+#define RT_DEVICE_CTRL_CHAR_STREAM      0x40            /**< stream mode on char device */
+/* block device */
+#define RT_DEVICE_CTRL_BLK_GETGEOME     0x40            /**< get geometry information   */
+#define RT_DEVICE_CTRL_BLK_SYNC         0x41            /**< flush data to block device */
+#define RT_DEVICE_CTRL_BLK_ERASE        0x42            /**< erase block on block device */
+#define RT_DEVICE_CTRL_BLK_AUTOREFRESH  0x43            /**< block device : enter/exit auto refresh mode */
+/* net interface device*/
+#define RT_DEVICE_CTRL_NETIF_GETMAC     0x40            /**< get mac address */
 
 typedef struct rt_device *rt_device_t;
 

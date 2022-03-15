@@ -11,11 +11,12 @@
  * 2018-02-16     armink       add auto sync time by NTP
  */
 
-#include <time.h>
-#include <string.h>
-#include <rtthread.h>
+#include <rtdevice.h>
 
 #ifdef RT_USING_RTC
+
+#include <time.h>
+#include <string.h>
 
 /* Using NTP auto sync RTC time */
 #ifdef RTC_SYNC_USING_NTP
