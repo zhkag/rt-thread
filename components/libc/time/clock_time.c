@@ -9,7 +9,7 @@
  *                             which found by Rob <rdent@iinet.net.au>
  */
 
-#include <rtthread.h>
+#include <rtdevice.h>
 #include "clock_time.h"
 
 static struct timeval _timevalue;

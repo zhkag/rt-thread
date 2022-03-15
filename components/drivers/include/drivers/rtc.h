@@ -8,8 +8,14 @@
  * 2012-10-10     aozima       first version.
  */
 
-#ifndef __RTC_H__
-#define __RTC_H__
+#ifndef RTC_H__
+#define RTC_H__
+
+/* RTC device */
+#define RT_DEVICE_CTRL_RTC_GET_TIME     0x40            /**< get time */
+#define RT_DEVICE_CTRL_RTC_SET_TIME     0x41            /**< set time */
+#define RT_DEVICE_CTRL_RTC_GET_ALARM    0x42            /**< get alarm */
+#define RT_DEVICE_CTRL_RTC_SET_ALARM    0x43            /**< set alarm */
 
 rt_err_t set_date(rt_uint32_t year, rt_uint32_t month, rt_uint32_t day);
 rt_err_t set_time(rt_uint32_t hour, rt_uint32_t minute, rt_uint32_t second);

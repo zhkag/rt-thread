@@ -143,6 +143,10 @@ extern "C" {
 #include "drivers/rt_inputcapture.h"
 #endif
 
+#ifdef RT_USING_LCD
+#include "drivers/lcd.h"
+#endif
+
 #ifdef __cplusplus
 }
 #endif

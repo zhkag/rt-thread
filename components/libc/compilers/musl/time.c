@@ -7,7 +7,7 @@
  * Date           Author       Notes
  */
 #include <sys/time.h>
-#include <rtthread.h>
+#include <rtdevice.h>
 
 #ifdef RT_USING_DEVICE
 int gettimeofday(struct timeval *tp, void *ignore)
