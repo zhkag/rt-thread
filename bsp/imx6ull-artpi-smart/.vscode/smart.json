@@ -11,7 +11,8 @@
             "RTT_CC": "gcc",
             "RTT_CC_PREFIX": "arm-linux-musleabi-",
             "RTT_EXEC_PATH": "${SDK_ROOT}/tools/gnu_gcc/arm-linux-musleabi_for_x86_64-pc-linux-gnu/bin",
-            "PATH": "$PATH:$RTT_EXEC_PATH"
+            "UDB_PATH": "${SDK_ROOT}/tools/udb-tools/linux",
+            "PATH": "$PATH:$RTT_EXEC_PATH:$UDB_PATH"
         }
     },
     "statusBarItem": {
@@ -39,7 +40,7 @@
             "commands": [
                 "udb tcp ${SERVER_IP} 5555",
                 "udb devices",
-                "udb push ${EXECUTABLE_PROGRAM} ${TARGET_PATH}"
+                "udb push ${EXECUTABLE_PROGRAM} /kernel/kernel.bin"
             ],
             "label": "下载",
             "tooltip": "下载 RT-Thread Smart 工程"

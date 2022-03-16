@@ -14,5 +14,6 @@
 int main(void)
 {
     printf("hello rt-smart\n");
+
     return 0;
 }
