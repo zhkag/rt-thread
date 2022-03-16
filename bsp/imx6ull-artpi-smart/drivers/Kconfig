@@ -99,6 +99,7 @@ endmenu
 menu "Select LCD Driver"
 config BSP_USING_LCD
     bool "Enable LCD"
+    select RT_USING_LCD
     default y
 
     if BSP_USING_LCD
@@ -175,6 +176,7 @@ menu "Select ADC Driver"
      config RT_USING_ADC
         bool "Enable ADC"
         default n
+
     if RT_USING_ADC
         config BSP_USING_ADC1_1
             bool "Enable ADC1 CH1"

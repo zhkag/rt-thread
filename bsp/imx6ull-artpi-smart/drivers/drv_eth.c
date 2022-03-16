@@ -142,13 +142,13 @@ void imx6ul_eth_link_change(struct rt_imx6ul_ethps *imx6ul_device,rt_bool_t up)
 {
     if(up)
     {
-        LOG_D("enet%d link up\n",imx6ul_device->mac_num);
+        LOG_D("enet%d link up",imx6ul_device->mac_num);
         eth_device_linkchange(&imx6ul_device->parent, RT_TRUE);
         imx6ul_device->phy_link_status = RT_TRUE;
     }
     else
     {
-        LOG_D("enet%d link down\n",imx6ul_device->mac_num);
+        LOG_D("enet%d link down",imx6ul_device->mac_num);
         eth_device_linkchange(&imx6ul_device->parent, RT_FALSE);
         imx6ul_device->phy_link_status = RT_FALSE;
     }
@@ -170,13 +170,13 @@ rt_err_t enet_buffer_init(enet_buffer_config_t *buffConfig)
     if(((SYS_PAGE_SIZE<<RX_BUFFER_INDEX_NUM)<buffConfig->rxBufferTotalSize)||
        ((SYS_PAGE_SIZE<<TX_BUFFER_INDEX_NUM)<buffConfig->txBufferTotalSize))
     {
-        LOG_E("ERROR: alloc mem not enough for enet driver\n");
+        LOG_E("ERROR: alloc mem not enough for enet driver");
         return RT_ERROR;
     }
     rx_buff_addr = rt_pages_alloc(RX_BUFFER_INDEX_NUM);
     if(!rx_buff_addr)
     {
-        LOG_E("ERROR: rx buff page alloc failed\n");
+        LOG_E("ERROR: rx buff page alloc failed");
         return RT_ERROR;
     }
     buffConfig->rxBufferAlign = (void *)rt_ioremap_nocache(virtual_to_physical(rx_buff_addr), (SYS_PAGE_SIZE<<RX_BUFFER_INDEX_NUM));
@@ -185,7 +185,7 @@ rt_err_t enet_buffer_init(enet_buffer_config_t *buffConfig)
     tx_buff_addr = rt_pages_alloc(TX_BUFFER_INDEX_NUM);
     if(!tx_buff_addr)
     {
-        LOG_E("ERROR: tx buff page alloc failed\n");
+        LOG_E("ERROR: tx buff page alloc failed");
         return RT_ERROR;
     }
     buffConfig->txBufferAlign = (void *)rt_ioremap_nocache(virtual_to_physical(tx_buff_addr), (SYS_PAGE_SIZE<<TX_BUFFER_INDEX_NUM));
@@ -194,7 +194,7 @@ rt_err_t enet_buffer_init(enet_buffer_config_t *buffConfig)
     rx_bd_addr = rt_pages_alloc(RX_BD_INDEX_NUM);
     if(!rx_bd_addr)
     {
-        LOG_E("ERROR: rx bd page alloc failed\n");
+        LOG_E("ERROR: rx bd page alloc failed");
         return RT_ERROR;
     }
     buffConfig->rxBdStartAddrAlign = (void *)rt_ioremap_nocache(virtual_to_physical(rx_bd_addr), (SYS_PAGE_SIZE<<RX_BD_INDEX_NUM));
@@ -203,7 +203,7 @@ rt_err_t enet_buffer_init(enet_buffer_config_t *buffConfig)
     tx_bd_addr = rt_pages_alloc(TX_BD_INDEX_NUM);
     if(!tx_bd_addr)
     {
-        LOG_E("ERROR: tx bd page alloc failed\n");
+        LOG_E("ERROR: tx bd page alloc failed");
         return RT_ERROR;
     }
     buffConfig->txBdStartAddrAlign = (void *)rt_ioremap_nocache(virtual_to_physical(tx_bd_addr), (SYS_PAGE_SIZE<<TX_BD_INDEX_NUM));
@@ -384,7 +384,7 @@ rt_err_t rt_imx6ul_eth_tx(rt_device_t dev, struct pbuf *p)
     }
     if(offset > ENET_FRAME_MAX_FRAMELEN)
     {
-        LOG_E("net error send length %d exceed max length\n",offset);
+        LOG_E("net error send length %d exceed max length",offset);
     }
     return ret;
 }
@@ -416,7 +416,7 @@ struct pbuf *rt_imx6ul_eth_rx(rt_device_t dev)
     }
     if(length > ENET_FRAME_MAX_FRAMELEN)
     {
-        LOG_E("net error recv length %d exceed max length\n",length);
+        LOG_E("net error recv length %d exceed max length",length);
         return RT_NULL;
     }
     pbuf_realloc(p, length);
@@ -448,7 +448,7 @@ void rx_enet_callback(void *base)
     instance = get_instance_by_base(base);
     if(instance == -1)
     {
-        LOG_E("interrput match base addr error \n");
+        LOG_E("interrput match base addr error");
         return;
     }
     eth_device_ready(&(_imx6ul_eth_device[instance].parent));
@@ -483,7 +483,7 @@ static void phy_detect_thread_entry(void *param)
     }
     else
     {
-        LOG_E("\r\nPHY Link down, please check the cable connection and link partner setting.\r\n");
+        LOG_E("PHY Link down, please check the cable connection and link partner setting.");
     }
 
     while(1)
@@ -533,7 +533,7 @@ static int imx6ul_eth_init(void)
         state = eth_device_init(&(_imx6ul_eth_device[idx].parent), _imx6ul_eth_device[idx].mac_name);
         if (RT_EOK == state)
         {
-            LOG_E("emac device init success\n");
+            LOG_E("emac device init success");
         }
         else
         {

@@ -87,6 +87,8 @@
 #define RT_SERIAL_RB_BUFSZ 64
 #define RT_USING_TTY
 #define RT_USING_PIN
+#define RT_USING_RTC
+#define RT_USING_SOFT_RTC
 
 /* Using USB */
 
@@ -157,6 +159,9 @@
 /* enhanced kernel services */
 
 
+/* POSIX extension functions */
+
+
 /* acceleration: Assembly language or algorithmic acceleration packages */
 
 
@@ -174,10 +179,21 @@
 
 /* miscellaneous packages */
 
+/* project laboratory */
+
 /* samples: kernel and components samples */
 
 
 /* entertainment: terminal games and other interesting software packages */
+
+
+/* Privated Packages of RealThread */
+
+
+/* Network Utilities */
+
+
+/* RT-Thread Smart */
 
 
 /* Platform Driver Configuration */

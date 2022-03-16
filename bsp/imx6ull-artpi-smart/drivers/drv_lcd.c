@@ -12,7 +12,6 @@
 
 #include <rthw.h>
 #include <rtdevice.h>
-#include <rtthread.h>
 
 #ifdef BSP_USING_LCD
 
@@ -22,7 +21,6 @@
 #include "fsl_iomuxc.h"
 #include "drv_lcd.h"
 #include <lwp_user_mm.h>
-#include "rt_lcd.h"
 
 static struct imx6ull_lcd_config _lcd_config = LCD_BUS_CONFIG;
 static struct imx6ull_lcd_bus _lcd_obj;

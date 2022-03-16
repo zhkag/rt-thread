@@ -10,6 +10,7 @@
  */
 
 #include <sys/time.h>
+#include <rtdevice.h>
 #include <rtthread.h>
 
 #if !defined (__IAR_SYSTEMS_ICC__)

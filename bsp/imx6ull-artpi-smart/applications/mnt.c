@@ -52,6 +52,6 @@ int mnt_init(void)
 #endif
     return 0;
 }
-INIT_APP_EXPORT(mnt_init);
+INIT_ENV_EXPORT(mnt_init);
 
 #endif
