@@ -59,6 +59,7 @@
 
 #define RT_USING_FINSH
 #define RT_USING_MSH
+#define FINSH_USING_MSH
 #define FINSH_THREAD_NAME "tshell"
 #define FINSH_USING_HISTORY
 #define FINSH_HISTORY_LINES 5
@@ -75,10 +76,13 @@
 /* Device Drivers */
 
 #define RT_USING_DEVICE_IPC
+#define RT_UNAMED_PIPE_NUMBER 64
 #define RT_PIPE_BUFSZ 512
 #define RT_USING_SERIAL
 #define RT_SERIAL_RB_BUFSZ 64
+#define RT_USING_TTY
 #define RT_USING_PIN
+#define RT_USING_RTC
 
 /* Using USB */
 
@@ -131,13 +135,30 @@
 
 /* multimedia packages */
 
+/* LVGL: powerful and easy-to-use embedded GUI library */
+
+
+/* u8g2: a monochrome graphic library */
+
+
+/* PainterEngine: A cross-platform graphics application framework written in C language */
+
 
 /* tools packages */
 
 
 /* system packages */
 
+/* enhanced kernel services */
+
+
+/* POSIX extension functions */
+
+
 /* acceleration: Assembly language or algorithmic acceleration packages */
+
+
+/* CMSIS: ARM Cortex-M Microcontroller Software Interface Standard */
 
 
 /* Micrium: Micrium software products porting for RT-Thread */
@@ -151,6 +172,7 @@
 
 /* miscellaneous packages */
 
+/* project laboratory */
 
 /* samples: kernel and components samples */
 
@@ -162,6 +184,9 @@
 
 
 /* Network Utilities */
+
+
+/* RT-Thread Smart */
 
 #define SOC_FAMILY_STM32
 #define SOC_SERIES_STM32F4
