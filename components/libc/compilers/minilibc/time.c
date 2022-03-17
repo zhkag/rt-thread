@@ -7,6 +7,7 @@
  * Date           Author       Notes
  */
 #include <time.h>
+#include <rtdevice.h>
 #include <rtthread.h>
 
 /* days per month -- nonleap! */
