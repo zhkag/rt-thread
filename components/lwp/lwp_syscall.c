@@ -2397,12 +2397,12 @@ int sys_accept(int socket, struct musl_sockaddr *addr, socklen_t *addrlen)
 
     if (addr)
     {
-        if (!lwp_user_accessable(addrlen, sizeof (socklen_t *)))
+        if (!lwp_user_accessable(addrlen, sizeof (socklen_t)))
         {
             rt_set_errno(EFAULT);
             return -1;
         }
-        lwp_get_from_user(&uaddrlen, addrlen, sizeof (socklen_t *));
+        lwp_get_from_user(&uaddrlen, addrlen, sizeof (socklen_t));
         if (!uaddrlen)
         {
             rt_set_errno(EINVAL);
@@ -2428,7 +2428,7 @@ int sys_accept(int socket, struct musl_sockaddr *addr, socklen_t *addrlen)
                 uaddrlen = sizeof(struct musl_sockaddr);
             }
             lwp_put_to_user(addr, &kmusladdr, uaddrlen);
-            lwp_put_to_user(addrlen, &uaddrlen, sizeof (socklen_t *));
+            lwp_put_to_user(addrlen, &uaddrlen, sizeof (socklen_t));
         }
     }
     return ret;
