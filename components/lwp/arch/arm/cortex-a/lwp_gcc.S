@@ -52,7 +52,7 @@ lwp_user_entry:
 .type lwp_user_thread_entry, % function
 lwp_user_thread_entry:
     cps #Mode_SYS
-    sub sp, r2, #12
+    sub sp, r2, #16
     ldr r2, =lwp_thread_return
     ldr r4, [r2]
     str r4, [sp]
