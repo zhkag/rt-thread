@@ -19,6 +19,34 @@
 #include "page.h"
 #endif
 
+static rt_mutex_t mm_lock;
+
+void rt_mm_lock(void)
+{
+    if (rt_thread_self())
+    {
+        if (!mm_lock)
+        {
+            mm_lock = rt_mutex_create("mm_lock", RT_IPC_FLAG_FIFO);
+        }
+        if (mm_lock)
+        {
+            rt_mutex_take(mm_lock, RT_WAITING_FOREVER);
+        }
+    }
+}
+
+void rt_mm_unlock(void)
+{
+    if (rt_thread_self())
+    {
+        if (mm_lock)
+        {
+            rt_mutex_release(mm_lock);
+        }
+    }
+}
+
 /* dump 2nd level page table */
 void rt_hw_cpu_dump_page_table_2nd(rt_uint32_t *ptb)
 {
@@ -195,7 +223,6 @@ void rt_hw_cpu_dcache_clean(void *addr, int size);
 int rt_hw_mmu_map_init(rt_mmu_info *mmu_info, void* v_address, size_t size, size_t *vtable, size_t pv_off)
 {
     size_t l1_off, va_s, va_e;
-    rt_base_t level;
 
     if (!mmu_info || !vtable)
     {
@@ -218,15 +245,12 @@ int rt_hw_mmu_map_init(rt_mmu_info *mmu_info, void* v_address, size_t size, size
         return -1;
     }
 
-    level = rt_hw_interrupt_disable();
-
     for (l1_off = va_s; l1_off <= va_e; l1_off++)
     {
         size_t v = vtable[l1_off];
 
         if (v & ARCH_MMU_USED_MASK)
         {
-            rt_hw_interrupt_enable(level);
             return -1;
         }
     }
@@ -235,8 +259,6 @@ int rt_hw_mmu_map_init(rt_mmu_info *mmu_info, void* v_address, size_t size, size
     mmu_info->vstart = va_s;
     mmu_info->vend = va_e;
     mmu_info->pv_off = pv_off;
-
-    rt_hw_interrupt_enable(level);
 
     return 0;
 }
@@ -757,33 +779,29 @@ void _rt_hw_mmu_unmap(rt_mmu_info *mmu_info, void* v_addr, size_t size)
 void *rt_hw_mmu_map(rt_mmu_info *mmu_info, void *v_addr, void* p_addr, size_t size, size_t attr)
 {
     void *ret;
-    rt_base_t level;
 
-    level = rt_hw_interrupt_disable();
+    rt_mm_lock();
     ret = _rt_hw_mmu_map(mmu_info, v_addr, p_addr, size, attr);
-    rt_hw_interrupt_enable(level);
+    rt_mm_unlock();
     return ret;
 }
 
 void *rt_hw_mmu_map_auto(rt_mmu_info *mmu_info, void *v_addr, size_t size, size_t attr)
 {
     void *ret;
-    rt_base_t level;
 
-    level = rt_hw_interrupt_disable();
+    rt_mm_lock();
     ret = _rt_hw_mmu_map_auto(mmu_info, v_addr, size, attr);
-    rt_hw_interrupt_enable(level);
+    rt_mm_unlock();
     return ret;
 }
 #endif
 
 void rt_hw_mmu_unmap(rt_mmu_info *mmu_info, void* v_addr, size_t size)
 {
-    rt_base_t level;
-
-    level = rt_hw_interrupt_disable();
+    rt_mm_lock();
     _rt_hw_mmu_unmap(mmu_info, v_addr, size);
-    rt_hw_interrupt_enable(level);
+    rt_mm_unlock();
 }
 
 void *_rt_hw_mmu_v2p(rt_mmu_info *mmu_info, void* v_addr)
@@ -842,11 +860,10 @@ void *_rt_hw_mmu_v2p(rt_mmu_info *mmu_info, void* v_addr)
 void *rt_hw_mmu_v2p(rt_mmu_info *mmu_info, void* v_addr)
 {
     void *ret;
-    rt_base_t level;
 
-    level = rt_hw_interrupt_disable();
+    rt_mm_lock();
     ret = _rt_hw_mmu_v2p(mmu_info, v_addr);
-    rt_hw_interrupt_enable(level);
+    rt_mm_unlock();
     return ret;
 }
 

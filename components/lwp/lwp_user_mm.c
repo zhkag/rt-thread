@@ -124,16 +124,15 @@ static void *_lwp_map_user(struct rt_lwp *lwp, void *map_va, size_t map_size, in
 
 int lwp_unmap_user(struct rt_lwp *lwp, void *va)
 {
-    rt_base_t level = 0;
     struct lwp_avl_struct *ma_avl_node = RT_NULL;
     struct rt_mm_area_struct *ma = RT_NULL;
     int pa_need_free = 0;
 
-    level = rt_hw_interrupt_disable();
+    rt_mm_lock();
     ma_avl_node = lwp_map_find(lwp->map_area, (size_t)va);
     if (!ma_avl_node)
     {
-        rt_hw_interrupt_enable(level);
+        rt_mm_unlock();
         return -1;
     }
     ma = (struct rt_mm_area_struct *)ma_avl_node->data;
@@ -145,7 +144,7 @@ int lwp_unmap_user(struct rt_lwp *lwp, void *va)
     }
     unmap_range(lwp, (void *)ma->addr, ma->size, pa_need_free);
     lwp_map_area_remove(&lwp->map_area, (size_t)va);
-    rt_hw_interrupt_enable(level);
+    rt_mm_unlock();
     return 0;
 }
 
@@ -225,7 +224,6 @@ int lwp_unmap_user_type(struct rt_lwp *lwp, void *va)
 
 void *lwp_map_user(struct rt_lwp *lwp, void *map_va, size_t map_size, int text)
 {
-    rt_base_t level = 0;
     void *ret = RT_NULL;
     size_t offset = 0;
 
@@ -238,9 +236,9 @@ void *lwp_map_user(struct rt_lwp *lwp, void *map_va, size_t map_size, int text)
     map_size &= ~ARCH_PAGE_MASK;
     map_va = (void *)((size_t)map_va & ~ARCH_PAGE_MASK);
 
-    level = rt_hw_interrupt_disable();
+    rt_mm_lock();
     ret = _lwp_map_user(lwp, map_va, map_size, text);
-    rt_hw_interrupt_enable(level);
+    rt_mm_unlock();
     if (ret)
     {
         ret = (void *)((char *)ret + offset);
@@ -283,7 +281,6 @@ static void *_lwp_map_user_type(struct rt_lwp *lwp, void *map_va, void *map_pa, 
 
 void *lwp_map_user_type(struct rt_lwp *lwp, void *map_va, void *map_pa, size_t map_size, int cached, int type)
 {
-    rt_base_t level = 0;
     void *ret = RT_NULL;
     size_t offset = 0;
 
@@ -303,9 +300,9 @@ void *lwp_map_user_type(struct rt_lwp *lwp, void *map_va, void *map_pa, size_t m
     map_size &= ~ARCH_PAGE_MASK;
     map_pa = (void *)((size_t)map_pa & ~ARCH_PAGE_MASK);
 
-    level = rt_hw_interrupt_disable();
+    rt_mm_lock();
     ret = _lwp_map_user_type(lwp, map_va, map_pa, map_size, cached, type);
-    rt_hw_interrupt_enable(level);
+    rt_mm_unlock();
     if (ret)
     {
         ret = (void *)((char *)ret + offset);
@@ -320,11 +317,10 @@ void *lwp_map_user_phy(struct rt_lwp *lwp, void *map_va, void *map_pa, size_t ma
 
 rt_base_t lwp_brk(void *addr)
 {
-    rt_base_t level = 0;
     rt_base_t ret = -1;
     struct rt_lwp *lwp = RT_NULL;
 
-    level = rt_hw_interrupt_disable();
+    rt_mm_lock();
     lwp = rt_thread_self()->lwp;
 
     if ((size_t)addr <= lwp->end_heap)
@@ -347,7 +343,7 @@ rt_base_t lwp_brk(void *addr)
             ret = lwp->end_heap;
         }
     }
-    rt_hw_interrupt_enable(level);
+    rt_mm_unlock();
     return ret;
 }
 
@@ -356,16 +352,15 @@ rt_base_t lwp_brk(void *addr)
 void* lwp_mmap2(void *addr, size_t length, int prot,
         int flags, int fd, off_t pgoffset)
 {
-    rt_base_t level = 0;
     void *ret = (void *)-1;
     struct rt_lwp *lwp = RT_NULL;
 
     if (fd == -1)
     {
         lwp = rt_thread_self()->lwp;
-        level = rt_hw_interrupt_disable();
+        rt_mm_lock();
         ret = lwp_map_user(lwp, addr, length, 0);
-        rt_hw_interrupt_enable(level);
+        rt_mm_unlock();
         if (ret)
         {
             if ((flags & MAP_ANONYMOUS) != 0)
@@ -383,14 +378,13 @@ void* lwp_mmap2(void *addr, size_t length, int prot,
 
 int lwp_munmap(void *addr)
 {
-    rt_base_t level = 0;
     int ret = 0;
     struct rt_lwp *lwp = RT_NULL;
 
-    level = rt_hw_interrupt_disable();
+    rt_mm_lock();
     lwp = rt_thread_self()->lwp;
     ret = lwp_unmap_user(lwp, addr);
-    rt_hw_interrupt_enable(level);
+    rt_mm_unlock();
     return ret;
 }
 

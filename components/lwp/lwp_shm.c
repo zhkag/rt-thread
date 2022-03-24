@@ -146,11 +146,10 @@ err:
 int lwp_shmget(size_t key, size_t size, int create)
 {
     int ret = 0;
-    rt_base_t level = 0;
 
-    level = rt_hw_interrupt_disable();
+    rt_mm_lock();
     ret = _lwp_shmget(key, size, create);
-    rt_hw_interrupt_enable(level);
+    rt_mm_unlock();
     return ret;
 }
 
@@ -211,11 +210,10 @@ static int _lwp_shmrm(int id)
 int lwp_shmrm(int id)
 {
     int ret = 0;
-    rt_base_t level = 0;
 
-    level = rt_hw_interrupt_disable();
+    rt_mm_lock();
     ret = _lwp_shmrm(id);
-    rt_hw_interrupt_enable(level);
+    rt_mm_unlock();
     return ret;
 }
 
@@ -257,15 +255,14 @@ static void *_lwp_shmat(int id, void *shm_vaddr)
 void *lwp_shmat(int id, void *shm_vaddr)
 {
     void *ret = RT_NULL;
-    rt_base_t level = 0;
 
     if (((size_t)shm_vaddr & ARCH_PAGE_MASK) != 0)
     {
         return RT_NULL;
     }
-    level= rt_hw_interrupt_disable();
+    rt_mm_lock();
     ret = _lwp_shmat(id, shm_vaddr);
-    rt_hw_interrupt_enable(level);
+    rt_mm_unlock();
     return ret;
 }
 
@@ -303,11 +300,10 @@ static int _lwp_shm_ref_inc(struct rt_lwp *lwp, void *shm_vaddr)
 int lwp_shm_ref_inc(struct rt_lwp *lwp, void *shm_vaddr)
 {
     int ret = 0;
-    rt_base_t level = 0;
 
-    level = rt_hw_interrupt_disable();
+    rt_mm_lock();
     ret = _lwp_shm_ref_inc(lwp, shm_vaddr);
-    rt_hw_interrupt_enable(level);
+    rt_mm_unlock();
 
     return ret;
 }
@@ -327,11 +323,10 @@ static int _lwp_shm_ref_dec(struct rt_lwp *lwp, void *shm_vaddr)
 int lwp_shm_ref_dec(struct rt_lwp *lwp, void *shm_vaddr)
 {
     int ret = 0;
-    rt_base_t level = 0;
 
-    level = rt_hw_interrupt_disable();
+    rt_mm_lock();
     ret = _lwp_shm_ref_dec(lwp, shm_vaddr);
-    rt_hw_interrupt_enable(level);
+    rt_mm_unlock();
 
     return ret;
 }
@@ -359,11 +354,10 @@ int _lwp_shmdt(void *shm_vaddr)
 int lwp_shmdt(void *shm_vaddr)
 {
     int ret = 0;
-    rt_base_t level = 0;
 
-    level = rt_hw_interrupt_disable();
+    rt_mm_lock();
     ret = _lwp_shmdt(shm_vaddr);
-    rt_hw_interrupt_enable(level);
+    rt_mm_unlock();
 
     return ret;
 }
@@ -389,11 +383,10 @@ void *_lwp_shminfo(int id)
 void *lwp_shminfo(int id)
 {
     void *vaddr = RT_NULL;
-    rt_base_t level = 0;
 
-    level = rt_hw_interrupt_disable();
+    rt_mm_lock();
     vaddr = _lwp_shminfo(id);
-    rt_hw_interrupt_enable(level);
+    rt_mm_unlock();
     return vaddr;
 }
 
@@ -410,13 +403,11 @@ static int _shm_info(struct lwp_avl_struct* node_key, void *data)
 
 void list_shm(void)
 {
-    rt_base_t level = 0;
-
     rt_kprintf("   key        paddr      size       id\n");
     rt_kprintf("---------- ---------- ---------- --------\n");
-    level = rt_hw_interrupt_disable();
+    rt_mm_lock();
     lwp_avl_traversal(shm_tree_key, _shm_info, NULL);
-    rt_hw_interrupt_enable(level);
+    rt_mm_unlock();
 }
 MSH_CMD_EXPORT(list_shm, show share memory info);
 #endif

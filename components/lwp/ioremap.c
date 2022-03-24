@@ -36,7 +36,6 @@ static void _iounmap_range(void *addr, size_t size)
 
 static void *_ioremap_type(void *paddr, size_t size, int type)
 {
-    rt_base_t level;
     void *v_addr = NULL;
     size_t attr;
 
@@ -52,7 +51,7 @@ static void *_ioremap_type(void *paddr, size_t size, int type)
         return v_addr;
     }
 
-    level = rt_hw_interrupt_disable();
+    rt_mm_lock();
     v_addr = rt_hw_mmu_map(&mmu_info, 0, paddr, size, attr);
     if (v_addr)
     {
@@ -63,7 +62,7 @@ static void *_ioremap_type(void *paddr, size_t size, int type)
             v_addr = NULL;
         }
     }
-    rt_hw_interrupt_enable(level);
+    rt_mm_unlock();
     return v_addr;
 }
 
@@ -84,10 +83,9 @@ void *rt_ioremap_cached(void *paddr, size_t size)
 
 void rt_iounmap(volatile void *vaddr)
 {
-    rt_base_t level;
     struct lwp_avl_struct *ma_avl_node;
 
-    level = rt_hw_interrupt_disable();
+    rt_mm_lock();
     ma_avl_node = lwp_map_find(k_map_area, (size_t)vaddr);
     if (ma_avl_node)
     {
@@ -96,7 +94,7 @@ void rt_iounmap(volatile void *vaddr)
         _iounmap_range((void *)ma->addr, ma->size);
         lwp_map_area_remove(&k_map_area, (size_t)vaddr);
     }
-    rt_hw_interrupt_enable(level);
+    rt_mm_unlock();
 }
 
 #else
