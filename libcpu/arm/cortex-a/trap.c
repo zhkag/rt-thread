@@ -298,12 +298,13 @@ void rt_hw_trap_irq(void)
     }
 #else
     void *param;
-    int ir;
+    int ir, ir_real;
     rt_isr_handler_t isr_func;
     extern struct rt_irq_desc isr_table[];
 
     ir = rt_hw_interrupt_get_irq();
 
+    ir_real = ir & 0x3ff;
     if (ir == 1023)
     {
         /* Spurious interrupt */
@@ -311,14 +312,14 @@ void rt_hw_trap_irq(void)
     }
 
     /* get interrupt service routine */
-    isr_func = isr_table[ir].handler;
+    isr_func = isr_table[ir_real].handler;
 #ifdef RT_USING_INTERRUPT_INFO
-    isr_table[ir].counter++;
+    isr_table[ir_real].counter++;
 #endif
     if (isr_func)
     {
         /* Interrupt for myself. */
-        param = isr_table[ir].param;
+        param = isr_table[ir_real].param;
         /* turn to interrupt service routine */
         isr_func(ir, param);
     }
