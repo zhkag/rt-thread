@@ -666,11 +666,11 @@ after_enable_mmu2:
     cps #Mode_FIQ
     ldr sp, =irq_stack_2_limit
 
-    cps #Mode_SVC
-    ldr sp, =svc_stack_2_limit
-
     cps #Mode_ABT
     ldr sp, =abt_stack_2_limit
+
+    cps #Mode_SVC
+    ldr sp, =svc_stack_2_limit
 
     /* initialize the mmu table and enable mmu */
 #ifndef RT_USING_USERSPACE
