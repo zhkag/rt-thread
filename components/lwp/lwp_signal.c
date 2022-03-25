@@ -552,7 +552,7 @@ int lwp_kill(pid_t pid, int sig)
     }
     level = rt_hw_interrupt_disable();
     lwp = lwp_from_pid(pid);
-    if (!lwp)
+    if (!lwp || lwp->finish)
     {
         rt_set_errno(ESRCH);
         goto out;

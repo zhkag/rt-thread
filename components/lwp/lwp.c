@@ -1021,8 +1021,8 @@ void lwp_cleanup(struct rt_thread *tid)
 
     lwp_tid_put(tid->tid);
     rt_list_remove(&tid->sibling);
-    lwp_ref_dec(lwp);
     rt_hw_interrupt_enable(level);
+    lwp_ref_dec(lwp);
 
     return;
 }
