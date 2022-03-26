@@ -22,27 +22,6 @@
 .equ I_Bit,           0x80   /* when I bit is set, IRQ is disabled */
 .equ F_Bit,           0x40   /* when F bit is set, FIQ is disabled */
 
-.equ UND_Stack_Size,     0x00000400
-.equ SVC_Stack_Size,     0x00000400
-.equ ABT_Stack_Size,     0x00000400
-.equ RT_FIQ_STACK_PGSZ,  0x00000000
-.equ RT_IRQ_STACK_PGSZ,  0x00000800
-.equ USR_Stack_Size,     0x00000400
-
-#define ISR_Stack_Size  (UND_Stack_Size + SVC_Stack_Size + ABT_Stack_Size + \
-                 RT_FIQ_STACK_PGSZ + RT_IRQ_STACK_PGSZ)
-
-.section .data.share.isr
-/* stack */
-.globl stack_start
-.globl stack_top
-
-stack_start:
-.rept ISR_Stack_Size
-.byte 0
-.endr
-stack_top:
-
 #ifdef RT_USING_USERSPACE
 .data
 .align 14
@@ -137,7 +116,7 @@ continue:
     and r6, r8    /* r6 end vaddr align up to 1M */
     sub r6, r9    /* r6 is size */
 
-    ldr sp, =stack_top
+    ldr sp, =svc_stack_n_limit
     add sp, r5    /* use paddr */
 
     ldr r0, =init_mtbl
@@ -169,7 +148,7 @@ after_enable_mmu:
     mcr p15, 0, r1, c1, c0, 0
 
     /* setup stack */
-    bl      stack_setup
+    bl  stack_setup
 
     /* clear .bss */
     mov r0,#0                   /* get a zero                       */
@@ -223,33 +202,36 @@ _rtthread_startup:
     .word rtthread_startup
 
 stack_setup:
-    ldr     r0, =stack_top
 
-    /* Set the startup stack for svc */
-    mov     sp, r0
+#ifdef RT_USING_SMP
+    /* cpu id */
+    mrc p15, 0, r0, c0, c0, 5
+    and r0, r0, #0xf
+    add r0, r0, #1
+#else
+    mov r0, #1
+#endif
 
-    /* Enter Undefined Instruction Mode and set its Stack Pointer */
-    msr     cpsr_c, #Mode_UND|I_Bit|F_Bit
-    mov     sp, r0
-    sub     r0, r0, #UND_Stack_Size
+    cps #Mode_UND
+    ldr r1, =und_stack_n
+    add sp, r1, r0, asl #12
 
-    /* Enter Abort Mode and set its Stack Pointer */
-    msr     cpsr_c, #Mode_ABT|I_Bit|F_Bit
-    mov     sp, r0
-    sub     r0, r0, #ABT_Stack_Size
+    cps #Mode_IRQ
+    ldr r1, =irq_stack_n
+    add sp, r1, r0, asl #12
 
-    /* Enter FIQ Mode and set its Stack Pointer */
-    msr     cpsr_c, #Mode_FIQ|I_Bit|F_Bit
-    mov     sp, r0
-    sub     r0, r0, #RT_FIQ_STACK_PGSZ
+    cps #Mode_FIQ
+    ldr r1, =irq_stack_n
+    add sp, r1, r0, asl #12
 
-    /* Enter IRQ Mode and set its Stack Pointer */
-    msr     cpsr_c, #Mode_IRQ|I_Bit|F_Bit
-    mov     sp, r0
-    sub     r0, r0, #RT_IRQ_STACK_PGSZ
+    cps #Mode_ABT
+    ldr r1, =abt_stack_n
+    add sp, r1, r0, asl #12
 
-    /* come back to SVC mode */
-    msr     cpsr_c, #Mode_SVC|I_Bit|F_Bit
+    cps #Mode_SVC
+    ldr r1, =svc_stack_n
+    add sp, r1, r0, asl #12
+
     bx      lr
 
 #ifdef RT_USING_USERSPACE
@@ -632,12 +614,12 @@ rt_secondary_cpu_entry:
 #ifdef RT_USING_USERSPACE
     ldr     r5, =PV_OFFSET
 
-    ldr     lr, =after_enable_mmu2
+    ldr     lr, =after_enable_mmu_n
     ldr     r0, =init_mtbl
     add     r0, r5
     b       enable_mmu
 
-after_enable_mmu2:
+after_enable_mmu_n:
     ldr     r0, =MMUTable
     add     r0, r5
     bl      switch_mmu
@@ -657,20 +639,7 @@ after_enable_mmu2:
     bic r0, #(1<<13)
     mcr p15, 0, r0, c1, c0, 0
 
-    cps #Mode_UND
-    ldr sp, =und_stack_2_limit
-
-    cps #Mode_IRQ
-    ldr sp, =irq_stack_2_limit
-
-    cps #Mode_FIQ
-    ldr sp, =irq_stack_2_limit
-
-    cps #Mode_ABT
-    ldr sp, =abt_stack_2_limit
-
-    cps #Mode_SVC
-    ldr sp, =svc_stack_2_limit
+    bl stack_setup
 
     /* initialize the mmu table and enable mmu */
 #ifndef RT_USING_USERSPACE
@@ -680,20 +649,21 @@ after_enable_mmu2:
     b rt_hw_secondary_cpu_bsp_start
 #endif
 
+#ifndef RT_CPUS_NR
+#define RT_CPUS_NR 1
+#endif
+
 .bss
-.align 2     /* align to  2~2=4 */
-svc_stack_2:
-    .space (1 << 10)
-svc_stack_2_limit:
+.align 3     /* align to  2~3=8 */
+svc_stack_n:
+    .space (RT_CPUS_NR << 12)
+svc_stack_n_limit:
 
-irq_stack_2:
-    .space (1 << 10)
-irq_stack_2_limit:
+irq_stack_n:
+    .space (RT_CPUS_NR << 12)
 
-und_stack_2:
-    .space (1 << 10)
-und_stack_2_limit:
+und_stack_n:
+    .space (RT_CPUS_NR << 12)
 
-abt_stack_2:
-    .space (1 << 10)
-abt_stack_2_limit:
+abt_stack_n:
+    .space (RT_CPUS_NR << 12)
