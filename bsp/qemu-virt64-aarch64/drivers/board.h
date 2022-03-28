@@ -1,6 +1,6 @@
 /*
  * File      : board.h
- * Copyright (c) 2006-2021, RT-Thread Development Team
+ * Copyright (c) 2006-2022, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -51,6 +51,8 @@ extern unsigned char __bss_end;
 #define ARM_GIC_NR_IRQS     (96)
 /* only one GIC available */
 #define ARM_GIC_MAX_NR      (1)
+
+#define TIMER_IRQ   (30)
 
 /* the basic constants and interfaces needed by gic */
 rt_inline rt_uint64_t platform_get_gic_dist_base(void)
