@@ -528,13 +528,32 @@ static void eraser(unsigned char c, struct tty_struct *tty)
  *
  *  Locking: ctrl_lock
  */
-
+extern struct termios old_stdin_termios;
 static void __isig(int sig, struct tty_struct *tty)
 {
     struct rt_lwp *lwp = tty->foreground;
+    struct tty_ldisc *ld = RT_NULL;
+    struct termios *new_termios = &old_stdin_termios;
+
     if (lwp)
     {
-        lwp_kill(lwp_to_pid(lwp), sig);
+        if (sig == SIGTSTP)
+        {
+            tty->init_termios = *new_termios;
+            ld = tty->ldisc;
+            if (ld != RT_NULL)
+            {
+                if (ld->ops->set_termios)
+                {
+                    ld->ops->set_termios(tty, &old_stdin_termios);
+                }
+            }
+            tty->foreground = RT_NULL;  
+        }
+        else
+        {
+            lwp_kill(lwp_to_pid(lwp), sig);
+        }
     }
 }
 
