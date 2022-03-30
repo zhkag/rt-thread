@@ -38,10 +38,15 @@ static const char elf_magic[] = {0x7f, 'E', 'L', 'F'};
 #ifdef DFS_USING_WORKDIR
 extern char working_directory[];
 #endif
-struct termios stdin_termios, old_stdin_termios;
+static struct termios stdin_termios, old_stdin_termios;
 
 extern void lwp_user_entry(void *args, const void *text, void *ustack, void *k_stack);
 int load_ldso(struct rt_lwp *lwp, char *exec_name, char *const argv[], char *const envp[]);
+
+struct termios *get_old_termios(void)
+{
+    return &old_stdin_termios;
+}
 
 void lwp_setcwd(char *buf)
 {

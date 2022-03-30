@@ -125,6 +125,7 @@ enum lwp_exit_request_type
     LWP_EXIT_REQUEST_TRIGGERED,
     LWP_EXIT_REQUEST_IN_PROCESS,
 };
+struct termios *get_old_termios(void);
 void lwp_setcwd(char *buf);
 char *lwp_getcwd(void);
 void lwp_request_thread_exit(rt_thread_t thread_to_exit);
