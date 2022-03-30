@@ -529,7 +529,7 @@ static void eraser(unsigned char c, struct tty_struct *tty)
  *
  *  Locking: ctrl_lock
  */
-extern struct termios old_stdin_termios;
+
 static void __isig(int sig, struct tty_struct *tty)
 {
     struct rt_lwp *lwp = tty->foreground;
