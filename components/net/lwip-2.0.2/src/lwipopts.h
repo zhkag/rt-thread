@@ -5,6 +5,9 @@
 
 #define ERRNO                       1
 
+#define LWIP_SOCKET_SELECT 1
+#define LWIP_SOCKET_POLL 1
+
 #define LWIP_IPV4                   1
 
 #ifdef RT_USING_LWIP_IPV6
@@ -235,7 +238,6 @@
 #else
 #define MEM_ALIGNMENT               4
 #endif
-
 #define MEMP_OVERFLOW_CHECK         1 ////
 #define LWIP_ALLOW_MEM_FREE_FROM_OTHER_CONTEXT 1 ////
 //#define MEM_LIBC_MALLOC             1
@@ -248,8 +250,9 @@
 /* MEMP_NUM_PBUF: the number of memp struct pbufs. If the application
    sends a lot of data out of ROM (or other static memory), this
    should be set high. */
-#define MEMP_NUM_PBUF               32 //16
-
+#ifdef RT_LWIP_PBUF_STRUCT_NUM   
+#define MEMP_NUM_PBUF               RT_LWIP_PBUF_STRUCT_NUM //16
+#endif
 /* the number of struct netconns */
 #ifdef RT_MEMP_NUM_NETCONN
 #define MEMP_NUM_NETCONN            RT_MEMP_NUM_NETCONN
@@ -282,15 +285,24 @@
  * setting in the lwip opts.h
  */
 /* MEMP_NUM_NETBUF: the number of struct netbufs. */
-// #define MEMP_NUM_NETBUF             2
+
+#ifdef RT_LWIP_NETBUF_NUM
+#define MEMP_NUM_NETBUF             RT_LWIP_NETBUF_NUM
+#endif
+
 /* MEMP_NUM_NETCONN: the number of struct netconns. */
 // #define MEMP_NUM_NETCONN            4
 
 /* MEMP_NUM_TCPIP_MSG_*: the number of struct tcpip_msg, which is used
    for sequential API communication and incoming packets. Used in
    src/api/tcpip.c. */
-// #define MEMP_NUM_TCPIP_MSG_API      16
-// #define MEMP_NUM_TCPIP_MSG_INPKT    16
+#ifdef RT_MEMP_NUM_TCPIP_MSG_API 
+#define MEMP_NUM_TCPIP_MSG_API      RT_MEMP_NUM_TCPIP_MSG_API
+#endif
+
+#ifdef RT_MEMP_NUM_TCPIP_MSG_INPKT
+#define MEMP_NUM_TCPIP_MSG_INPKT    RT_MEMP_NUM_TCPIP_MSG_INPKT
+#endif
 
 /* ---------- Pbuf options ---------- */
 /* PBUF_POOL_SIZE: the number of buffers in the pbuf pool. */
@@ -381,7 +393,10 @@
 #define TCPIP_THREAD_STACKSIZE      4096
 #endif
 #define TCPIP_THREAD_NAME           "tcpip"
-#define DEFAULT_TCP_RECVMBOX_SIZE   10
+
+#ifdef RT_TCP_RECVMBOX_SIZE
+#define DEFAULT_TCP_RECVMBOX_SIZE   RT_TCP_RECVMBOX_SIZE
+#endif
 
 /* ---------- ARP options ---------- */
 #define LWIP_ARP                    1
@@ -447,7 +462,10 @@
 
 #define LWIP_UDPLITE                0
 #define UDP_TTL                     255
-#define DEFAULT_UDP_RECVMBOX_SIZE   1
+
+#ifdef RT_UDP_RECVMBOX_SIZE
+#define DEFAULT_UDP_RECVMBOX_SIZE   RT_UDP_RECVMBOX_SIZE
+#endif
 
 /* ---------- RAW options ---------- */
 #ifdef RT_LWIP_RAW
@@ -604,8 +622,8 @@
 /**
  * If LWIP_SO_RCVBUF is used, this is the default value for recv_bufsize.
  */
-#ifndef RECV_BUFSIZE_DEFAULT
-#define RECV_BUFSIZE_DEFAULT            8192
+#ifdef RT_RECV_BUFSIZE_DEFAULT
+#define RECV_BUFSIZE_DEFAULT            RT_RECV_BUFSIZE_DEFAULT*1024
 #endif
 
 /**
