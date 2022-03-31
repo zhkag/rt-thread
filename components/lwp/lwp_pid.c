@@ -431,11 +431,11 @@ void lwp_free(struct rt_lwp* lwp)
 
     /* for parent */
     {
-        extern struct termios old_stdin_termios;
+        struct termios *old_stdin_termios = get_old_termios();
         struct rt_lwp *self_lwp = (struct rt_lwp *)lwp_self();
         if (lwp->session == -1)
         {
-            tcsetattr(1, 0, &old_stdin_termios);
+            tcsetattr(1, 0, old_stdin_termios);
         }
         if (lwp->tty != RT_NULL)
         {

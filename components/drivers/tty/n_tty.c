@@ -10,6 +10,7 @@
 #include <stddef.h>
 #include <ctype.h>
 #include <tty.h>
+#include <lwp.h>
 #if defined(RT_USING_POSIX)
 #include <posix_termios.h>
 #endif
@@ -532,9 +533,30 @@ static void eraser(unsigned char c, struct tty_struct *tty)
 static void __isig(int sig, struct tty_struct *tty)
 {
     struct rt_lwp *lwp = tty->foreground;
+    struct tty_ldisc *ld = RT_NULL;
+    struct termios old_termios;
+    struct termios *new_termios = get_old_termios();
+
     if (lwp)
     {
-        lwp_kill(lwp_to_pid(lwp), sig);
+        if (sig == SIGTSTP)
+        {
+            rt_memcpy(&old_termios, &(tty->init_termios), sizeof(struct termios));
+            tty->init_termios = *new_termios;
+            ld = tty->ldisc;
+            if (ld != RT_NULL)
+            {
+                if (ld->ops->set_termios)
+                {
+                    ld->ops->set_termios(tty, &old_termios);
+                }
+            }
+            tty->foreground = RT_NULL;  
+        }
+        else
+        {
+            lwp_kill(lwp_to_pid(lwp), sig);
+        }
     }
 }
 

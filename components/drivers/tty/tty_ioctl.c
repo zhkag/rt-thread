@@ -36,7 +36,7 @@
 
 static int set_termios(struct tty_struct *tty, void *arg, int opt)
 {
-    struct termios old_termios = tty->init_termios;
+    struct termios old_termios;
     struct tty_ldisc *ld = RT_NULL;
     struct termios *new_termios = (struct termios *)arg;
     int level = 0;
@@ -47,6 +47,7 @@ static int set_termios(struct tty_struct *tty, void *arg, int opt)
         return retval;
     }
 
+    rt_memcpy(&old_termios, &(tty->init_termios), sizeof(struct termios));
     level = rt_hw_interrupt_disable();
     tty->init_termios = *new_termios;
     rt_hw_interrupt_enable(level);
@@ -55,7 +56,7 @@ static int set_termios(struct tty_struct *tty, void *arg, int opt)
     {
         if (ld->ops->set_termios)
         {
-            ld->ops->set_termios(tty, &old_termios);
+            ld->ops->set_termios(tty, old_termios);
         }
     }
     return 0;
