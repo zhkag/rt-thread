@@ -212,8 +212,24 @@ config RT_USING_LWIP
             int "the number of struct netconns"
             default 8
 
+        config RT_MEMP_NUM_TCPIP_MSG_API
+            int "the number of struct tcpip_msg ,which are used for callback/timeout API communication"
+            default 16
+
+        config RT_MEMP_NUM_TCPIP_MSG_INPKT
+            int "the number of struct tcpip_msg ,which are used for incoming packets"
+            default 16            
+
         config RT_LWIP_PBUF_NUM
             int "the number of PBUF"
+            default 16
+
+        config RT_LWIP_PBUF_STRUCT_NUM
+            int "the number of pbuf struct"
+            default 16            
+
+        config RT_LWIP_NETBUF_NUM
+            int "the number of netbuf struct"
             default 16
 
         config RT_LWIP_RAW_PCB_NUM
@@ -224,6 +240,14 @@ config RT_USING_LWIP
             int "the number of UDP socket"
             default 8 if RT_USING_DFS_NFS
             default 4
+
+        config RT_UDP_RECVMBOX_SIZE
+            int "the number of udp recv mbox num"
+            default 16
+
+        config RT_RECV_BUFSIZE_DEFAULT
+            int "this is the default value for recv_bufsize, the unit is KB"
+            default 64    
 
         if RT_LWIP_TCP
         config RT_LWIP_TCP_PCB_NUM
@@ -241,6 +265,10 @@ config RT_USING_LWIP
         config RT_LWIP_TCP_WND
             int "the size of TCP send window"
             default 8196
+
+        config RT_TCP_RECVMBOX_SIZE
+            int "the number of tcp recv mbox num"
+            default 16            
         endif
 
         config RT_LWIP_TCPTHREAD_PRIORITY
