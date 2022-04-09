@@ -306,6 +306,7 @@ static rt_err_t rt_imx6ul_eth_control(rt_device_t dev, int cmd, void *args)
             ocotp_base = (OCOTP_Type *)rt_ioremap((void*)OCOTP_BASE, 0x1000);
             uid[0] = ocotp_base->CFG0;
             uid[1] = ocotp_base->CFG1;
+            rt_iounmap(ocotp_base);
             LOG_D("UNIQUE_ID is %x%x",uid[0], uid[1]);
             uid_crc = uid[0] - uid[1];
             LOG_D("UNIQUE_ID change to 32 bits %x", uid_crc);
