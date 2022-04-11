@@ -56,7 +56,7 @@ static int set_termios(struct tty_struct *tty, void *arg, int opt)
     {
         if (ld->ops->set_termios)
         {
-            ld->ops->set_termios(tty, old_termios);
+            ld->ops->set_termios(tty, &old_termios);
         }
     }
     return 0;
