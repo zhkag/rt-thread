@@ -299,6 +299,37 @@ static rt_err_t rt_imx6ul_eth_control(rt_device_t dev, int cmd, void *args)
         /* get MAC address */
         if (args)
         {
+            OCOTP_Type *ocotp_base;
+            rt_uint32_t uid[2];
+            rt_uint32_t uid_crc = 0;
+
+            ocotp_base = (OCOTP_Type *)rt_ioremap((void*)OCOTP_BASE, 0x1000);
+            uid[0] = ocotp_base->CFG0;
+            uid[1] = ocotp_base->CFG1;
+            rt_iounmap(ocotp_base);
+            LOG_D("UNIQUE_ID is %x%x",uid[0], uid[1]);
+            uid_crc = uid[0] - uid[1];
+            LOG_D("UNIQUE_ID change to 32 bits %x", uid_crc);
+
+            if (imx6ul_device->enet_phy_base_addr == ENET1)
+            {
+                imx6ul_device->dev_addr[0] = 0xa8;
+                imx6ul_device->dev_addr[1] = 0x5e;
+                imx6ul_device->dev_addr[2] = 0x45;
+                imx6ul_device->dev_addr[3] = (uid_crc>>16) & 0x7f;
+                imx6ul_device->dev_addr[4] = (uid_crc>>8) & 0xff;
+                imx6ul_device->dev_addr[5] = uid_crc & 0xff;
+            }
+            else /*if (imx6ul_device->enet_phy_base_addr == ENET2)*/
+            {
+                imx6ul_device->dev_addr[0] = 0xa8;
+                imx6ul_device->dev_addr[1] = 0x5e;
+                imx6ul_device->dev_addr[2] = 0x46;
+                imx6ul_device->dev_addr[3] = (uid_crc >> 16) & 0x7f;
+                imx6ul_device->dev_addr[4] = (uid_crc >> 8) & 0xff;
+                imx6ul_device->dev_addr[5] = uid_crc & 0xff;
+            }
+
             rt_memcpy(args, imx6ul_device->dev_addr, MAX_ADDR_LEN);
         }
         else
