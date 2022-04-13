@@ -339,7 +339,7 @@ static void convert_sockopt(int *level, int *optname)
 }
 #endif  /* RT_USING_SAL */
 
-#ifdef RT_USING_LWIP
+#if defined(RT_USING_LWIP) || defined(SAL_USING_UNET)
     static void sockaddr_tolwip(const struct musl_sockaddr *std, struct sockaddr *lwip)
     {
         if (std && lwip)
@@ -1184,21 +1184,21 @@ rt_err_t sys_mb_delete(rt_mailbox_t mb)
     return lwp_user_object_delete(lwp_self(), (rt_object_t)mb);
 }
 
-rt_err_t sys_mb_send(rt_mailbox_t mb, rt_uint32_t value)
+rt_err_t sys_mb_send(rt_mailbox_t mb, rt_ubase_t value)
 {
     return rt_mb_send(mb, value);
 }
 
 rt_err_t sys_mb_send_wait(rt_mailbox_t mb,
-                         rt_uint32_t  value,
+                         rt_ubase_t  value,
                          rt_int32_t   timeout)
 {
     return rt_mb_send_wait(mb, value, timeout);
 }
 
-rt_err_t sys_mb_recv(rt_mailbox_t mb, rt_uint32_t *value, rt_int32_t timeout)
+rt_err_t sys_mb_recv(rt_mailbox_t mb, rt_ubase_t *value, rt_int32_t timeout)
 {
-    if (!lwp_user_accessable((void *)value, sizeof(rt_uint32_t *)))
+    if (!lwp_user_accessable((void *)value, sizeof(rt_ubase_t *)))
     {
         return -EFAULT;
     }
