@@ -10,7 +10,10 @@
 
 #if defined(RT_USING_DFS)
 
+#include <dfs.h>
 #include <dfs_fs.h>
+#include <dfs_file.h>
+
 #include <ioremap.h>
 #include <drv_sdio.h>
 
@@ -18,74 +21,95 @@
 #define DBG_LVL DBG_INFO
 #include <rtdbg.h>
 
-static void _sdcard_mount(void)
+void filesysytem_try_mount(char *device_name, char *mount_point, char *fs_type_name, int mkfs_count)
 {
-    rt_device_t device;
+    struct statfs fs_stat;
+    int rc = 0;
 
-    device = rt_device_find("sd0");
-    if (device == NULL)
+    LOG_I("mount(\"%s\",\"%s\",\"%s\");", device_name, mount_point, fs_type_name);
+
+    if (rt_device_find(device_name) == NULL)
     {
-        mmcsd_wait_cd_changed(0);
-        host_change();
-        mmcsd_wait_cd_changed(RT_WAITING_FOREVER);
-        rt_thread_mdelay(10);
-        device = rt_device_find("sd0");
+        LOG_I("%s not find!!!", device_name);
+        return;
     }
-
-    if (device != RT_NULL)
+    mkdir(mount_point, 0);
+_remount:
+    rc = dfs_mount(device_name, mount_point, fs_type_name, 0, 0);
+    if (rc == 0)
     {
-        if (dfs_mount("sd0", "/mnt", "elm", 0, 0) == RT_EOK)
+        LOG_I("mounted %s on %s", device_name, mount_point);
+        if (dfs_statfs(mount_point, &fs_stat) >= 0)
         {
-            LOG_I("sd card mount to '/mnt'");
+            LOG_I("%s size:%d, total: %d, free: %d", mount_point,
+                  fs_stat.f_bsize, fs_stat.f_blocks, fs_stat.f_bfree);
         }
-        else
+    }
+    else
+    {
+        if (mkfs_count > 0)
         {
-            LOG_W("sd card mount to '/mnt' failed!");
+            LOG_I("[%s]try mkfs -t %s %s ", mkfs_count, fs_type_name, device_name);
+            dfs_mkfs(fs_type_name, device_name);
+            mkfs_count--;
+            goto _remount;
         }
+        LOG_I("mount failed :%d ", rc);
     }
 }
 
-static void _sdcard_unmount(void)
+void filesysytem_try_unmount(char *mount_point)
 {
-    rt_thread_mdelay(200);
-    dfs_unmount("/mnt");
-    LOG_I("Unmount \"/mnt\"");
-
-    mmcsd_wait_cd_changed(0);
-    host_change();
-    mmcsd_wait_cd_changed(RT_WAITING_FOREVER);
+    struct stat filestat = {0};
+    LOG_I("unmount(\"%s\");",  mount_point);
+    if ((dfs_file_stat(mount_point, &filestat) >= 0) && (S_ISDIR(filestat.st_mode)))
+    {
+        dfs_unmount(mount_point);
+    }
 }
 
 static void sd_task_entry(void *parameter)
 {
     volatile unsigned int *IN_STATUS;
 
-    IN_STATUS = (volatile unsigned int *)rt_ioremap((void *)0x2190030, 4);
+    IN_STATUS = (volatile unsigned int *)rt_ioremap((void *)0x2190030, 4); //cd status
 
-    rt_thread_mdelay(200);
-    if (dfs_mount("sd0", "/mnt", "elm", 0, 0) == RT_EOK)
-    {
-        LOG_I("sd card mount to '/mnt'");
-    }
-    else
-    {
-        LOG_W("sd card mount to '/mnt' failed!");
-    }
-
+    int change = 0;
     while (1)
     {
         rt_thread_mdelay(200);
-        if (((*IN_STATUS >>6) & 0x1) == 1)
+        change = 0;
+        if (((*IN_STATUS >> 6) & 0x1) == 1)
         {
             *IN_STATUS = 0x40;
-            _sdcard_mount();
+            change = 1;
         }
-
-        if (((*IN_STATUS >>7) & 0x1) == 1)
+        if (((*IN_STATUS >> 7) & 0x1) == 1)
         {
             *IN_STATUS = (0x80);
-            _sdcard_unmount();
+            change = 2;
         }
+        if(change > 0)
+        {
+            LOG_D("sdio host change: %d",  change);
+            mmcsd_wait_cd_changed(0); // clear
+            host_change();  // send cd change to host
+
+            int result = mmcsd_wait_cd_changed(RT_TICK_PER_SECOND);
+            if (result == MMCSD_HOST_PLUGED)
+            {
+                LOG_D("mmcsd change pluged");
+                filesysytem_try_mount("sd0","/sd","elm",0);
+            }else
+            if(result == MMCSD_HOST_UNPLUGED)
+            {
+                LOG_D("mmcsd change unpluged");
+                filesysytem_try_unmount("/sd");
+            }else{
+                LOG_I("mmcsd wait_cd_changed %d",result);
+            }
+        }
+
     }
 }
 
