@@ -132,6 +132,7 @@
 #define RT_USING_SPI
 #define RT_USING_WDT
 #define RT_USING_TOUCH
+#define RT_USING_LCD
 
 /* Using USB */
 
@@ -170,7 +171,7 @@
 /* light weight TCP/IP stack */
 
 #define RT_USING_LWIP
-#define RT_USING_LWIP202
+#define RT_USING_LWIP212
 #define RT_LWIP_MEM_ALIGNMENT 4
 #define RT_LWIP_IGMP
 #define RT_LWIP_ICMP
@@ -188,13 +189,20 @@
 #define RT_LWIP_TCP
 #define RT_LWIP_RAW
 #define RT_MEMP_NUM_NETCONN 16
+#define RT_MEMP_NUM_TCPIP_MSG_API 16
+#define RT_MEMP_NUM_TCPIP_MSG_INPKT 16
 #define RT_LWIP_PBUF_NUM 16
+#define RT_LWIP_PBUF_STRUCT_NUM 16
+#define RT_LWIP_NETBUF_NUM 16
 #define RT_LWIP_RAW_PCB_NUM 4
 #define RT_LWIP_UDP_PCB_NUM 8
+#define RT_UDP_RECVMBOX_SIZE 16
+#define RT_RECV_BUFSIZE_DEFAULT 64
 #define RT_LWIP_TCP_PCB_NUM 8
 #define RT_LWIP_TCP_SEG_NUM 40
 #define RT_LWIP_TCP_SND_BUF 8196
 #define RT_LWIP_TCP_WND 8196
+#define RT_TCP_RECVMBOX_SIZE 16
 #define RT_LWIP_TCPTHREAD_PRIORITY 10
 #define RT_LWIP_TCPTHREAD_MBOX_SIZE 8
 #define RT_LWIP_TCPTHREAD_STACKSIZE 8192
@@ -209,7 +217,8 @@
 #define LWIP_SO_SNDTIMEO 1
 #define LWIP_SO_RCVBUF 1
 #define LWIP_SO_LINGER 0
-#define LWIP_NETIF_LOOPBACK 0
+#define RT_LWIP_NETIF_LOOPBACK
+#define LWIP_NETIF_LOOPBACK 1
 #define RT_LWIP_USING_PING
 
 /* AT commands */
@@ -249,6 +258,11 @@
 
 /* language packages */
 
+/* JSON: JavaScript Object Notation, a lightweight data-interchange format */
+
+
+/* XML: Extensible Markup Language */
+
 
 /* multimedia packages */
 
@@ -258,10 +272,19 @@
 /* u8g2: a monochrome graphic library */
 
 
+/* PainterEngine: A cross-platform graphics application framework written in C language */
+
+
 /* tools packages */
 
 
 /* system packages */
+
+/* enhanced kernel services */
+
+
+/* POSIX extension functions */
+
 
 /* acceleration: Assembly language or algorithmic acceleration packages */
 
@@ -280,12 +303,24 @@
 
 /* miscellaneous packages */
 
+/* project laboratory */
+
 /* samples: kernel and components samples */
 
 
 /* entertainment: terminal games and other interesting software packages */
 
+
+/* Privated Packages of RealThread */
+
+
+/* Network Utilities */
+
+
+/* RT-Thread Smart */
+
 #define BCM2711_SOC
+#define BSP_SUPPORT_FPU
 
 /* Hardware Drivers Config */
 
