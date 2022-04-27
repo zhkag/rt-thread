@@ -26,8 +26,7 @@
 static int link_speed = 0;
 static int link_flag = 0;
 
-#define RECV_CACHE_BUF          (2048)
-#define DMA_DISC_ADDR_SIZE      (4 * 1024 *1024)
+#define DMA_DISC_ADDR_SIZE          (4 * 1024 *1024)
 
 #define RX_DESC_BASE            (mac_reg_base_addr + GENET_RX_OFF)
 #define TX_DESC_BASE            (mac_reg_base_addr + GENET_TX_OFF)
@@ -48,9 +47,6 @@ static rt_uint32_t tx_index = 0;
 static rt_uint32_t rx_index = 0;
 static rt_uint32_t index_flag = 0;
 
-static rt_uint8_t send_cache_pbuf[RECV_CACHE_BUF];
-//static rt_uint8_t recv_data[RX_BUF_LENGTH];
-
 struct rt_eth_dev
 {
     struct eth_device parent;
@@ -63,7 +59,6 @@ struct rt_eth_dev
     void *priv;
 };
 static struct rt_eth_dev eth_dev;
-static struct rt_semaphore sem_lock;
 static struct rt_semaphore link_ack;
 
 static inline rt_uint32_t read32(void *addr)
@@ -79,7 +74,6 @@ static inline void write32(void *addr, rt_uint32_t value)
 static void eth_rx_irq(int irq, void *param)
 {
     rt_uint32_t val = 0;
-
     val = read32(mac_reg_base_addr + GENET_INTRL2_CPU_STAT);
     val &= ~read32(mac_reg_base_addr + GENET_INTRL2_CPU_STAT_MASK);
 
@@ -623,38 +617,49 @@ static rt_err_t bcmgenet_eth_control(rt_device_t dev, int cmd, void *args)
 
 rt_err_t rt_eth_tx(rt_device_t device, struct pbuf *p)
 {
-    size_t sendbuf = (size_t)eth_send_no_cache;
-    /* lock eth device */
-    if (link_flag == 1)
-    {
-        rt_sem_take(&sem_lock, RT_WAITING_FOREVER);
-        pbuf_copy_partial(p, (void *)&send_cache_pbuf[0], p->tot_len, 0);
-        rt_memcpy((void *)sendbuf, send_cache_pbuf, p->tot_len);
+    int copy_len = 0;
 
-        bcmgenet_gmac_eth_send((void *)sendbuf, p->tot_len);
-        rt_sem_release(&sem_lock);
+    /* lock eth device */
+    if (link_flag != 1)
+    {
+        rt_kprintf("link disconnected\n");
+        return -RT_ERROR;
     }
+
+    copy_len = pbuf_copy_partial(p, eth_send_no_cache, p->tot_len, 0);
+    if (copy_len == 0)
+    {
+
+        rt_kprintf("copy len is zero\n");
+        return -RT_ERROR;
+    }
+    bcmgenet_gmac_eth_send((void *)eth_send_no_cache, p->tot_len);
+
     return RT_EOK;
 }
 
 struct pbuf *rt_eth_rx(rt_device_t device)
 {
     int recv_len = 0;
-    size_t addr_point[8];
+    size_t addr_point;
     struct pbuf *pbuf = RT_NULL;
-    if (link_flag == 1)
+    if (link_flag != 1)
     {
-        rt_sem_take(&sem_lock, RT_WAITING_FOREVER);
-        recv_len = bcmgenet_gmac_eth_recv((rt_uint8_t **)&addr_point[0]);
-        if (recv_len > 0)
-        {
-            pbuf = pbuf_alloc(PBUF_LINK, recv_len, PBUF_RAM);
-            //calc offset
-            addr_point[0] = (size_t)(addr_point[0] + (eth_recv_no_cache - RECV_DATA_NO_CACHE));
-            rt_memcpy(pbuf->payload, (char *)addr_point[0], recv_len);
-        }
-        rt_sem_release(&sem_lock);
+        return RT_NULL;
     }
+
+    recv_len = bcmgenet_gmac_eth_recv((rt_uint8_t **)&addr_point);
+    if (recv_len > 0)
+    {
+        pbuf = pbuf_alloc(PBUF_LINK, recv_len, PBUF_POOL);
+        if (pbuf != RT_NULL)
+        {
+            //calc offset
+            addr_point= (size_t)(addr_point+ (eth_recv_no_cache - RECV_DATA_NO_CACHE));
+            rt_memcpy(pbuf->payload, (char *)addr_point, recv_len);
+        }
+    }
+
     return pbuf;
 }
 
@@ -662,7 +667,6 @@ int rt_hw_eth_init(void)
 {
     rt_uint8_t mac_addr[6];
 
-    rt_sem_init(&sem_lock, "eth_lock", 1, RT_IPC_FLAG_FIFO);
     rt_sem_init(&link_ack, "link_ack", 0, RT_IPC_FLAG_FIFO);
 
     memset(&eth_dev, 0, sizeof(eth_dev));
