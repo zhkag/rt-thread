@@ -1,3 +1,12 @@
+/*
+ * Copyright (c) 2006-2021, RT-Thread Development Team
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Change Logs:
+ * Date           Author        Notes
+ * 2022-05-05     linzhenxing     first version
+ */
 #include <rtthread.h>
 #include <dfs_fs.h>
 #include <drivers/gpt.h>
