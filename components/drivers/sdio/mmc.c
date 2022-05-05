@@ -193,10 +193,11 @@ static int mmc_parse_ext_csd(struct rt_mmcsd_card *card, rt_uint8_t *ext_csd)
   card->hs_max_data_rate = 52000000;
 
   card_capacity = *((rt_uint32_t *)&ext_csd[EXT_CSD_SEC_CNT]);
+  card->card_sec_cnt = card_capacity;
   card_capacity *= card->card_blksize;
   card_capacity >>= 10; /* unit:KB */
   card->card_capacity = card_capacity;
-  LOG_I("emmc card capacity %d KB.", card->card_capacity);
+  LOG_I("emmc card capacity %d KB, card sec count:%d.", card->card_capacity, card->card_sec_cnt);
 
   return 0;
 }
@@ -322,7 +323,7 @@ static int mmc_select_bus_width(struct rt_mmcsd_card *card, rt_uint8_t *ext_csd)
     * set by drivers.
     */
 
-     if (!(((host->flags & MMCSD_BUSWIDTH_8) &&
+    if (!(((host->flags & MMCSD_BUSWIDTH_8) &&
       ext_csd_bits[idx] == EXT_CSD_BUS_WIDTH_8) ||
          ((host->flags & MMCSD_BUSWIDTH_4) &&
       ext_csd_bits[idx] == EXT_CSD_BUS_WIDTH_4) ||

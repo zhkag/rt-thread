@@ -15,6 +15,8 @@
 #include <drivers/mmcsd_host.h>
 #include <drivers/mmcsd_card.h>
 #include <drivers/mmcsd_cmd.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -235,6 +237,7 @@ void mmcsd_free_host(struct rt_mmcsd_host *host);
 int rt_mmcsd_core_init(void);
 
 int rt_mmcsd_blk_init(void);
+rt_int32_t read_lba(struct rt_mmcsd_card *card, size_t lba, uint8_t *buffer, size_t count);
 rt_int32_t rt_mmcsd_blk_probe(struct rt_mmcsd_card *card);
 void rt_mmcsd_blk_remove(struct rt_mmcsd_card *card);
 
