@@ -22,6 +22,10 @@
 
 #define min(a, b) a < b ? a : b
 static int force_gpt = 0;
+static gpt_header *_gpt;
+static gpt_entry *_ptes;
+#define GPT_TYPE 1
+#define MBR_TYPE 0
 
 static inline int efi_guidcmp (gpt_guid_t left, gpt_guid_t right)
 {
@@ -51,6 +55,7 @@ static inline int pmbr_part_valid(gpt_mbr_record *part)
 invalid:
     return 0;
 }
+
 /*
 *
 * return ret
@@ -194,7 +199,7 @@ static int is_gpt_valid(struct rt_mmcsd_card *card, size_t lba, gpt_header **gpt
     /* Check the GUID Partition Table signature */
     if ((uint64_t)((*gpt)->signature) != GPT_HEADER_SIGNATURE)
     {
-        printf("GUID Partition Table Header signature is wrong:"
+        LOG_E("GUID Partition Table Header signature is wrong:"
              "%ld != %ld\n",(uint64_t)((*gpt)->signature),(uint64_t)GPT_HEADER_SIGNATURE);
         goto fail;
     }
@@ -202,17 +207,17 @@ static int is_gpt_valid(struct rt_mmcsd_card *card, size_t lba, gpt_header **gpt
     /* Check the GUID Partition Table header size is too small */
     if ((uint32_t)((*gpt)->header_size) < sizeof(gpt_header))
     {
-        printf("GUID Partition Table Header size is too small: %u < %zu\n",
+        LOG_E("GUID Partition Table Header size is too small: %u < %zu\n",
             (uint32_t)((*gpt)->header_size),sizeof(gpt_header));
         goto fail;
     }
 
-    /* Check that the my_lba entry points to the LBA that contains
+    /* Check that the start_lba entry points to the LBA that contains
      * the GUID Partition Table */
-    if ((uint64_t)((*gpt)->my_lba) != lba)
+    if ((uint64_t)((*gpt)->start_lba) != lba)
     {
-        printf("GPT my_lba incorrect: %ld != %ld\n",
-             (uint64_t)((*gpt)->my_lba),
+        LOG_E("GPT start_lba incorrect: %ld != %ld\n",
+             (uint64_t)((*gpt)->start_lba),
              (uint64_t)lba);
         goto fail;
     }
@@ -223,7 +228,7 @@ static int is_gpt_valid(struct rt_mmcsd_card *card, size_t lba, gpt_header **gpt
     lastlba = last_lba(card);
     if ((uint64_t)((*gpt)->first_usable_lba) > lastlba)
     {
-        printf("GPT: first_usable_lba incorrect: %ld > %ld\n",
+        LOG_E("GPT: first_usable_lba incorrect: %ld > %ld\n",
              ((uint64_t)((*gpt)->first_usable_lba)),
              (size_t)lastlba);
         goto fail;
@@ -231,7 +236,7 @@ static int is_gpt_valid(struct rt_mmcsd_card *card, size_t lba, gpt_header **gpt
 
     if ((uint64_t)((*gpt)->last_usable_lba) > lastlba)
     {
-        printf("GPT: last_usable_lba incorrect: %ld > %ld\n",
+        LOG_E("GPT: last_usable_lba incorrect: %ld > %ld\n",
              (uint64_t)((*gpt)->last_usable_lba),
              (size_t)lastlba);
         goto fail;
@@ -239,14 +244,14 @@ static int is_gpt_valid(struct rt_mmcsd_card *card, size_t lba, gpt_header **gpt
 
     if ((uint64_t)((*gpt)->last_usable_lba) < (uint64_t)((*gpt)->first_usable_lba))
     {
-        printf("GPT: last_usable_lba incorrect: %ld > %ld\n",
+        LOG_E("GPT: last_usable_lba incorrect: %ld > %ld\n",
              (uint64_t)((*gpt)->last_usable_lba),
              (uint64_t)((*gpt)->first_usable_lba));
         goto fail;
     }
     /* Check that sizeof_partition_entry has the correct value */
     if ((uint32_t)((*gpt)->sizeof_partition_entry) != sizeof(gpt_entry)) {
-        printf("GUID Partition Entry Size check failed.\n");
+        LOG_E("GUID Partition Entry Size check failed.\n");
         goto fail;
     }
 
@@ -266,8 +271,8 @@ static int is_gpt_valid(struct rt_mmcsd_card *card, size_t lba, gpt_header **gpt
 
 /**
  * is_pte_valid() - tests one PTE for validity
- * @pte:pte to check
- * @lastlba: last lba of the disk
+ * pte:pte to check
+ * lastlba: last lba of the disk
  *
  * Description: returns 1 if valid,  0 on error.
  */
@@ -285,9 +290,9 @@ static inline int is_pte_valid(const gpt_entry *pte, const size_t lastlba)
 
 /**
  * compare_gpts() - Search disk for valid GPT headers and PTEs
- * @pgpt: primary GPT header
- * @agpt: alternate GPT header
- * @lastlba: last LBA number
+ * pgpt: primary GPT header
+ * agpt: alternate GPT header
+ * lastlba: last LBA number
  *
  * Description: Returns nothing.  Sanity checks pgpt and agpt fields
  * and prints warnings on discrepancies.
@@ -301,21 +306,21 @@ static void compare_gpts(gpt_header *pgpt, gpt_header *agpt, size_t lastlba)
         return;
     }
 
-    if ((uint64_t)(pgpt->my_lba) != (uint64_t)(agpt->alternate_lba))
+    if ((uint64_t)(pgpt->start_lba) != (uint64_t)(agpt->alternate_lba))
     {
         LOG_I("GPT:Primary header LBA != Alt. header alternate_lba\n");
         LOG_I("GPT:%lld != %lld\n",
-               (uint64_t)(pgpt->my_lba),
+               (uint64_t)(pgpt->start_lba),
                        (uint64_t)(agpt->alternate_lba));
         error_found++;
     }
 
-    if ((uint64_t)(pgpt->alternate_lba) != (uint64_t)(agpt->my_lba))
+    if ((uint64_t)(pgpt->alternate_lba) != (uint64_t)(agpt->start_lba))
     {
-        LOG_I("GPT:Primary header alternate_lba != Alt. header my_lba\n");
+        LOG_I("GPT:Primary header alternate_lba != Alt. header start_lba\n");
         LOG_I("GPT:%lld != %lld\n",
                (uint64_t)(pgpt->alternate_lba),
-                       (uint64_t)(agpt->my_lba));
+                       (uint64_t)(agpt->start_lba));
         error_found++;
     }
 
@@ -379,11 +384,11 @@ static void compare_gpts(gpt_header *pgpt, gpt_header *agpt, size_t lastlba)
         error_found++;
     }
 
-    if ((agpt->my_lba) != lastlba)
+    if ((agpt->start_lba) != lastlba)
     {
         LOG_I("GPT:Alternate GPT header not at the end of the disk.\n");
         LOG_I("GPT:%lld != %lld\n",
-            (uint64_t)(agpt->my_lba),
+            (uint64_t)(agpt->start_lba),
             (size_t)lastlba);
         error_found++;
     }
@@ -397,9 +402,9 @@ static void compare_gpts(gpt_header *pgpt, gpt_header *agpt, size_t lastlba)
 
 /**
  * find_valid_gpt() - Search disk for valid GPT headers and PTEs
- * @state: disk parsed partitions
- * @gpt: GPT header ptr, filled on return.
- * @ptes: PTEs ptr, filled on return.
+ * state: disk parsed partitions
+ * gpt: GPT header ptr, filled on return.
+ * ptes: PTEs ptr, filled on return.
  *
  * Description: Returns 1 if valid, 0 on error.
  * If valid, returns pointers to newly allocated GPT header and PTEs.
@@ -509,32 +514,35 @@ static int find_valid_gpt(struct rt_mmcsd_card *card, gpt_header **gpt,
         *ptes = RT_NULL;
         return 0;
 }
-static gpt_header *_gpt;
-static gpt_entry *_ptes;
+
 int check_gpt(struct rt_mmcsd_card *card)
 {
     if (!find_valid_gpt(card, &_gpt, &_ptes) || !_gpt || !_ptes)
     {
         rt_free(_gpt);
         rt_free(_ptes);
-        return 0;
+        return MBR_TYPE;
     }
-    return 1;
+    return GPT_TYPE;
 }
 
-int get_partition_param(struct rt_mmcsd_card *card, struct dfs_partition *part, uint32_t pindex)
+int gpt_get_partition_param(struct rt_mmcsd_card *card, struct dfs_partition *part, uint32_t pindex)
 {
     if (!is_pte_valid(&_ptes[pindex], last_lba(card)))
     {
         return -1;
     }
+
     part->offset = (off_t)(_ptes[pindex].starting_lba);
     part->size = (_ptes[pindex].ending_lba) - (_ptes[pindex].starting_lba) + 1ULL;
 
     rt_kprintf("found part[%d], begin(sector): %d, end(sector):%d size: ",
              pindex, _ptes[pindex].starting_lba, _ptes[pindex].ending_lba);
+
     if ((part->size >> 11) == 0)
-        rt_kprintf("%d%s", part->size >> 1, "KB\n"); /* KB */
+    {
+        rt_kprintf("%d%s", part->size >> 1, "KB\n"); /* KB */        
+    }
     else
     {
         unsigned int part_size;
@@ -547,7 +555,7 @@ int get_partition_param(struct rt_mmcsd_card *card, struct dfs_partition *part, 
     return 0;
 }
 
-void gpt_free()
+void gpt_free(void)
 {
     rt_free(_ptes);
     rt_free(_gpt);

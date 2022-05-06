@@ -9,11 +9,13 @@
  */
 #ifndef __GPT_H
 #define __GPT_H
+
+#include <rtthread.h>
 #include <stdint.h>
-#include <drivers/mmcsd_card.h>
+
 typedef struct
 {
-    uint8_t b[16];
+    uint8_t b[16]; /* GUID 16 bytes*/
 } guid_t;
 
 #define MSDOS_MBR_SIGNATURE 0xaa55
@@ -65,8 +67,8 @@ typedef struct _gpt_header
     uint32_t header_size;
     uint32_t header_crc32;
     uint32_t reserved1;
-    uint64_t my_lba;
-    uint64_t alternate_lba;
+    uint64_t start_lba;     /*GPT head start sector*/
+    uint64_t alternate_lba; /*GPT head alternate sector*/
     uint64_t first_usable_lba;
     uint64_t last_usable_lba;
     gpt_guid_t disk_guid;
@@ -125,6 +127,6 @@ typedef struct _legacy_mbr
 #pragma pack(pop)
 
 int check_gpt(struct rt_mmcsd_card *card);
-int get_partition_param(struct rt_mmcsd_card *card, struct dfs_partition *part, uint32_t pindex);
-void gpt_free();
+int gpt_get_partition_param(struct rt_mmcsd_card *card, struct dfs_partition *part, uint32_t pindex);
+void gpt_free(void);
 #endif /*__GPT_H*/

@@ -35,3 +35,5 @@ ncscope.*
 tags
 
 .vscode/
+
+bsp/
