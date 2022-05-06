@@ -475,19 +475,6 @@ static int find_valid_gpt(struct rt_mmcsd_card *card, gpt_header **gpt,
         }
 
         compare_gpts(pgpt, agpt, lastlba);
-        // legacymbr = rt_malloc(512);
-        // if (!legacymbr)
-        // {
-        //     goto fail;
-        // }
-
-        // status = read_lba(card, 0, (uint8_t *)legacymbr, 1);
-        // if (status)
-        // {
-        //     LOG_I("status:%d\n", status);
-        //     goto fail;
-        // }
-        // rt_free(legacymbr);
 
         /* The good cases */
         if (good_pgpt)
