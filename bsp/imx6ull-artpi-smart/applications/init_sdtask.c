@@ -61,7 +61,7 @@ _remount:
 void filesysytem_try_unmount(char *mount_point)
 {
     struct stat filestat = {0};
-    LOG_I("unmount(\"%s\");",  mount_point);
+    LOG_I("unmount(\"%s\");", mount_point);
     if ((dfs_file_stat(mount_point, &filestat) >= 0) && (S_ISDIR(filestat.st_mode)))
     {
         dfs_unmount(mount_point);
@@ -72,7 +72,7 @@ static void sd_task_entry(void *parameter)
 {
     volatile unsigned int *IN_STATUS;
 
-    IN_STATUS = (volatile unsigned int *)rt_ioremap((void *)0x2190030, 4); //cd status
+    IN_STATUS = (volatile unsigned int *)rt_ioremap((void *)0x2190030, 4); // cd status
 
     int change = 0;
     while (1)
@@ -89,27 +89,28 @@ static void sd_task_entry(void *parameter)
             *IN_STATUS = (0x80);
             change = 2;
         }
-        if(change > 0)
+        if (change > 0)
         {
-            LOG_D("sdio host change: %d",  change);
+            LOG_D("sdio host change: %d", change);
             mmcsd_wait_cd_changed(0); // clear
-            host_change();  // send cd change to host
+            host_change();            // send cd change to host
 
             int result = mmcsd_wait_cd_changed(RT_TICK_PER_SECOND);
             if (result == MMCSD_HOST_PLUGED)
             {
                 LOG_D("mmcsd change pluged");
-                filesysytem_try_mount("sd0","/sd","elm",0);
-            }else
-            if(result == MMCSD_HOST_UNPLUGED)
+                filesysytem_try_mount("sd0", "/mnt/sd0", "elm", 0);
+            }
+            else if (result == MMCSD_HOST_UNPLUGED)
             {
                 LOG_D("mmcsd change unpluged");
-                filesysytem_try_unmount("/sd");
-            }else{
-                LOG_I("mmcsd wait_cd_changed %d",result);
+                filesysytem_try_unmount("/mnt/sd0");
+            }
+            else
+            {
+                LOG_I("mmcsd wait_cd_changed %d", result);
             }
         }
-
     }
 }
 
@@ -130,5 +131,4 @@ int sd_task_init(void)
     return RT_EOK;
 }
 INIT_APP_EXPORT(sd_task_init);
-
 #endif
