@@ -200,13 +200,20 @@
 #define RT_LWIP_TCP
 #define RT_LWIP_RAW
 #define RT_MEMP_NUM_NETCONN 8
+#define RT_MEMP_NUM_TCPIP_MSG_API 16
+#define RT_MEMP_NUM_TCPIP_MSG_INPKT 16
 #define RT_LWIP_PBUF_NUM 16
+#define RT_LWIP_PBUF_STRUCT_NUM 16
+#define RT_LWIP_NETBUF_NUM 16
 #define RT_LWIP_RAW_PCB_NUM 4
 #define RT_LWIP_UDP_PCB_NUM 4
+#define RT_UDP_RECVMBOX_SIZE 16
+#define RT_RECV_BUFSIZE_DEFAULT 64
 #define RT_LWIP_TCP_PCB_NUM 4
 #define RT_LWIP_TCP_SEG_NUM 40
 #define RT_LWIP_TCP_SND_BUF 8196
 #define RT_LWIP_TCP_WND 8196
+#define RT_TCP_RECVMBOX_SIZE 16
 #define RT_LWIP_TCPTHREAD_PRIORITY 10
 #define RT_LWIP_TCPTHREAD_MBOX_SIZE 8
 #define RT_LWIP_TCPTHREAD_STACKSIZE 8192
@@ -320,15 +327,6 @@
 
 
 /* entertainment: terminal games and other interesting software packages */
-
-
-/* Privated Packages of RealThread */
-
-
-/* Network Utilities */
-
-
-/* RT-Thread Smart */
 
 #define SOC_IMX6ULL
 #define CPU_MCIMX6Y2CVM05
