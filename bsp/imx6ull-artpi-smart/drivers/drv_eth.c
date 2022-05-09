@@ -514,7 +514,7 @@ static void phy_detect_thread_entry(void *param)
     }
     else
     {
-        LOG_E("PHY Link down, please check the cable connection and link partner setting.");
+        LOG_W("PHY Link down, please check the cable connection and link partner setting.");
     }
 
     while(1)
@@ -564,14 +564,14 @@ static int imx6ul_eth_init(void)
         state = eth_device_init(&(_imx6ul_eth_device[idx].parent), _imx6ul_eth_device[idx].mac_name);
         if (RT_EOK == state)
         {
-            LOG_E("emac device init success");
+            LOG_I("emac device init success");
         }
         else
         {
             LOG_E("emac device init faild: %d", state);
             state = -RT_ERROR;
         }
-        
+
         rt_sprintf(link_detect,"link_d%d",_imx6ul_eth_device[idx].mac_num);
         /* start phy link detect */
         rt_thread_t phy_link_tid;

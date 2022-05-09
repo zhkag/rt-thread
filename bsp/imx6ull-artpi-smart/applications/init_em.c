@@ -21,12 +21,12 @@
 int em_init(void)
 {
     int count = 5;
-    char *em_cmd = "/bin/em.elf &";
+    char *em_cmd = "/services/em.elf &";
 
     while (count --)
     {
         int fd;
-        fd = open("/bin/em.elf", O_RDONLY);
+        fd = open("/services/em.elf", O_RDONLY);
         if (fd >= 0)
         {
             close(fd);
