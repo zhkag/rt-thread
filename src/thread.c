@@ -629,6 +629,66 @@ rt_err_t rt_thread_mdelay(rt_int32_t ms)
 }
 RTM_EXPORT(rt_thread_mdelay);
 
+#ifdef RT_USING_SMP
+static void rt_thread_cpu_bind(rt_thread_t thread, int cpu)
+{
+    rt_base_t level;
+
+    if (cpu >= RT_CPUS_NR)
+    {
+        cpu = RT_CPUS_NR;
+    }
+
+    level = rt_hw_interrupt_disable();
+    if ((thread->stat & RT_THREAD_STAT_MASK) == RT_THREAD_READY)
+    {
+        /* unbind */
+        /* remove from old ready queue */
+        rt_schedule_remove_thread(thread);
+        /* change thread bind cpu */
+        thread->bind_cpu = cpu;
+        /* add to new ready queue */
+        rt_schedule_insert_thread(thread);
+        if (rt_thread_self() != RT_NULL)
+        {
+            rt_schedule();
+        }
+    }
+    else
+    {
+        thread->bind_cpu = cpu;
+        if ((thread->stat & RT_THREAD_STAT_MASK) == RT_THREAD_RUNNING)
+        {
+            /* thread is running on a cpu */
+            int current_cpu = rt_hw_cpu_id();
+
+            if (cpu != RT_CPUS_NR)
+            {
+                if (thread->oncpu == current_cpu)
+                {
+                    /* current thread on current cpu */
+                    if (cpu != current_cpu)
+                    {
+                        /* bind to other cpu */
+                        rt_hw_ipi_send(RT_SCHEDULE_IPI, 1U << cpu);
+                        /* self cpu need reschedule */
+                        rt_schedule();
+                    }
+                    /* else do nothing */
+                }
+                else
+                {
+                    /* no running on self cpu, but dest cpu can be itself */
+                    rt_hw_ipi_send(RT_SCHEDULE_IPI, 1U << thread->oncpu);
+                }
+            }
+            /* else do nothing */
+        }
+    }
+    rt_hw_interrupt_enable(level);
+}
+#endif
+
 /**
  * This function will control thread behaviors according to control command.
  *
@@ -716,14 +776,8 @@ rt_err_t rt_thread_control(rt_thread_t thread, int cmd, void *arg)
     {
         rt_uint8_t cpu;
 
-        if ((thread->stat & RT_THREAD_STAT_MASK) != RT_THREAD_INIT)
-        {
-            /* we only support bind cpu before started phase. */
-            return RT_ERROR;
-        }
-
         cpu = (rt_uint8_t)(size_t)arg;
-        thread->bind_cpu = cpu > RT_CPUS_NR? RT_CPUS_NR : cpu;
+        rt_thread_cpu_bind(thread, cpu);
         break;
     }
 #endif /*RT_USING_SMP*/
