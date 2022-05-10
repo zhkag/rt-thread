@@ -1368,6 +1368,11 @@ rt_thread_t sys_thread_create(void *arg[])
     thread->tid = tid;
     lwp_tid_set_thread(tid, thread);
 
+    if (lwp->debug)
+    {
+        rt_thread_control(thread, RT_THREAD_CTRL_BIND_CPU, (void*)0);
+    }
+
     level = rt_hw_interrupt_disable();
     rt_list_insert_after(&lwp->t_grp, &thread->sibling);
     rt_hw_interrupt_enable(level);
@@ -1507,6 +1512,11 @@ long _sys_clone(void *arg[])
     if ((flags & CLONE_CHILD_CLEARTID) == CLONE_CHILD_CLEARTID)
     {
         thread->clear_child_tid = (int *)arg[4];
+    }
+
+    if (lwp->debug)
+    {
+        rt_thread_control(thread, RT_THREAD_CTRL_BIND_CPU, (void*)0);
     }
 
     level = rt_hw_interrupt_disable();
