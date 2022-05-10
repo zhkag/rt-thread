@@ -76,7 +76,11 @@ __start:
     eret                            /* exception return. from EL2. continue from .L__in_el1 */
 
 .L__in_el1:
+#ifdef RT_USING_LWP
     ldr     x9, =PV_OFFSET
+#else
+    mov     x9, #0
+#endif
     mov     sp, x1                  /* in EL1. Set sp to _start */
 
     /* Set CPACR_EL1 (Architecture Feature Access Control Register) to avoid trap from SIMD or float point instruction */
@@ -118,7 +122,9 @@ __start:
     dsb sy
 
     ldr x2, =0x40000000      /* map 1G memory for kernel space */
+#ifdef RT_USING_LWP
     ldr x3, =PV_OFFSET
+#endif
     bl rt_hw_mmu_setup_early
 
     ldr x30, =after_mmu_enable  /* set LR to after_mmu_enable function, it's a v_addr */

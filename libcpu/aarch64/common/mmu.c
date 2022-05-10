@@ -137,6 +137,7 @@ int armv8_init_map_2M(unsigned long *lv0_tbl, unsigned long va, unsigned long pa
     return 0;
 }
 
+#ifdef RT_USING_LWP
 static int _kenrel_map_2M(unsigned long *lv0_tbl, unsigned long va, unsigned long pa, unsigned long attr)
 {
     int level;
@@ -196,6 +197,12 @@ static int _kenrel_map_2M(unsigned long *lv0_tbl, unsigned long va, unsigned lon
 
     return 0;
 }
+#else
+static int _kenrel_map_2M(unsigned long *lv0_tbl, unsigned long va, unsigned long pa, unsigned long attr)
+{
+    return 0;
+}
+#endif
 
 struct mmu_level_info
 {
@@ -203,6 +210,7 @@ struct mmu_level_info
     void *page;
 };
 
+#ifdef RT_USING_LWP
 static void _kenrel_unmap_4K(unsigned long *lv0_tbl, void *v_addr)
 {
     int level;
@@ -330,6 +338,18 @@ err:
     _kenrel_unmap_4K(lv0_tbl, (void *)va);
     return ret;
 }
+#else
+static void _kenrel_unmap_4K(unsigned long *lv0_tbl, void *v_addr)
+{
+
+}
+
+static int _kenrel_map_4K(unsigned long *lv0_tbl, unsigned long va, unsigned long pa, unsigned long attr)
+{
+
+    return 0;
+}
+#endif
 
 int kernel_map_fixed(unsigned long *lv0_tbl, unsigned long va, unsigned long pa, unsigned long count, unsigned long attr)
 {
@@ -928,5 +948,10 @@ void rt_hw_mmu_setup_early(unsigned long *tbl0, unsigned long *tbl1, unsigned lo
     {
         while (1);
     }
+}
+#else
+void rt_hw_mmu_setup_early(unsigned long *tbl0, unsigned long *tbl1, unsigned long size, unsigned long pv_off)
+{
+
 }
 #endif
