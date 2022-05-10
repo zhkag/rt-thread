@@ -508,6 +508,44 @@ rt_int32_t mbr_device_probe(struct rt_mmcsd_card *card)
     status = rt_mmcsd_req_blk(card, 0, sector, 1, 0);
     if (status == RT_EOK)
     {
+        blk_dev = rt_calloc(1, sizeof(struct mmcsd_blk_device));
+        if (!blk_dev)
+        {
+            LOG_E("mmcsd:malloc memory failed!");
+            return -1;
+        }
+        blk_dev->max_req_size = BLK_MIN((card->host->max_dma_segs *
+                                        card->host->max_seg_size) >> 9,
+                                        (card->host->max_blk_count *
+                                        card->host->max_blk_size) >> 9);
+        blk_dev->part.offset = 0;
+        blk_dev->part.size   = 0;
+        rt_snprintf(sname, sizeof(sname)-1, "sem_%s%d", card->host->name,0);
+        blk_dev->part.lock = rt_sem_create(sname, 1, RT_IPC_FLAG_FIFO);
+        /* register mmcsd device */
+        blk_dev->dev.type  = RT_Device_Class_Block;
+#ifdef RT_USING_DEVICE_OPS
+        blk_dev->dev.ops  = &mmcsd_blk_ops;
+#else
+        blk_dev->dev.init = rt_mmcsd_init;
+        blk_dev->dev.open = rt_mmcsd_open;
+        blk_dev->dev.close = rt_mmcsd_close;
+        blk_dev->dev.read = rt_mmcsd_read;
+        blk_dev->dev.write = rt_mmcsd_write;
+        blk_dev->dev.control = rt_mmcsd_control;
+#endif
+        blk_dev->card = card;
+
+        blk_dev->geometry.bytes_per_sector = 1<<9;
+        blk_dev->geometry.block_size = card->card_blksize;
+        blk_dev->geometry.sector_count =
+            card->card_capacity * (1024 / 512);
+
+        blk_dev->dev.user_data = blk_dev;
+
+        rt_device_register(&(blk_dev->dev), card->host->name,
+            RT_DEVICE_FLAG_RDWR);
+        rt_list_insert_after(&blk_devices, &blk_dev->list);
         for (i = 0; i < RT_MMCSD_MAX_PARTITION; i++)
         {
             blk_dev = rt_calloc(1, sizeof(struct mmcsd_blk_device));
