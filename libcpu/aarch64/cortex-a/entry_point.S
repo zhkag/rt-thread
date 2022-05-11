@@ -148,11 +148,13 @@ __start:
     ret
 
 after_mmu_enable:
+#ifdef RT_USING_LWP
     mrs x0, tcr_el1          /* disable ttbr0, only using kernel space */
     orr x0, x0, #(1 << 7)
     msr tcr_el1, x0
     msr ttbr0_el1, xzr
     dsb sy
+#endif
 
     mov     x0, #1
     msr     spsel, x0

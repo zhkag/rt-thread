@@ -952,6 +952,24 @@ void rt_hw_mmu_setup_early(unsigned long *tbl0, unsigned long *tbl1, unsigned lo
 #else
 void rt_hw_mmu_setup_early(unsigned long *tbl0, unsigned long *tbl1, unsigned long size, unsigned long pv_off)
 {
+    int ret;
+    unsigned long va = KERNEL_VADDR_START;
+    unsigned long count = (size + ARCH_SECTION_MASK) >> ARCH_SECTION_SHIFT;
+    unsigned long normal_attr = MMU_MAP_CUSTOM(MMU_AP_KAUN, NORMAL_MEM);
 
+    /* clean the first two pages */
+    mmu_memset((char *)tbl0, 0, ARCH_PAGE_SIZE);
+    mmu_memset((char *)tbl1, 0, ARCH_PAGE_SIZE);
+
+    ret = armv8_init_map_2M(tbl1, va, va + pv_off, count, normal_attr);
+    if (ret != 0)
+    {
+        while (1);
+    }
+    ret = armv8_init_map_2M(tbl0, va + pv_off, va + pv_off, count, normal_attr);
+    if (ret != 0)
+    {
+        while (1);
+    }
 }
 #endif
