@@ -71,11 +71,13 @@ typedef uint16_t in_port_t;
 #define  SOL_SOCKET     0xfff    /* options for socket level */
 
 #define AF_UNSPEC       0
+#define AF_UNIX         1
 #define AF_INET         2
 #define AF_INET6        10
 #define AF_CAN          29  /* Controller Area Network      */
 #define AF_AT           45  /* AT socket */
 #define AF_WIZ          46  /* WIZnet socket */
+#define PF_UNIX         AF_UNIX
 #define PF_INET         AF_INET
 #define PF_INET6        AF_INET6
 #define PF_UNSPEC       AF_UNSPEC
@@ -160,6 +162,15 @@ struct sockaddr
     sa_family_t    sa_family;
     char           sa_data[14];
 };
+
+/* Structure describing the address of an AF_LOCAL (aka AF_UNIX) socket.  */
+struct sockaddr_un
+{
+    uint8_t        sa_len;
+    sa_family_t    sa_family;
+    char sun_path[108];         /* Path name.  */
+};
+
 
 #if NETDEV_IPV4
 /* members are in network byte order */

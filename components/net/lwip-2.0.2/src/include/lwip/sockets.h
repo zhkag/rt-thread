@@ -210,12 +210,14 @@ struct linger {
 
 
 #define AF_UNSPEC       0
+#define AF_UNIX         1
 #define AF_INET         2
 #if LWIP_IPV6
 #define AF_INET6        10
 #else /* LWIP_IPV6 */
 #define AF_INET6        AF_UNSPEC
 #endif /* LWIP_IPV6 */
+#define PF_UNIX         AF_UNIX
 #define PF_INET         AF_INET
 #define PF_INET6        AF_INET6
 #define PF_UNSPEC       AF_UNSPEC

@@ -2639,6 +2639,14 @@ int sys_bind(int socket, const struct musl_sockaddr *name, socklen_t namelen)
     {
         return -EFAULT;
     }
+
+#ifdef SAL_USING_AF_UNIX
+    if (name->sa_family  == AF_UNIX)
+    {
+        namelen = sizeof(struct sockaddr);
+    }
+#endif /* SAL_USING_AF_UNIX */
+
     lwp_get_from_user(&kname, (void *)name, namelen);
 
     sockaddr_tolwip(&kname, &sa);
@@ -2764,6 +2772,14 @@ int sys_connect(int socket, const struct musl_sockaddr *name, socklen_t namelen)
     {
         return -EFAULT;
     }
+
+#ifdef SAL_USING_AF_UNIX
+    if (name->sa_family  == AF_UNIX)
+    {
+        namelen = sizeof(struct sockaddr);
+    }
+#endif /* SAL_USING_AF_UNIX */
+
     lwp_get_from_user(&kname, (void *)name, namelen);
 
     sockaddr_tolwip(&kname, &sa);
