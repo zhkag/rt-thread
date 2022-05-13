@@ -80,6 +80,17 @@ int bind(int s, const struct sockaddr *name, socklen_t namelen)
 {
     int socket = dfs_net_getsocket(s);
 
+#ifdef SAL_USING_AF_UNIX
+    struct sockaddr_in server_addr = {0};
+    if (name->sa_family == AF_UNIX)
+    {
+        server_addr.sin_family = AF_INET;
+        server_addr.sin_port = htons(514);
+        server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+        return sal_bind(socket, (struct sockaddr *)&server_addr, namelen);
+    }
+#endif /* SAL_USING_AF_UNIX */
+
     return sal_bind(socket, name, namelen);
 }
 RTM_EXPORT(bind);
@@ -154,6 +165,17 @@ int connect(int s, const struct sockaddr *name, socklen_t namelen)
 {
     int socket = dfs_net_getsocket(s);
 
+#ifdef SAL_USING_AF_UNIX
+    struct sockaddr_in server_addr = {0};
+    if (name->sa_family == AF_UNIX)
+    {
+        server_addr.sin_family = AF_INET;
+        server_addr.sin_port = htons(514);
+        server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+        return sal_connect(socket, (struct sockaddr *)&server_addr, namelen);
+    }
+#endif /* SAL_USING_AF_UNIX */
+
     return sal_connect(socket, name, namelen);
 }
 RTM_EXPORT(connect);
@@ -224,6 +246,13 @@ int socket(int domain, int type, int protocol)
         rt_set_errno(-ENOMEM);
         return -1;
     }
+
+#ifdef SAL_USING_AF_UNIX
+    if (domain == AF_UNIX)
+    {
+        domain = AF_INET;
+    }
+#endif /* SAL_USING_AF_UNIX */
 
     /* create socket  and then put it to the dfs_fd */
     socket = sal_socket(domain, type, protocol);
