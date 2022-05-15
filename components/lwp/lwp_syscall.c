@@ -1325,6 +1325,9 @@ rt_thread_t sys_thread_create(void *arg[])
         goto fail;
     }
 
+#ifdef RT_USING_SMP
+    thread->bind_cpu = lwp->bind_cpu;
+#endif
     thread->cleanup = lwp_cleanup;
     thread->user_entry = (void (*)(void *))arg[1];
     thread->user_stack = (void *)user_stack;
@@ -1494,6 +1497,9 @@ long _sys_clone(void *arg[])
         goto fail;
     }
 
+#ifdef RT_USING_SMP
+    thread->bind_cpu = lwp->bind_cpu;
+#endif
     thread->cleanup = lwp_cleanup;
     thread->user_entry = RT_NULL;
     thread->user_stack = RT_NULL;
@@ -4015,6 +4021,11 @@ int sys_madvise(void *addr, size_t len, int behav)
 }
 #endif
 
+int sys_setaffinity(pid_t pid, int cpu)
+{
+    return lwp_setaffinity(pid, cpu);
+}
+
 const static void* func_table[] =
 {
     (void *)sys_exit,            /* 01 */
@@ -4152,7 +4163,7 @@ const static void* func_table[] =
     (void *)sys_thread_sigprocmask,
 #ifdef ARCH_MM_MMU
     (void *)sys_cacheflush,
-    (void *)sys_notimpl,
+    (void *)sys_setaffinity,
     (void *)sys_notimpl,
 #else
     (void *)sys_notimpl,
