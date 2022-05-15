@@ -8,7 +8,7 @@ if GetDepend(['BSP_USING_USB_DEVICE']):
     src += Glob('usb/phy/*.c')
 
 list = os.listdir(cwd)
-CPPPATH = [cwd, cwd + '/iomux']
+CPPPATH = [cwd]
 objs = []
 
 group = DefineGroup('Drivers', src, depend = [''], CPPPATH = CPPPATH)
