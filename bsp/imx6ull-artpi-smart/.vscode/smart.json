@@ -2,15 +2,10 @@
     "env": {
         "windows": {
             "VENV_MODE": true,
-            "RTT_CC": "gcc",
-            "RTT_CC_PREFIX": "arm-linux-musleabi-",
-            "RTT_EXEC_PATH": "${SDK_ROOT}/tools/gnu_gcc/arm-linux-musleabi_for_i686-w64-mingw32/bin",
-            "PATH": "%RTT_EXEC_PATH%;%ENV_ROOT%/tools/gnu_gcc/arm_gcc/mingw/bin;%PATH%"
+            "UDB_PATH": "${SDK_ROOT}/tools/udb-tools/windows",
+            "PATH": "%RTT_EXEC_PATH%;%PATH%;%UDB_PATH%"
         },
         "linux": {
-            "RTT_CC": "gcc",
-            "RTT_CC_PREFIX": "arm-linux-musleabi-",
-            "RTT_EXEC_PATH": "${SDK_ROOT}/tools/gnu_gcc/arm-linux-musleabi_for_x86_64-pc-linux-gnu/bin",
             "UDB_PATH": "${SDK_ROOT}/tools/udb-tools/linux",
             "PATH": "$PATH:$RTT_EXEC_PATH:$UDB_PATH"
         }
@@ -40,7 +35,7 @@
             "commands": [
                 "udb tcp ${SERVER_IP} 5555",
                 "udb devices",
-                "udb push ${EXECUTABLE_PROGRAM} /kernel/kernel.bin"
+                "udb push rtthread.bin /kernel/kernel.bin"
             ],
             "label": "下载",
             "tooltip": "下载 RT-Thread Smart 工程"
