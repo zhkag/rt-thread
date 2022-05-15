@@ -2082,7 +2082,7 @@ int load_ldso(struct rt_lwp *lwp, char *exec_name, char *const argv[], char *con
         goto quit;
     }
 
-    ret = lwp_load("/bin/ld.so", lwp, RT_NULL, 0, aux);
+    ret = lwp_load("/lib/ld.so", lwp, RT_NULL, 0, aux);
 
     rt_strncpy(lwp->cmd, exec_name, RT_NAME_MAX);
 quit:
