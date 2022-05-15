@@ -14,7 +14,7 @@
 
 #include "mmu.h"
 
-#ifdef RT_USING_USERSPACE
+#ifdef RT_USING_LWP
 #include <page.h>
 #endif
 
@@ -40,6 +40,31 @@ struct page_table
 {
     unsigned long page[512];
 };
+
+#ifndef RT_USING_LWP
+#define MMU_TBL_PAGE_NR_MAX     32
+
+#undef PV_OFFSET
+#define PV_OFFSET 0
+
+static volatile struct page_table MMUPage[MMU_TBL_PAGE_NR_MAX] __attribute__((aligned(4096)));
+
+#define rt_page_ref_inc(...)
+
+unsigned long rt_pages_alloc(rt_size_t size_bits)
+{
+    static unsigned long i = 0;
+
+    if (i >= MMU_TBL_PAGE_NR_MAX)
+    {
+        return RT_NULL;
+    }
+
+    ++i;
+
+    return (unsigned long)&MMUPage[i - 1].page;
+}
+#endif
 
 static struct page_table *__init_page_array;
 static unsigned long __page_off = 0UL;
@@ -203,6 +228,7 @@ struct mmu_level_info
     void *page;
 };
 
+#ifdef RT_USING_LWP
 static void _kenrel_unmap_4K(unsigned long *lv0_tbl, void *v_addr)
 {
     int level;
@@ -330,6 +356,7 @@ err:
     _kenrel_unmap_4K(lv0_tbl, (void *)va);
     return ret;
 }
+#endif
 
 int kernel_map_fixed(unsigned long *lv0_tbl, unsigned long va, unsigned long pa, unsigned long count, unsigned long attr)
 {
@@ -439,8 +466,12 @@ void rt_hw_mmu_setmtt(unsigned long vaddrStart,
 
 void kernel_mmu_switch(unsigned long tbl)
 {
+#ifdef RT_USING_LWP
     tbl += PV_OFFSET;
     __asm__ volatile("msr TTBR1_EL1, %0\n dsb sy\nisb"::"r"(tbl):"memory");
+#else
+    __asm__ volatile("msr TTBR0_EL1, %0\n dsb sy\nisb"::"r"(tbl):"memory");
+#endif
     __asm__ volatile("tlbi vmalle1\n dsb sy\nisb":::"memory");
     __asm__ volatile("ic ialluis\n dsb sy\nisb":::"memory");
 }
@@ -555,7 +586,7 @@ static size_t find_vaddr(rt_mmu_info *mmu_info, int pages)
     return 0;
 }
 
-#ifdef RT_USING_USERSPACE
+#ifdef RT_USING_LWP
 static int check_vaddr(rt_mmu_info *mmu_info, void *va, int pages)
 {
     size_t loop_va;
@@ -592,7 +623,6 @@ static int check_vaddr(rt_mmu_info *mmu_info, void *va, int pages)
     }
     return 0;
 }
-#endif
 
 static void __rt_hw_mmu_unmap(rt_mmu_info *mmu_info, void *v_addr, size_t npages)
 {
@@ -638,13 +668,14 @@ static int __rt_hw_mmu_map(rt_mmu_info *mmu_info, void *v_addr, void *p_addr, si
     }
     return ret;
 }
+#endif
 
 static void rt_hw_cpu_tlb_invalidate(void)
 {
     __asm__ volatile("tlbi vmalle1\n dsb sy\n isb sy\n");
 }
 
-#ifdef RT_USING_USERSPACE
+#ifdef RT_USING_LWP
 void *_rt_hw_mmu_map(rt_mmu_info *mmu_info, void *v_addr, void *p_addr, size_t size, size_t attr)
 {
     size_t pa_s, pa_e;
@@ -705,7 +736,7 @@ void *_rt_hw_mmu_map(rt_mmu_info *mmu_info, void* p_addr, size_t size, size_t at
     pages = pa_e - pa_s + 1;
     vaddr = find_vaddr(mmu_info, pages);
     if (vaddr) {
-        ret = __rt_hw_mmu_map(mmu_info, (void*)vaddr, p_addr, pages, attr);
+        //TODO ret = __rt_hw_mmu_map(mmu_info, (void*)vaddr, p_addr, pages, attr);
         if (ret == 0)
         {
             rt_hw_cpu_tlb_invalidate();
@@ -716,7 +747,7 @@ void *_rt_hw_mmu_map(rt_mmu_info *mmu_info, void* p_addr, size_t size, size_t at
 }
 #endif
 
-#ifdef RT_USING_USERSPACE
+#ifdef RT_USING_LWP
 static int __rt_hw_mmu_map_auto(rt_mmu_info *mmu_info, void *v_addr, size_t npages, size_t attr)
 {
     size_t loop_va = (size_t)v_addr & ~ARCH_PAGE_MASK;
@@ -797,7 +828,6 @@ void *_rt_hw_mmu_map_auto(rt_mmu_info *mmu_info, void *v_addr, size_t size, size
     }
     return 0;
 }
-#endif
 
 void _rt_hw_mmu_unmap(rt_mmu_info *mmu_info, void *v_addr, size_t size)
 {
@@ -813,7 +843,6 @@ void _rt_hw_mmu_unmap(rt_mmu_info *mmu_info, void *v_addr, size_t size)
     rt_hw_cpu_tlb_invalidate();
 }
 
-#ifdef RT_USING_USERSPACE
 void *rt_hw_mmu_map(rt_mmu_info *mmu_info, void *v_addr, void *p_addr, size_t size, size_t attr)
 {
     void *ret;
@@ -835,7 +864,6 @@ void *rt_hw_mmu_map_auto(rt_mmu_info *mmu_info, void *v_addr, size_t size, size_
     rt_hw_interrupt_enable(level);
     return ret;
 }
-#endif
 
 void rt_hw_mmu_unmap(rt_mmu_info *mmu_info, void *v_addr, size_t size)
 {
@@ -845,6 +873,7 @@ void rt_hw_mmu_unmap(rt_mmu_info *mmu_info, void *v_addr, size_t size)
     _rt_hw_mmu_unmap(mmu_info, v_addr, size);
     rt_hw_interrupt_enable(level);
 }
+#endif
 
 void *_rt_hw_mmu_v2p(rt_mmu_info *mmu_info, void *v_addr)
 {
@@ -906,7 +935,7 @@ void *rt_hw_mmu_v2p(rt_mmu_info *mmu_info, void *v_addr)
     return ret;
 }
 
-#ifdef RT_USING_USERSPACE
+
 void rt_hw_mmu_setup_early(unsigned long *tbl0, unsigned long *tbl1, unsigned long size, unsigned long pv_off)
 {
     int ret;
@@ -929,4 +958,3 @@ void rt_hw_mmu_setup_early(unsigned long *tbl0, unsigned long *tbl1, unsigned lo
         while (1);
     }
 }
-#endif

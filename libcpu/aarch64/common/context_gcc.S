@@ -171,22 +171,22 @@ rt_hw_get_gtimer_frq:
     LDP     X2, X3, [SP], #0x10
     LDP     X0, X1, [SP], #0x10
     RESTORE_FPU SP
-
+#ifdef RT_USING_LWP
     BEQ     ret_to_user
-
+#endif
     ERET
 .endm
 #else
 .macro RESTORE_CONTEXT
     /* Set the SP to point to the stack of the task being restored. */
     MOV     SP, X0
-
+#ifdef RT_USING_LWP
     BL      rt_thread_self
     MOV     X19, X0
     BL      lwp_mmu_switch
     MOV     X0, X19
     BL      lwp_user_setting_restore
-
+#endif
     LDP     X2, X3, [SP], #0x10  /* SPSR and ELR. */
 
     TST     X3, #0x1f
@@ -214,9 +214,9 @@ rt_hw_get_gtimer_frq:
     LDP     X2, X3, [SP], #0x10
     LDP     X0, X1, [SP], #0x10
     RESTORE_FPU SP
-
+#ifdef RT_USING_LWP
     BEQ     ret_to_user
-
+#endif
     ERET
 .endm
 #endif
@@ -250,9 +250,9 @@ rt_hw_get_gtimer_frq:
     LDP     X2, X3, [SP], #0x10
     LDP     X0, X1, [SP], #0x10
     RESTORE_FPU SP
-
+#ifdef RT_USING_LWP
     BEQ     ret_to_user
-
+#endif
     ERET
 .endm
 
@@ -301,8 +301,10 @@ rt_hw_context_switch_to:
     MOV     SP, X0
     MOV     X0, X1
     BL      rt_cpus_lock_status_restore
+#ifdef RT_USING_LWP
     BL      rt_thread_self
     BL      lwp_user_setting_restore
+#endif
     B       rt_hw_context_switch_exit
 
 /*
@@ -321,8 +323,10 @@ rt_hw_context_switch:
     MOV    SP, X0
     MOV    X0, X2
     BL     rt_cpus_lock_status_restore
+#ifdef RT_USING_LWP
     BL     rt_thread_self
     BL     lwp_user_setting_restore
+#endif
     B      rt_hw_context_switch_exit
 
 /*
@@ -337,8 +341,10 @@ rt_hw_context_switch_interrupt:
     STP     X0, X1, [SP, #-0x10]!
     STP     X2, X3, [SP, #-0x10]!
     STP     X29, X30, [SP, #-0x10]!
+#ifdef RT_USING_LWP
     BL      rt_thread_self
     BL      lwp_user_setting_save
+#endif
     LDP     X29, X30, [SP], #0x10
     LDP     X2, X3, [SP], #0x10
     LDP     X0, X1, [SP], #0x10
@@ -349,7 +355,9 @@ rt_hw_context_switch_interrupt:
     MOV     X19, X0
     BL      rt_cpus_lock_status_restore
     MOV     X0, X19
+#ifdef RT_USING_LWP
     BL      lwp_user_setting_restore
+#endif
     B       rt_hw_context_switch_exit
 
 .globl vector_fiq
@@ -420,8 +428,10 @@ rt_hw_context_switch_interrupt:
     MOV     X7, #1              // set rt_thread_switch_interrupt_flag to 1
     STR     X7, [X6]
     STP     X1, X30, [SP, #-0x10]!
+#ifdef RT_USING_LWP
     MOV     X0, X2
     BL      lwp_user_setting_save
+#endif
     LDP     X1, X30, [SP], #0x10
 _reswitch:
     LDR     X6, =rt_interrupt_to_thread     // set rt_interrupt_to_thread

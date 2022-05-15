@@ -236,16 +236,18 @@ void rt_hw_trap_exception(struct rt_hw_exp_stack *regs)
         SVC_Handler(regs);
         /* never return here */
     }
-
+#ifdef RT_USING_LWP
     if (check_user_stack(esr, regs))
     {
         return;
     }
-
+#endif
     process_exception(esr, regs->pc);
     rt_hw_show_register(regs);
     rt_kprintf("current: %s\n", rt_thread_self()->name);
+#ifdef RT_USING_LWP
     check_user_fault(regs, 0, "user fault");
+#endif
 #ifdef RT_USING_FINSH
     list_thread();
 #endif
