@@ -68,6 +68,11 @@ struct rt_lwp
     struct rt_mpu_info mpu_info;
 #endif /* ARCH_MM_MPU */
 #endif
+
+#ifdef RT_USING_SMP
+    int bind_cpu;
+#endif
+
     uint8_t lwp_type;
     uint8_t reserv[3];
 
@@ -151,6 +156,7 @@ void lwp_mmu_switch(struct rt_thread *thread);
 #endif
 void lwp_user_setting_save(rt_thread_t thread);
 void lwp_user_setting_restore(rt_thread_t thread);
+int lwp_setaffinity(pid_t pid, int cpu);
 
 #ifdef RT_USING_USERSPACE
 struct __pthread {

@@ -866,17 +866,20 @@ static int channel_fops_close(struct dfs_fd *file)
 
     level = rt_hw_interrupt_disable();
     ch = (rt_channel_t)file->fnode->data;
-    ch->ref--;
-    if (ch->ref == 0)
+    if (file->fnode->ref_count == 1)
     {
-        /* wakeup all the suspended receivers and senders */
-        rt_channel_list_resume_all(&ch->parent.suspend_thread);
-        rt_channel_list_resume_all(&ch->wait_thread);
+        ch->ref--;
+        if (ch->ref == 0)
+        {
+            /* wakeup all the suspended receivers and senders */
+            rt_channel_list_resume_all(&ch->parent.suspend_thread);
+            rt_channel_list_resume_all(&ch->wait_thread);
 
-        /* all ipc msg will lost */
-        rt_list_init(&ch->wait_msg);
+            /* all ipc msg will lost */
+            rt_list_init(&ch->wait_msg);
 
-        rt_object_delete(&ch->parent.parent);   /* release the IPC channel structure */
+            rt_object_delete(&ch->parent.parent);   /* release the IPC channel structure */
+        }
     }
     rt_hw_interrupt_enable(level);
     return 0;
@@ -966,6 +969,7 @@ rt_err_t lwp_channel_close(int fdt_type, int fd)
 {
     rt_channel_t ch;
     struct dfs_fd *d;
+    struct dfs_fnode *fnode;
 
     d = lwp_fd_get(fdt_type, fd);
     if (!d)
@@ -973,20 +977,25 @@ rt_err_t lwp_channel_close(int fdt_type, int fd)
         return -RT_EIO;
     }
 
-    if (!d->fnode)
+    fnode = d->fnode;
+    if (!fnode)
     {
         return -RT_EIO;
     }
 
     ch = fd_2_channel(fdt_type, fd);
-    rt_free(d->fnode);
     if (!ch)
     {
         return -RT_EIO;
     }
     _chfd_free(fd, fdt_type);
+    if (fnode->ref_count == 1)
+    {
+        rt_free(fnode);
+        return rt_raw_channel_close(ch);
+    }
 
-    return rt_raw_channel_close(ch);
+    return 0;
 }
 
 rt_err_t lwp_channel_send(int fdt_type, int fd, rt_channel_msg_t data)

@@ -1028,3 +1028,64 @@ void lwp_wait_subthread_exit(void)
         rt_thread_mdelay(10);
     }
 }
+
+static int _lwp_setaffinity(pid_t pid, int cpu)
+{
+    struct rt_lwp *lwp;
+    int ret = -1;
+
+    lwp = lwp_from_pid(pid);
+    if (lwp)
+    {
+#ifdef RT_USING_SMP
+        rt_list_t *list;
+
+        lwp->bind_cpu = cpu;
+        for (list = lwp->t_grp.next; list != &lwp->t_grp; list = list->next)
+        {
+            rt_thread_t thread;
+
+            thread = rt_list_entry(list, struct rt_thread, sibling);
+            rt_thread_control(thread, RT_THREAD_CTRL_BIND_CPU, (void *)(rt_size_t)cpu);
+        }
+#endif
+        ret = 0;
+    }
+    return ret;
+}
+
+int lwp_setaffinity(pid_t pid, int cpu)
+{
+    rt_base_t level;
+    int ret;
+
+#ifdef RT_USING_SMP
+    if (cpu < 0 || cpu > RT_CPUS_NR)
+    {
+        cpu = RT_CPUS_NR;
+    }
+#endif
+    level = rt_hw_interrupt_disable();
+    ret = _lwp_setaffinity(pid, cpu);
+    rt_hw_interrupt_enable(level);
+    return ret;
+}
+
+#ifdef RT_USING_SMP
+static void cmd_cpu_bind(int argc, char** argv)
+{
+    int pid;
+    int cpu;
+
+    if (argc < 3)
+    {
+        rt_kprintf("Useage: cpu_bind pid cpu\n");
+        return;
+    }
+
+    pid = atoi(argv[1]);
+    cpu = atoi(argv[2]);
+    lwp_setaffinity((pid_t)pid, cpu);
+}
+MSH_CMD_EXPORT_ALIAS(cmd_cpu_bind, cpu_bind, set a process bind to a cpu);
+#endif

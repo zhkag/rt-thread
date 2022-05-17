@@ -358,13 +358,20 @@ void rt_schedule(void)
             current_thread->oncpu = RT_CPU_DETACHED;
             if ((current_thread->stat & RT_THREAD_STAT_MASK) == RT_THREAD_RUNNING)
             {
-                if (current_thread->current_priority < highest_ready_priority)
+                if (current_thread->bind_cpu == RT_CPUS_NR || current_thread->bind_cpu == cpu_id)
                 {
-                    to_thread = current_thread;
-                }
-                else if (current_thread->current_priority == highest_ready_priority && (current_thread->stat & RT_THREAD_STAT_YIELD_MASK) == 0)
-                {
-                    to_thread = current_thread;
+                    if (current_thread->current_priority < highest_ready_priority)
+                    {
+                        to_thread = current_thread;
+                    }
+                    else if (current_thread->current_priority == highest_ready_priority && (current_thread->stat & RT_THREAD_STAT_YIELD_MASK) == 0)
+                    {
+                        to_thread = current_thread;
+                    }
+                    else
+                    {
+                        rt_schedule_insert_thread(current_thread);
+                    }
                 }
                 else
                 {
@@ -612,13 +619,20 @@ void rt_scheduler_do_irq_switch(void *context)
             current_thread->oncpu = RT_CPU_DETACHED;
             if ((current_thread->stat & RT_THREAD_STAT_MASK) == RT_THREAD_RUNNING)
             {
-                if (current_thread->current_priority < highest_ready_priority)
+                if (current_thread->bind_cpu == RT_CPUS_NR || current_thread->bind_cpu == cpu_id)
                 {
-                    to_thread = current_thread;
-                }
-                else if (current_thread->current_priority == highest_ready_priority && (current_thread->stat & RT_THREAD_STAT_YIELD_MASK) == 0)
-                {
-                    to_thread = current_thread;
+                    if (current_thread->current_priority < highest_ready_priority)
+                    {
+                        to_thread = current_thread;
+                    }
+                    else if (current_thread->current_priority == highest_ready_priority && (current_thread->stat & RT_THREAD_STAT_YIELD_MASK) == 0)
+                    {
+                        to_thread = current_thread;
+                    }
+                    else
+                    {
+                        rt_schedule_insert_thread(current_thread);
+                    }
                 }
                 else
                 {
