@@ -753,6 +753,7 @@ void msh_auto_complete_path(char *path)
     }
     else
     {
+        int multi = 0;
         rt_size_t length, min_length;
 
         min_length = 0;
@@ -764,6 +765,7 @@ void msh_auto_complete_path(char *path)
             /* matched the prefix string */
             if (strncmp(index, dirent->d_name, rt_strlen(index)) == 0)
             {
+                multi ++;
                 if (min_length == 0)
                 {
                     min_length = rt_strlen(dirent->d_name);
@@ -782,7 +784,7 @@ void msh_auto_complete_path(char *path)
 
         if (min_length)
         {
-            if (min_length < rt_strlen(full_path))
+            if (multi > 1)
             {
                 /* list the candidate */
                 rewinddir(dir);
@@ -800,6 +802,16 @@ void msh_auto_complete_path(char *path)
             length = index - path;
             memcpy(index, full_path, min_length);
             path[length + min_length] = '\0';
+
+            /* try to locate folder */
+            if (multi == 1)
+            {
+                struct stat buffer = {0};
+                if ((stat(path, &buffer) == 0) && (S_ISDIR(buffer.st_mode)))
+                {
+                    strcat(path, "/");
+                }
+            }
         }
     }
 
@@ -811,11 +823,9 @@ void msh_auto_complete_path(char *path)
 void msh_auto_complete(char *prefix)
 {
     int length, min_length;
-    const char *name_ptr, *cmd_name;
-    struct finsh_syscall *index;
+    const char *name_ptr = RT_NULL;
 
     min_length = 0;
-    name_ptr = RT_NULL;
 
     if (*prefix == '\0')
     {
@@ -853,6 +863,9 @@ void msh_auto_complete(char *prefix)
 
     /* checks in internal command */
     {
+        struct finsh_syscall *index;
+        const char *cmd_name = RT_NULL;
+
         for (index = _syscall_table_begin; index < _syscall_table_end; FINSH_NEXT_SYSCALL(index))
         {
             /* skip finsh shell function */
@@ -876,12 +889,12 @@ void msh_auto_complete(char *prefix)
                 rt_kprintf("%s\n", cmd_name);
             }
         }
-    }
 
-    /* auto complete string */
-    if (name_ptr != NULL)
-    {
-        rt_strncpy(prefix, name_ptr, min_length);
+        /* auto complete string */
+        if (name_ptr != NULL)
+        {
+            rt_strncpy(prefix, name_ptr, min_length);
+        }
     }
 
     return ;
