@@ -56,7 +56,7 @@
 
 #include <tty.h>
 #include "lwp_ipc_internal.h"
-
+#include <pthread.h>
 #ifndef GRND_NONBLOCK
 #define GRND_NONBLOCK	0x0001
 #endif /* GRND_NONBLOCK */
@@ -4026,6 +4026,95 @@ int sys_setaffinity(pid_t pid, int cpu)
     return lwp_setaffinity(pid, cpu);
 }
 
+int sys_sched_setparam(pid_t pid, void *param)
+{
+    struct sched_param *sched_param = (struct sched_param *)param;
+    struct rt_lwp *lwp = NULL;
+    rt_thread_t main_thread;
+    int ret = -1;
+    if (!lwp_user_accessable(param, sizeof(struct sched_param)))
+    {
+        return -EFAULT;
+    }
+    if (pid > 0)
+    {
+        lwp = lwp_from_pid(pid);
+    }
+    else if (pid == 0)
+    {
+        lwp = lwp_self();
+    }
+    if (lwp)
+    {
+        main_thread = rt_list_entry(lwp->t_grp.prev, struct rt_thread, sibling);
+        return rt_thread_control(main_thread, RT_THREAD_CTRL_CHANGE_PRIORITY, (void *)&sched_param->sched_priority);
+    }
+    return ret;
+}
+
+int sys_sched_getparam(pid_t pid, void *param)
+{
+    struct sched_param *sched_param = (struct sched_param *)param;
+    struct rt_lwp *lwp = NULL;
+    rt_thread_t main_thread;
+    int ret = -1;
+    if (!lwp_user_accessable(param, sizeof(struct sched_param)))
+    {
+        return -EFAULT;
+    }
+    if (pid > 0)
+    {
+        lwp = lwp_from_pid(pid);
+    }
+    else if (pid == 0)
+    {
+        lwp = lwp_self();
+    }
+    if (lwp)
+    {
+        main_thread = rt_list_entry(lwp->t_grp.prev, struct rt_thread, sibling);
+        sched_param->sched_priority = main_thread->current_priority;
+        ret = 0;
+    }
+    return ret;
+}
+
+int sys_sched_get_priority_max(int policy)
+{
+    return RT_THREAD_PRIORITY_MAX;
+}
+
+int sys_sched_get_priority_min(int policy)
+{
+    return 0;
+}
+
+int sys_sched_setscheduler(int tid, int policy, void *param)
+{
+    struct sched_param *sched_param = (struct sched_param *)param;
+    rt_thread_t thread = lwp_tid_get_thread(tid);
+
+    if (!lwp_user_accessable(param, sizeof(struct sched_param)))
+    {
+        return -EFAULT;
+    }
+    return rt_thread_control(thread, RT_THREAD_CTRL_CHANGE_PRIORITY, (void *)&sched_param->sched_priority);
+    return 0;
+}
+
+int sys_sched_getscheduler(int tid, int *policy, void *param)
+{
+    struct sched_param *sched_param = (struct sched_param *)param;
+    rt_thread_t thread = lwp_tid_get_thread(tid);
+    if (!lwp_user_accessable(sched_param, sizeof(struct sched_param)))
+    {
+        return -EFAULT;
+    }
+    sched_param->sched_priority = thread->current_priority;
+    *policy = 0;
+    return 0;
+}
+
 const static void* func_table[] =
 {
     (void *)sys_exit,            /* 01 */
@@ -4214,6 +4303,12 @@ const static void* func_table[] =
     (void *)sys_notimpl,    // (void *)sys_readlink     /* 145 */
     SYSCALL_USPACE(sys_mremap),
     SYSCALL_USPACE(sys_madvise),
+    (void *)sys_sched_setparam,
+    (void *)sys_sched_getparam,
+    (void *)sys_sched_get_priority_max,
+    (void *)sys_sched_get_priority_min,
+    (void *)sys_sched_setscheduler,
+    (void *)sys_sched_getscheduler,
 };
 
 const void *lwp_get_sys_api(rt_uint32_t number)
