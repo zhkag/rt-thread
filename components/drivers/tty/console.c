@@ -211,7 +211,6 @@ static rt_size_t rt_console_write(struct rt_device *dev,
         const void       *buffer,
         rt_size_t         size)
 {
-    rt_base_t level = 0;
     rt_size_t len = 0;
     struct tty_struct *console = RT_NULL;
 
@@ -219,16 +218,13 @@ static rt_size_t rt_console_write(struct rt_device *dev,
     RT_ASSERT(console != RT_NULL);
     RT_ASSERT(console->init_flag == TTY_INIT_FLAG_INITED);
 
-    level = rt_hw_interrupt_disable();
     len = rt_device_write((struct rt_device *)console->driver, -1, buffer, size);
-    rt_hw_interrupt_enable(level);
 
     return len;
 }
 
 static rt_err_t  rt_console_control(rt_device_t dev, int cmd, void *args)
 {
-    rt_base_t level = 0;
     rt_size_t len = 0;
     struct tty_struct *console = RT_NULL;
 
@@ -236,9 +232,7 @@ static rt_err_t  rt_console_control(rt_device_t dev, int cmd, void *args)
     RT_ASSERT(console != RT_NULL);
     RT_ASSERT(console->init_flag == TTY_INIT_FLAG_INITED);
 
-    level = rt_hw_interrupt_disable();
     len = rt_device_control((struct rt_device *)console->driver, cmd, args);
-    rt_hw_interrupt_enable(level);
 
     return len;
 }
