@@ -613,12 +613,15 @@ void *_rt_hw_mmu_map(rt_mmu_info *mmu_info, void *v_addr, void* p_addr, size_t s
         vaddr = find_vaddr(mmu_info, pages);
     }
     if (vaddr) {
+        rt_enter_critical();
         ret = __rt_hw_mmu_map(mmu_info, (void*)vaddr, p_addr, pages, attr);
         if (ret == 0)
         {
             rt_hw_cpu_tlb_invalidate();
+            rt_exit_critical();
             return (void*)(vaddr + ((size_t)p_addr & ARCH_PAGE_MASK));
         }
+        rt_exit_critical();
     }
     return 0;
 }
@@ -637,12 +640,15 @@ void *_rt_hw_mmu_map(rt_mmu_info *mmu_info, void* p_addr, size_t size, size_t at
     pages = pa_e - pa_s + 1;
     vaddr = find_vaddr(mmu_info, pages);
     if (vaddr) {
+        rt_enter_critical();
         ret = __rt_hw_mmu_map(mmu_info, (void*)vaddr, p_addr, pages, attr);
         if (ret == 0)
         {
             rt_hw_cpu_tlb_invalidate();
+            rt_exit_critical();
             return (void*)(vaddr + ((size_t)p_addr & ARCH_PAGE_MASK));
         }
+        rt_exit_critical();
     }
     return 0;
 }
@@ -750,12 +756,15 @@ void *_rt_hw_mmu_map_auto(rt_mmu_info *mmu_info, void *v_addr, size_t size, size
         vaddr = find_vaddr(mmu_info, pages);
     }
     if (vaddr) {
+        rt_enter_critical();
         ret = __rt_hw_mmu_map_auto(mmu_info, (void*)vaddr, pages, attr);
         if (ret == 0)
         {
             rt_hw_cpu_tlb_invalidate();
+            rt_exit_critical();
             return (void*)((char*)vaddr + offset);
         }
+        rt_exit_critical();
     }
     return 0;
 }
@@ -771,8 +780,10 @@ void _rt_hw_mmu_unmap(rt_mmu_info *mmu_info, void* v_addr, size_t size)
     va_s >>= ARCH_PAGE_SHIFT;
     va_e >>= ARCH_PAGE_SHIFT;
     pages = va_e - va_s + 1;
+    rt_enter_critical();
     __rt_hw_mmu_unmap(mmu_info, v_addr, pages);
     rt_hw_cpu_tlb_invalidate();
+    rt_exit_critical();
 }
 
 #ifdef RT_USING_USERSPACE
