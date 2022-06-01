@@ -701,11 +701,8 @@ static int do_output_char(unsigned char c, struct tty_struct *tty)
 static int process_output(unsigned char c, struct tty_struct *tty)
 {
     int retval = 0;
-    int level = 0;
 
-    level = rt_hw_interrupt_disable();
     retval = do_output_char(c, tty);
-    rt_hw_interrupt_enable(level);
     if (retval < 0)
     {
         return -1;
@@ -742,9 +739,6 @@ static ssize_t process_output_block(struct tty_struct *tty,
     int i = 0;
     ssize_t size = 0;
     const char *cp = RT_NULL;
-    int level = 0;
-
-    level = rt_hw_interrupt_disable();
 
     for (i = 0, cp = buf; i < nr; i++, cp++)
     {
@@ -803,7 +797,6 @@ static ssize_t process_output_block(struct tty_struct *tty,
     }
 break_out:
     size = rt_device_write((rt_device_t)tty, -1, buf, i);
-    rt_hw_interrupt_enable(level);
     return size;
 }
 
@@ -950,7 +943,6 @@ static void commit_echoes(struct tty_struct *tty)
     struct n_tty_data *ldata = tty->disc_data;
     size_t nr = 0, old = 0;
     size_t head = 0;
-    int level = 0;
 
     head = ldata->echo_head;
     ldata->echo_mark = head;
@@ -965,32 +957,27 @@ static void commit_echoes(struct tty_struct *tty)
         return;
     }
 
-    level = rt_hw_interrupt_disable();
     ldata->echo_commit = head;
     __process_echoes(tty);
-    rt_hw_interrupt_enable(level);
 }
 
 static void process_echoes(struct tty_struct *tty)
 {
     struct n_tty_data *ldata = tty->disc_data;
-    int level = 0;
+
     if (ldata->echo_mark == ldata->echo_tail)
     {
         return;
     }
 
-    level = rt_hw_interrupt_disable();
     ldata->echo_commit = ldata->echo_mark;
     __process_echoes(tty);
-    rt_hw_interrupt_enable(level);
 }
 
 /* NB: echo_mark and echo_head should be equivalent here */
 static void flush_echoes(struct tty_struct *tty)
 {
     struct n_tty_data *ldata = tty->disc_data;
-    int level = 0;
 
     if ((!L_ECHO(tty) && !L_ECHONL(tty)) ||
         ldata->echo_commit == ldata->echo_head)
@@ -998,10 +985,8 @@ static void flush_echoes(struct tty_struct *tty)
         return;
     }
 
-    level = rt_hw_interrupt_disable();
     ldata->echo_commit = ldata->echo_head;
     __process_echoes(tty);
-    rt_hw_interrupt_enable(level);
 }
 /**
  *  n_tty_set_termios   -   termios data changed
@@ -1965,12 +1950,9 @@ static int n_tty_write(struct dfs_fd *fd, const void *buf, size_t count)
         }
         else
         {
-            int level = 0;
             while (count > 0)
             {
-                level = rt_hw_interrupt_disable();
                 c = rt_device_write((rt_device_t)tty, -1, b, count);
-                rt_hw_interrupt_enable(level);
                 if (c < 0)
                 {
                     retval = c;

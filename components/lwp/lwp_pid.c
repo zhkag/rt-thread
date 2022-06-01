@@ -307,35 +307,33 @@ struct rt_lwp* lwp_new(void)
     rt_base_t level;
     struct rt_lwp* lwp = RT_NULL;
 
-    level = rt_hw_interrupt_disable();
-
-    pid = lwp_pid_get();
-    if (pid == 0)
-    {
-        LOG_E("pid slot fulled!\n");
-        goto out;
-    }
     lwp = (struct rt_lwp *)rt_malloc(sizeof(struct rt_lwp));
     if (lwp == RT_NULL)
     {
-        lwp_pid_put(pid);
-        LOG_E("no memory for lwp struct!\n");
-        goto out;
+        return lwp;
     }
     rt_memset(lwp, 0, sizeof(*lwp));
+    //lwp->tgroup_leader = RT_NULL;
     rt_list_init(&lwp->wait_list);
-    lwp->pid = pid;
     lwp->leader = 0;
     lwp->session = -1;
     lwp->tty = RT_NULL;
-    //lwp->tgroup_leader = RT_NULL;
-    lwp_pid_set_lwp(pid, lwp);
     rt_list_init(&lwp->t_grp);
     lwp_user_object_lock_init(lwp);
     lwp->address_search_head = RT_NULL;
     rt_wqueue_init(&lwp->wait_queue);
-
     lwp->ref = 1;
+
+    level = rt_hw_interrupt_disable();
+    pid = lwp_pid_get();
+    if (pid == 0)
+    {
+        rt_free(lwp);
+        LOG_E("pid slot fulled!\n");
+        goto out;
+    }
+    lwp->pid = pid;
+    lwp_pid_set_lwp(pid, lwp);
 out:
     rt_hw_interrupt_enable(level);
     return lwp;
@@ -353,8 +351,9 @@ void lwp_free(struct rt_lwp* lwp)
     LOG_D("lwp free: %p\n", lwp);
 
     level = rt_hw_interrupt_disable();
-
     lwp->finish = 1;
+    rt_hw_interrupt_enable(level);
+
     if (lwp->args != RT_NULL)
     {
 #ifndef ARCH_MM_MMU
@@ -410,6 +409,7 @@ void lwp_free(struct rt_lwp* lwp)
     lwp_unmap_user_space(lwp);
 #endif
 
+    level = rt_hw_interrupt_disable();
     /* for children */
     while (lwp->first_child)
     {
@@ -420,7 +420,9 @@ void lwp_free(struct rt_lwp* lwp)
         if (child->finish)
         {
             lwp_pid_put(lwp_to_pid(child));
+            rt_hw_interrupt_enable(level);
             rt_free(child);
+            level = rt_hw_interrupt_disable();
         }
         else
         {
@@ -429,6 +431,7 @@ void lwp_free(struct rt_lwp* lwp)
         }
     }
 
+    rt_hw_interrupt_enable(level);
     /* for parent */
     {
         struct termios *old_stdin_termios = get_old_termios();
@@ -437,6 +440,7 @@ void lwp_free(struct rt_lwp* lwp)
         {
             tcsetattr(1, 0, old_stdin_termios);
         }
+        level = rt_hw_interrupt_disable();
         if (lwp->tty != RT_NULL)
         {
             if (lwp->tty->foreground == lwp)
@@ -470,10 +474,9 @@ void lwp_free(struct rt_lwp* lwp)
             }
         }
         lwp_pid_put(lwp_to_pid(lwp));
+        rt_hw_interrupt_enable(level);
         rt_free(lwp);
     }
-
-    rt_hw_interrupt_enable(level);
 }
 
 void lwp_ref_inc(struct rt_lwp *lwp)
@@ -488,32 +491,32 @@ void lwp_ref_inc(struct rt_lwp *lwp)
 void lwp_ref_dec(struct rt_lwp *lwp)
 {
     rt_base_t level;
-    int ref;
+    int ref = -1;
 
     level = rt_hw_interrupt_disable();
     if (lwp->ref)
     {
         lwp->ref--;
         ref = lwp->ref;
-        if (!ref)
-        {
-            struct rt_channel_msg msg;
+    }
+    rt_hw_interrupt_enable(level);
+    if (!ref)
+    {
+        struct rt_channel_msg msg;
 
-            if (lwp->debug)
-            {
-                memset(&msg, 0, sizeof msg);
-                rt_raw_channel_send(gdb_server_channel(), &msg);
-            }
+        if (lwp->debug)
+        {
+            memset(&msg, 0, sizeof msg);
+            rt_raw_channel_send(gdb_server_channel(), &msg);
+        }
 
 #ifndef ARCH_MM_MMU
 #ifdef RT_LWP_USING_SHM
-            lwp_shm_lwp_free(lwp);
+        lwp_shm_lwp_free(lwp);
 #endif /* RT_LWP_USING_SHM */
 #endif /* not defined ARCH_MM_MMU */
-            lwp_free(lwp);
-        }
+        lwp_free(lwp);
     }
-    rt_hw_interrupt_enable(level);
 }
 
 struct rt_lwp* lwp_from_pid(pid_t pid)
