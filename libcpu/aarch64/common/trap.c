@@ -15,6 +15,8 @@
 #include <armv8.h>
 #include "interrupt.h"
 
+#include <backtrace.h>
+
 void rt_unwind(struct rt_hw_exp_stack *regs, int pc_adj)
 {
 }
@@ -251,6 +253,7 @@ void rt_hw_trap_exception(struct rt_hw_exp_stack *regs)
 #ifdef RT_USING_FINSH
     list_thread();
 #endif
+    backtrace((unsigned long)regs->pc, (unsigned long)regs->x30, (unsigned long)regs->x29);
     rt_hw_cpu_shutdown();
 }
 
