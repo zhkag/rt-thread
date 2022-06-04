@@ -11,7 +11,7 @@
  * 2021-02-12     lizhirui     add 64-bit support for sys_brk
  * 2021-02-20     lizhirui     fix some warnings
  */
-
+#define _GNU_SOURCE
 /* RT-Thread System call */
 #include <rthw.h>
 #include <board.h>
@@ -4021,9 +4021,20 @@ int sys_madvise(void *addr, size_t len, int behav)
 }
 #endif
 
-int sys_setaffinity(pid_t pid, int cpu)
+int sys_setaffinity(pid_t pid, size_t size, void *set)
 {
-    return lwp_setaffinity(pid, cpu);
+    if (!lwp_user_accessable(set, sizeof(cpu_set_t)))
+    {
+        return -EFAULT;
+    }
+    for (int i = 0;i < size * 8; i++)
+    {
+        if (CPU_ISSET(i, (cpu_set_t *)set))
+        {
+            return lwp_setaffinity(pid, i);
+        }
+    }
+    return -1;
 }
 
 int sys_sched_setparam(pid_t pid, void *param)
@@ -4252,7 +4263,7 @@ const static void* func_table[] =
     (void *)sys_thread_sigprocmask,
 #ifdef ARCH_MM_MMU
     (void *)sys_cacheflush,
-    (void *)sys_setaffinity,
+    (void *)sys_notimpl,
     (void *)sys_notimpl,
 #else
     (void *)sys_notimpl,
@@ -4309,6 +4320,7 @@ const static void* func_table[] =
     (void *)sys_sched_get_priority_min,
     (void *)sys_sched_setscheduler,
     (void *)sys_sched_getscheduler,
+    (void *)sys_setaffinity
 };
 
 const void *lwp_get_sys_api(rt_uint32_t number)
