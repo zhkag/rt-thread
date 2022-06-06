@@ -227,6 +227,8 @@ static rt_err_t rt_mmcsd_control(rt_device_t dev, int cmd, void *args)
     case RT_DEVICE_CTRL_BLK_GETGEOME:
         rt_memcpy(args, &blk_dev->geometry, sizeof(struct rt_device_blk_geometry));
         break;
+    case RT_DEVICE_CTRL_BLK_PARTITION:
+        rt_memcpy(args, &blk_dev->part, sizeof(struct dfs_partition));
     default:
         break;
     }
@@ -256,7 +258,7 @@ static rt_size_t rt_mmcsd_read(rt_device_t dev,
     while (remain_size)
     {
         req_size = (remain_size > blk_dev->max_req_size) ? blk_dev->max_req_size : remain_size;
-        err = rt_mmcsd_req_blk(blk_dev->card, part->offset + pos + offset, rd_ptr, req_size, 0);
+        err = rt_mmcsd_req_blk(blk_dev->card, pos + offset, rd_ptr, req_size, 0);
         if (err)
             break;
         offset += req_size;
@@ -297,7 +299,7 @@ static rt_size_t rt_mmcsd_write(rt_device_t dev,
     while (remain_size)
     {
         req_size = (remain_size > blk_dev->max_req_size) ? blk_dev->max_req_size : remain_size;
-        err = rt_mmcsd_req_blk(blk_dev->card, part->offset + pos + offset, wr_ptr, req_size, 1);
+        err = rt_mmcsd_req_blk(blk_dev->card, pos + offset, wr_ptr, req_size, 1);
         if (err)
             break;
         offset += req_size;
