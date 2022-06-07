@@ -1055,6 +1055,7 @@ enum rt_device_class_type
 #define RT_DEVICE_CTRL_BLK_SYNC         0x41            /**< flush data to block device */
 #define RT_DEVICE_CTRL_BLK_ERASE        0x42            /**< erase block on block device */
 #define RT_DEVICE_CTRL_BLK_AUTOREFRESH  0x43            /**< block device : enter/exit auto refresh mode */
+#define RT_DEVICE_CTRL_BLK_PARTITION    0X44            /**< get block device partition */
 /* net interface device*/
 #define RT_DEVICE_CTRL_NETIF_GETMAC     0x40            /**< get mac address */
 
