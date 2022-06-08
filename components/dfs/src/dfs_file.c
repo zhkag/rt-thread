@@ -14,6 +14,7 @@
 #include <dfs.h>
 #include <dfs_file.h>
 #include <dfs_private.h>
+#include <unistd.h>
 
 #define DFS_FNODE_HASH_NR 128
 
@@ -822,11 +823,12 @@ void cat(const char *filename)
 
     do
     {
-        length = dfs_file_read(&fd, buffer, sizeof(buffer) - 1);
+        rt_memset(buffer, 0x0, sizeof(buffer));
+        length = dfs_file_read(&fd, (void *)buffer, sizeof(buffer) - 1);
         if (length > 0)
         {
             buffer[length] = '\0';
-            rt_kprintf("%s", buffer);
+            write(STDOUT_FILENO, (void *)buffer, sizeof(buffer));
         }
     } while (length > 0);
 
