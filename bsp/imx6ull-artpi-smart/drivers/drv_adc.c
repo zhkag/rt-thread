@@ -50,12 +50,13 @@ static rt_err_t imx6ull_adc_convert(struct rt_adc_device *device, rt_uint32_t ch
     return RT_EOK;
 }
 
+#if defined(BSP_USING_ADC1_1) || defined(BSP_USING_ADC1_2) || defined(BSP_USING_ADC1_3) || defined(BSP_USING_ADC1_4)
 static struct rt_adc_ops imx6ull_adc_ops =
 {
     .enabled = imx6ull_adc_enabled,
     .convert = imx6ull_adc_convert,
 };
-
+#endif
 
 int imx6ull_adc_gpio_init(void)
 {
@@ -165,6 +166,7 @@ void set_adc_default(void *parameter)
 {
     int result = 0;
 
+    result = result;
 #ifdef BSP_USING_ADC1_1
     do {
         struct rt_adc_device *device = RT_NULL;
@@ -229,7 +231,6 @@ void set_adc_default(void *parameter)
         rt_kprintf("adc ch4 read result is %d\n",result);
     } while(0);
 #endif
-
 }
 
 static int set_adc_init(void)

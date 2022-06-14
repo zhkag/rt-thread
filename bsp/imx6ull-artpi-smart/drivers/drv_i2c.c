@@ -49,8 +49,11 @@ static uint32_t g_MasterCompletionFlag[4] = {0,0,0,0};
 static void i2c_master_callback(I2C_Type *base, i2c_master_handle_t *handle, status_t status, void *userData)
 {
     /* Signal transfer success when received success status. */
-    
-    uint32_t instance = I2C_GetInstance(imx6ull_get_periph_paddr((uint32_t)base));
+    struct imx6ull_i2c_config *config;
+
+    config = (struct imx6ull_i2c_config*)userData;
+
+    uint32_t instance = I2C_GetInstance(config->hw_base);
     if (status == kStatus_Success)
     {
         g_MasterCompletionFlag[instance-1] = 1;
@@ -70,7 +73,7 @@ static rt_size_t imx6ull_i2c_mst_xfer(struct rt_i2c_bus_device *bus, struct rt_i
     uint32_t instance = 0;
     i2c_bus = (struct imx6ull_i2c_bus *)bus;
 
-    instance = I2C_GetInstance(imx6ull_get_periph_paddr((uint32_t)i2c_bus->config->I2C));
+    instance = I2C_GetInstance(i2c_bus->config->hw_base);
     for(i = 0 ;i < num; i++)
     {
         if(msgs[i].flags & RT_I2C_RD)
@@ -174,7 +177,8 @@ int rt_hw_i2c_init(void)
     for(int i = 0; i < obj_num; i++)
     {
         i2c_obj[i].config = &i2c_config[i];
-        i2c_obj[i].config->I2C = (I2C_Type *)imx6ull_get_periph_vaddr((rt_uint32_t)(i2c_obj[i].config->I2C));
+        i2c_obj[i].config->hw_base = i2c_obj[i].config->I2C;
+        i2c_obj[i].config->I2C = (I2C_Type *)imx6ull_get_periph_vaddr((rt_uint32_t)i2c_obj[i].config->hw_base);
         i2c_obj[i].parent.ops = &imx6ull_i2c_ops;
         imx6ull_i2c_gpio_init(&i2c_obj[i]);
 
@@ -187,11 +191,10 @@ int rt_hw_i2c_init(void)
 
         rt_i2c_bus_device_register(&i2c_obj[i].parent, i2c_obj[i].config->name);
 
-#ifdef IMX_I2C_IRQ_MODE        
-        I2C_MasterTransferCreateHandle(imx6ull_get_periph_paddr((uint32_t)(i2c_obj[i].config->I2C)), &i2c_obj[i].config->master_handle, i2c_master_callback, NULL);
-        rt_hw_interrupt_install(i2c_obj[i].config->irq_num, (rt_isr_handler_t)I2C_DriverIRQHandler, (void *)i2c_obj[i].config->I2C,i2c_obj[i].config->name);
+#ifdef IMX_I2C_IRQ_MODE
+        I2C_MasterTransferCreateHandle(i2c_obj[i].config->hw_base, &i2c_obj[i].config->master_handle, i2c_master_callback, i2c_obj[i].config);
+        rt_hw_interrupt_install(i2c_obj[i].config->irq_num, (rt_isr_handler_t)I2C_DriverIRQHandler, i2c_obj[i].config, i2c_obj[i].config->name);
 #endif
-
     }
 
     return RT_EOK;

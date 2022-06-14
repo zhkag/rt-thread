@@ -15,6 +15,9 @@
 #include <usb/device/usb_device_dci.h>
 #include <rtdevice.h>
 #include <imx6ull.h>
+
+#define USB0_IRQNUM 75
+
 /* USB PHY condfiguration */
 #define BOARD_USB_PHY_D_CAL (0x0CU)
 #define BOARD_USB_PHY_TXCAL45DP (0x06U)
@@ -26,9 +29,6 @@ static struct udcd _fsl_udc_0;
 
 static usb_status_t usb_device_callback(usb_device_handle handle, uint32_t callbackEvent, void *eventParam);
 static usb_status_t usb_device_endpoint_callback(usb_device_handle handle, usb_device_endpoint_callback_message_struct_t *message, void *callbackParam);
-
-#define virtual_to_physical(v) ((void *)((size_t)v + PV_OFFSET))
-#define physical_to_virtual(p) ((void *)((size_t)p - PV_OFFSET))
 
 static void USB_DeviceIsrEnable(uint8_t controllerId)
 {
@@ -98,9 +98,19 @@ static struct ep_id _ehci0_ep_pool[] =
  *
  * @return None.
  */
-void USB_OTG1_IRQHandler(int irq, void *base)
+static struct rt_workqueue *usb0_wq = NULL;
+static struct rt_work usb0_work;
+void ehci0_work(struct rt_work *work, void *work_data)
 {
     USB_DeviceEhciIsrFunction(ehci0_handle);
+    rt_hw_interrupt_umask(USB0_IRQNUM);
+}
+
+void USB_OTG1_IRQHandler(int irq, void *base)
+{
+    // USB_DeviceEhciIsrFunction(ehci0_handle);
+    rt_hw_interrupt_mask(USB0_IRQNUM);
+    rt_workqueue_dowork(usb0_wq, &usb0_work);
 }
 
 static rt_err_t _ehci0_ep_set_stall(rt_uint8_t address)
@@ -216,8 +226,11 @@ static rt_err_t drv_ehci0_usbd_init(rt_device_t device)
     RT_ASSERT(ehci0_handle);
     if(result == kStatus_USB_Success)
     {
-        rt_hw_interrupt_install(75, USB_OTG1_IRQHandler, (void *)ehci0_handle,"usb1_intr");
-        rt_hw_interrupt_umask(75);
+        usb0_wq = rt_workqueue_create("u0wq", 4096, 3);
+        rt_work_init(&usb0_work, ehci0_work, NULL);
+
+        rt_hw_interrupt_install(USB0_IRQNUM, USB_OTG1_IRQHandler, (void *)ehci0_handle, "usb1_intr");
+        rt_hw_interrupt_umask(USB0_IRQNUM);
         USB_DeviceRun(ehci0_handle);
     }
     else
