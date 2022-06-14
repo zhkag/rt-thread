@@ -52,6 +52,15 @@ static int pipe_fops_open(struct dfs_fd *fd)
 
     rt_mutex_take(&pipe->lock, RT_WAITING_FOREVER);
 
+    if ((fd->flags & O_RDONLY) == O_RDONLY)
+    {
+        pipe->reader = 1;
+    }
+
+    if ((fd->flags & O_WRONLY) == O_WRONLY)
+    {
+        pipe->writer = 1;
+    }
     if (fd->fnode->ref_count == 1)
     {
         pipe->fifo = rt_ringbuffer_create(pipe->bufsz);
@@ -81,6 +90,20 @@ static int pipe_fops_close(struct dfs_fd *fd)
 
     device = &pipe->parent;
     rt_mutex_take(&pipe->lock, RT_WAITING_FOREVER);
+
+    if ((fd->flags & O_RDONLY) == O_RDONLY)
+    {
+        pipe->reader = 0;
+    }
+
+    if ((fd->flags & O_WRONLY) == O_WRONLY)
+    {
+        pipe->writer = 0;
+        while (!rt_list_isempty(&pipe->reader_queue.waiting_list))
+        {
+            rt_wqueue_wakeup(&pipe->reader_queue, (void*)POLLIN);
+        }
+    }
 
     if (fd->fnode->ref_count == 1)
     {
@@ -139,7 +162,7 @@ static int pipe_fops_read(struct dfs_fd *fd, void *buf, size_t count)
     {
         len = rt_ringbuffer_get(pipe->fifo, buf, count);
 
-        if (len > 0)
+        if (len > 0 || pipe->writer == 0)
         {
             break;
         }
@@ -427,6 +450,8 @@ rt_pipe_t *rt_pipe_create(const char *name, int bufsz)
     rt_mutex_init(&pipe->lock, name, RT_IPC_FLAG_FIFO);
     rt_wqueue_init(&pipe->reader_queue);
     rt_wqueue_init(&pipe->writer_queue);
+    pipe->writer = 0;
+    pipe->reader = 0;
 
     RT_ASSERT(bufsz < 0xFFFF);
     pipe->bufsz = bufsz;
