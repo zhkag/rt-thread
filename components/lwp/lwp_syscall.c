@@ -1590,40 +1590,19 @@ static int lwp_copy_files(struct rt_lwp *dst, struct rt_lwp *src)
     if (dst_fdt->fds)
     {
         struct dfs_fd *d_s;
-        struct dfs_fd *d_d;
         int i;
 
         dst_fdt->maxfd = src_fdt->maxfd;
 
         dfs_fd_lock();
-        /* copy stdio */
+        /* dup files */
         for (i = 0; i < src_fdt->maxfd; i++)
         {
             d_s = fdt_fd_get(src_fdt, i);
             if (d_s)
             {
-                dfs_fm_lock();
-                if (!d_s->fnode)
-                {
-                    dfs_fm_unlock();
-                    continue;
-                }
-                d_s->fnode->ref_count++;
-                dfs_fm_unlock();
-
-                /* alloc dfs_fd struct */
-                d_d = (struct dfs_fd *)rt_calloc(1, sizeof(struct dfs_fd));
-                if (!d_d)
-                {
-                    dfs_fd_unlock();
-                    return -1;
-                }
-                dst_fdt->fds[i] = d_d;
-                d_d->magic = d_s->magic;
-                d_d->ref_count = 1;
-                d_d->pos = d_s->pos;
-                d_d->fnode = d_s->fnode;
-                d_d->data = d_s->data;
+                dst_fdt->fds[i] = d_s;
+                d_s->ref_count++;
             }
         }
         dfs_fd_unlock();
