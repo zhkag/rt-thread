@@ -23,6 +23,7 @@
 
 struct imx6ull_i2c_config
 {
+    void *hw_base;  /* hardware physical address base */
     I2C_Type *I2C;
     char *name;
     rt_uint32_t baud_rate;   
