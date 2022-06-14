@@ -35,6 +35,8 @@ struct rt_pipe_device
 
     rt_wqueue_t reader_queue;
     rt_wqueue_t writer_queue;
+    int writer;
+    int reader;
 
     struct rt_mutex lock;
 };
