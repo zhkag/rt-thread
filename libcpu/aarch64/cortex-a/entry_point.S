@@ -13,6 +13,9 @@
 .global __start
 
 __start:
+#ifdef RT_NEED_FLUSH_DCACHE_ALL
+    bl      __asm_flush_dcache_all
+#endif
     bl      rt_hw_cpu_id_set
     /* read cpu id, stop slave cores */
     mrs     x0, tpidr_el1
