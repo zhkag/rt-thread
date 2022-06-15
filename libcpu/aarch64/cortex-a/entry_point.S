@@ -13,7 +13,7 @@
 .global __start
 
 __start:
-#ifdef RT_NEED_FLUSH_DCACHE_ALL
+#ifdef ARCH_ARM_BOOTWITH_FLUSH_CACHE
     bl      __asm_flush_dcache_all
 #endif
     bl      rt_hw_cpu_id_set

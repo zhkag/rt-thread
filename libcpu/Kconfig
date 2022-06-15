@@ -5,11 +5,11 @@ config RT_USING_CACHE
     bool
     default n
 
-config RT_NEED_FLUSH_DCACHE_ALL
+config RT_USING_CPU_FFS
     bool
     default n
 
-config RT_USING_CPU_FFS
+config ARCH_ARM_BOOTWITH_FLUSH_CACHE
     bool
     default n
 
