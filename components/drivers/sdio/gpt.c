@@ -122,7 +122,7 @@ check_hybrid:
         sz = (uint32_t)(mbr->partition_record[part].size_in_lba);
         if (sz != (uint32_t) total_sectors - 1 && sz != 0xFFFFFFFF)
         {
-            LOG_I("GPT: mbr size in lba (%u) different than whole disk (%u).\n",
+            LOG_I("GPT: mbr size in lba (%u) different than whole disk (%u).",
                  sz, min(total_sectors - 1, 0xFFFFFFFF));
         }
     }
@@ -200,14 +200,14 @@ static int is_gpt_valid(struct rt_mmcsd_card *card, size_t lba, gpt_header **gpt
     if ((uint64_t)((*gpt)->signature) != GPT_HEADER_SIGNATURE)
     {
         LOG_E("GUID Partition Table Header signature is wrong:"
-             "%ld != %ld\n",(uint64_t)((*gpt)->signature),(uint64_t)GPT_HEADER_SIGNATURE);
+             "%ld != %ld",(uint64_t)((*gpt)->signature),(uint64_t)GPT_HEADER_SIGNATURE);
         goto fail;
     }
 
     /* Check the GUID Partition Table header size is too small */
     if ((uint32_t)((*gpt)->header_size) < sizeof(gpt_header))
     {
-        LOG_E("GUID Partition Table Header size is too small: %u < %zu\n",
+        LOG_E("GUID Partition Table Header size is too small: %u < %zu",
             (uint32_t)((*gpt)->header_size),sizeof(gpt_header));
         goto fail;
     }
@@ -216,7 +216,7 @@ static int is_gpt_valid(struct rt_mmcsd_card *card, size_t lba, gpt_header **gpt
      * the GUID Partition Table */
     if ((uint64_t)((*gpt)->start_lba) != lba)
     {
-        LOG_E("GPT start_lba incorrect: %ld != %ld\n",
+        LOG_E("GPT start_lba incorrect: %ld != %ld",
              (uint64_t)((*gpt)->start_lba),
              (uint64_t)lba);
         goto fail;
@@ -228,7 +228,7 @@ static int is_gpt_valid(struct rt_mmcsd_card *card, size_t lba, gpt_header **gpt
     lastlba = last_lba(card);
     if ((uint64_t)((*gpt)->first_usable_lba) > lastlba)
     {
-        LOG_E("GPT: first_usable_lba incorrect: %ld > %ld\n",
+        LOG_E("GPT: first_usable_lba incorrect: %ld > %ld",
              ((uint64_t)((*gpt)->first_usable_lba)),
              (size_t)lastlba);
         goto fail;
@@ -236,7 +236,7 @@ static int is_gpt_valid(struct rt_mmcsd_card *card, size_t lba, gpt_header **gpt
 
     if ((uint64_t)((*gpt)->last_usable_lba) > lastlba)
     {
-        LOG_E("GPT: last_usable_lba incorrect: %ld > %ld\n",
+        LOG_E("GPT: last_usable_lba incorrect: %ld > %ld",
              (uint64_t)((*gpt)->last_usable_lba),
              (size_t)lastlba);
         goto fail;
@@ -244,14 +244,14 @@ static int is_gpt_valid(struct rt_mmcsd_card *card, size_t lba, gpt_header **gpt
 
     if ((uint64_t)((*gpt)->last_usable_lba) < (uint64_t)((*gpt)->first_usable_lba))
     {
-        LOG_E("GPT: last_usable_lba incorrect: %ld > %ld\n",
+        LOG_E("GPT: last_usable_lba incorrect: %ld > %ld",
              (uint64_t)((*gpt)->last_usable_lba),
              (uint64_t)((*gpt)->first_usable_lba));
         goto fail;
     }
     /* Check that sizeof_partition_entry has the correct value */
     if ((uint32_t)((*gpt)->sizeof_partition_entry) != sizeof(gpt_entry)) {
-        LOG_E("GUID Partition Entry Size check failed.\n");
+        LOG_E("GUID Partition Entry Size check failed.");
         goto fail;
     }
 
@@ -308,8 +308,8 @@ static void compare_gpts(gpt_header *pgpt, gpt_header *agpt, size_t lastlba)
 
     if ((uint64_t)(pgpt->start_lba) != (uint64_t)(agpt->alternate_lba))
     {
-        LOG_I("GPT:Primary header LBA != Alt. header alternate_lba\n");
-        LOG_I("GPT:%lld != %lld\n",
+        LOG_I("GPT:Primary header LBA != Alt. header alternate_lba");
+        LOG_I("GPT:%lld != %lld",
                (uint64_t)(pgpt->start_lba),
                        (uint64_t)(agpt->alternate_lba));
         error_found++;
@@ -317,8 +317,8 @@ static void compare_gpts(gpt_header *pgpt, gpt_header *agpt, size_t lastlba)
 
     if ((uint64_t)(pgpt->alternate_lba) != (uint64_t)(agpt->start_lba))
     {
-        LOG_I("GPT:Primary header alternate_lba != Alt. header start_lba\n");
-        LOG_I("GPT:%lld != %lld\n",
+        LOG_I("GPT:Primary header alternate_lba != Alt. header start_lba");
+        LOG_I("GPT:%lld != %lld",
                (uint64_t)(pgpt->alternate_lba),
                        (uint64_t)(agpt->start_lba));
         error_found++;
@@ -326,8 +326,8 @@ static void compare_gpts(gpt_header *pgpt, gpt_header *agpt, size_t lastlba)
 
     if ((uint64_t)(pgpt->first_usable_lba) != (uint64_t)(agpt->first_usable_lba))
     {
-        LOG_I("GPT:first_usable_lbas don't match.\n");
-        LOG_I("GPT:%lld != %lld\n",
+        LOG_I("GPT:first_usable_lbas don't match.");
+        LOG_I("GPT:%lld != %lld",
                (uint64_t)(pgpt->first_usable_lba),
                        (uint64_t)(agpt->first_usable_lba));
         error_found++;
@@ -335,8 +335,8 @@ static void compare_gpts(gpt_header *pgpt, gpt_header *agpt, size_t lastlba)
 
     if ((uint64_t)(pgpt->last_usable_lba) != (uint64_t)(agpt->last_usable_lba))
     {
-        LOG_I("GPT:last_usable_lbas don't match.\n");
-        LOG_I("GPT:%lld != %lld\n",
+        LOG_I("GPT:last_usable_lbas don't match.");
+        LOG_I("GPT:%lld != %lld",
                (uint64_t)(pgpt->last_usable_lba),
                        (uint64_t)(agpt->last_usable_lba));
         error_found++;
@@ -344,14 +344,14 @@ static void compare_gpts(gpt_header *pgpt, gpt_header *agpt, size_t lastlba)
 
     if (efi_guidcmp(pgpt->disk_guid, agpt->disk_guid))
     {
-        LOG_I("GPT:disk_guids don't match.\n");
+        LOG_I("GPT:disk_guids don't match.");
         error_found++;
     }
 
     if ((pgpt->num_partition_entries) != (agpt->num_partition_entries))
     {
         LOG_I("GPT:num_partition_entries don't match: "
-               "0x%x != 0x%x\n",
+               "0x%x != 0x%x",
                (pgpt->num_partition_entries),
                (agpt->num_partition_entries));
         error_found++;
@@ -360,7 +360,7 @@ static void compare_gpts(gpt_header *pgpt, gpt_header *agpt, size_t lastlba)
     if ((pgpt->sizeof_partition_entry) != (agpt->sizeof_partition_entry))
     {
         LOG_I("GPT:sizeof_partition_entry values don't match: "
-               "0x%x != 0x%x\n",
+               "0x%x != 0x%x",
                        (pgpt->sizeof_partition_entry),
                (agpt->sizeof_partition_entry));
         error_found++;
@@ -369,7 +369,7 @@ static void compare_gpts(gpt_header *pgpt, gpt_header *agpt, size_t lastlba)
     if ((pgpt->partition_entry_array_crc32) != (agpt->partition_entry_array_crc32))
     {
         LOG_I("GPT:partition_entry_array_crc32 values don't match: "
-               "0x%x != 0x%x\n",
+               "0x%x != 0x%x",
                        (pgpt->partition_entry_array_crc32),
                (agpt->partition_entry_array_crc32));
         error_found++;
@@ -377,8 +377,8 @@ static void compare_gpts(gpt_header *pgpt, gpt_header *agpt, size_t lastlba)
 
     if ((pgpt->alternate_lba) != lastlba)
     {
-        LOG_I("GPT:Primary header thinks Alt. header is not at the end of the disk.\n");
-        LOG_I("GPT:%lld != %lld\n",
+        LOG_I("GPT:Primary header thinks Alt. header is not at the end of the disk.");
+        LOG_I("GPT:%lld != %lld",
             (uint64_t)(pgpt->alternate_lba),
             (size_t)lastlba);
         error_found++;
@@ -386,8 +386,8 @@ static void compare_gpts(gpt_header *pgpt, gpt_header *agpt, size_t lastlba)
 
     if ((agpt->start_lba) != lastlba)
     {
-        LOG_I("GPT:Alternate GPT header not at the end of the disk.\n");
-        LOG_I("GPT:%lld != %lld\n",
+        LOG_I("GPT:Alternate GPT header not at the end of the disk.");
+        LOG_I("GPT:%lld != %lld",
             (uint64_t)(agpt->start_lba),
             (size_t)lastlba);
         error_found++;
@@ -395,7 +395,7 @@ static void compare_gpts(gpt_header *pgpt, gpt_header *agpt, size_t lastlba)
 
     if (error_found)
     {
-        LOG_I("GPT: Use GNU Parted to correct GPT errors.\n");        
+        LOG_I("GPT: Use GNU Parted to correct GPT errors.");        
     }
     return;
 }
@@ -433,7 +433,7 @@ static int find_valid_gpt(struct rt_mmcsd_card *card, gpt_header **gpt,
     }
 
     lastlba = last_lba(card);
-    LOG_D("total_sectors:%d, lastlba:%d\n", total_sectors, lastlba);
+    rt_kprintf("total_sectors:%d, lastlba:%d\n", total_sectors, lastlba);
     if (!force_gpt)
     {
         /* This will be added to the EFI Spec. per Intel after v1.02. */
@@ -446,7 +446,7 @@ static int find_valid_gpt(struct rt_mmcsd_card *card, gpt_header **gpt,
         status = read_lba(card, 0, (uint8_t *)legacymbr, 1);
         if (status)
         {
-            LOG_I("status:%d\n", status);
+            LOG_I("status:%d", status);
             goto fail;
         }
 
@@ -458,7 +458,7 @@ static int find_valid_gpt(struct rt_mmcsd_card *card, gpt_header **gpt,
             goto fail;
         }
 
-        LOG_D("Device has a %s MBR\n",
+        rt_kprintf("Device has a %s MBR\n",
              good_pmbr == GPT_MBR_PROTECTIVE ?
                         "protective" : "hybrid");
     }
@@ -490,7 +490,7 @@ static int find_valid_gpt(struct rt_mmcsd_card *card, gpt_header **gpt,
             rt_free(aptes);
             if (!good_agpt)
             {
-                LOG_D("Alternate GPT is invalid, using primary GPT.\n");
+                LOG_D("Alternate GPT is invalid, using primary GPT.");
             }
             return 1;
         }
@@ -500,7 +500,7 @@ static int find_valid_gpt(struct rt_mmcsd_card *card, gpt_header **gpt,
             *ptes = aptes;
             rt_free(pgpt);
             rt_free(pptes);
-            LOG_D("Primary GPT is invalid, using alternate GPT.\n");
+            LOG_D("Primary GPT is invalid, using alternate GPT.");
                 return 1;
         }
     }
