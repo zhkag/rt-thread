@@ -9,6 +9,10 @@ config RT_USING_CPU_FFS
     bool
     default n
 
+config ARCH_ARM_BOOTWITH_FLUSH_CACHE
+    bool
+    default n
+
 config ARCH_CPU_STACK_GROWS_UPWARD
     bool
     default n
