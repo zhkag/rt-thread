@@ -399,7 +399,7 @@ void sys_exit(int value)
 
         tid->clear_child_tid = RT_NULL;
         lwp_put_to_user(clear_child_tid, &t, sizeof t);
-        sys_futex(tid->clear_child_tid, FUTEX_WAKE, 1, RT_NULL, RT_NULL, 0);
+        sys_futex(clear_child_tid, FUTEX_WAKE, 1, RT_NULL, RT_NULL, 0);
     }
     main_thread = rt_list_entry(lwp->t_grp.prev, struct rt_thread, sibling);
     if (main_thread == tid)
