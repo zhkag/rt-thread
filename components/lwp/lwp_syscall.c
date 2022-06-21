@@ -4105,6 +4105,11 @@ int sys_sched_getscheduler(int tid, int *policy, void *param)
     return 0;
 }
 
+int sys_fsync(int fd)
+{
+    return fsync(fd);
+}
+
 const static void* func_table[] =
 {
     (void *)sys_exit,            /* 01 */
@@ -4299,7 +4304,8 @@ const static void* func_table[] =
     (void *)sys_sched_get_priority_min,
     (void *)sys_sched_setscheduler,
     (void *)sys_sched_getscheduler,
-    (void *)sys_setaffinity
+    (void *)sys_setaffinity,
+    (void *)sys_fsync
 };
 
 const void *lwp_get_sys_api(rt_uint32_t number)
