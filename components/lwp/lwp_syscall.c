@@ -399,7 +399,7 @@ void sys_exit(int value)
 
         tid->clear_child_tid = RT_NULL;
         lwp_put_to_user(clear_child_tid, &t, sizeof t);
-        sys_futex(tid->clear_child_tid, FUTEX_WAKE, 1, RT_NULL, RT_NULL, 0);
+        sys_futex(clear_child_tid, FUTEX_WAKE, 1, RT_NULL, RT_NULL, 0);
     }
     main_thread = rt_list_entry(lwp->t_grp.prev, struct rt_thread, sibling);
     if (main_thread == tid)
@@ -4105,6 +4105,11 @@ int sys_sched_getscheduler(int tid, int *policy, void *param)
     return 0;
 }
 
+int sys_fsync(int fd)
+{
+    return fsync(fd);
+}
+
 const static void* func_table[] =
 {
     (void *)sys_exit,            /* 01 */
@@ -4299,7 +4304,8 @@ const static void* func_table[] =
     (void *)sys_sched_get_priority_min,
     (void *)sys_sched_setscheduler,
     (void *)sys_sched_getscheduler,
-    (void *)sys_setaffinity
+    (void *)sys_setaffinity,
+    (void *)sys_fsync
 };
 
 const void *lwp_get_sys_api(rt_uint32_t number)
