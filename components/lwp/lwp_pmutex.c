@@ -15,8 +15,9 @@
 #endif
 #include "clock_time.h"
 
-#define PMUTEX_NORMAL    0 /* Unable to recursion */
-#define PMUTEX_RECURSIVE 1 /* Can be recursion */
+#define PMUTEX_NORMAL     0 /* Unable to recursion */
+#define PMUTEX_RECURSIVE  1 /* Can be recursion */
+#define PMUTEX_ERRORCHECK 2 /* This type of mutex provides error checking */
 
 struct rt_pmutex
 {
@@ -83,7 +84,7 @@ static struct rt_pmutex* pmutex_create(void *umutex, struct rt_lwp *lwp)
     long *p = (long *)umutex;
     /* umutex[0] bit[0-1] saved mutex type */
     type = *p & 3;
-    if (type != PMUTEX_NORMAL && type != PMUTEX_RECURSIVE)
+    if (type != PMUTEX_NORMAL && type != PMUTEX_RECURSIVE && type != PMUTEX_ERRORCHECK)
     {
         return RT_NULL;
     }
@@ -219,6 +220,7 @@ static int _pthread_mutex_lock_timeout(void *umutex, struct timespec *timeout)
     struct rt_pmutex *pmutex = RT_NULL;
     rt_err_t lock_ret = 0;
     rt_int32_t time = RT_WAITING_FOREVER;
+    register rt_base_t temp;
 
     if (timeout)
     {
@@ -255,6 +257,17 @@ static int _pthread_mutex_lock_timeout(void *umutex, struct timespec *timeout)
         break;
     case PMUTEX_RECURSIVE:
         lock_ret = rt_mutex_take_interruptible(pmutex->lock.kmutex, time);
+        break;
+    case PMUTEX_ERRORCHECK:
+        temp = rt_hw_interrupt_disable();
+        if (pmutex->lock.kmutex->owner == rt_thread_self())
+        {
+            /* enable interrupt */
+            rt_hw_interrupt_enable(temp);
+            return -EDEADLK;
+        }
+        lock_ret = rt_mutex_take_interruptible(pmutex->lock.kmutex, time);
+        rt_hw_interrupt_enable(temp);
         break;
     default: /* unknown type */
         return -EINVAL;
@@ -314,6 +327,7 @@ static int _pthread_mutex_unlock(void *umutex)
         lock_ret = rt_sem_release(pmutex->lock.ksem);
         break;
     case PMUTEX_RECURSIVE:
+    case PMUTEX_ERRORCHECK:
         lock_ret = rt_mutex_release(pmutex->lock.kmutex);
         break;
     default: /* unknown type */
