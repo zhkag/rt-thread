@@ -49,27 +49,6 @@
 #define ECHO_BLOCK      256
 #define ECHO_DISCARD_WATERMARK  RT_TTY_BUF - (ECHO_BLOCK + 32)
 
-void mutex_lock(rt_mutex_t mutex)
-{
-    rt_err_t result = -RT_EBUSY;
-
-    while (result == -RT_EBUSY)
-    {
-        result = rt_mutex_take(mutex, RT_WAITING_FOREVER);
-    }
-
-    if (result != RT_EOK)
-    {
-        RT_ASSERT(0);
-    }
-    return;
-}
-
-void mutex_unlock(rt_mutex_t mutex)
-{
-    rt_mutex_release(mutex);
-    return;
-}
 struct n_tty_data
 {
     /* producer-published */
