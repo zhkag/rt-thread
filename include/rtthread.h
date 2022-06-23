@@ -24,7 +24,7 @@
 #include <rtdef.h>
 #include <rtservice.h>
 #include <rtm.h>
-
+#include <rt_driver.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -517,6 +517,9 @@ rt_size_t rt_device_write(rt_device_t dev,
                           const void *buffer,
                           rt_size_t   size);
 rt_err_t  rt_device_control(rt_device_t dev, int cmd, void *arg);
+
+rt_err_t rt_driver_register(rt_driver_t drv);
+rt_err_t rt_driver_unregister(rt_driver_t drv);
 
 /**@}*/
 #endif

@@ -1093,7 +1093,8 @@ typedef struct rt_wqueue rt_wqueue_t;
 struct rt_device
 {
     struct rt_object          parent;                   /**< inherit from rt_object */
-
+    const struct rt_driver    *drv;
+    void *fdt_node; 
     enum rt_device_class_type type;                     /**< device type */
     rt_uint16_t               flag;                     /**< device flag */
     rt_uint16_t               open_flag;                /**< device open flag */
