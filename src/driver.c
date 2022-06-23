@@ -31,7 +31,9 @@ rt_err_t rt_device_bind(rt_driver_t driver, rt_device_t device, void *node)
     }
 
     device->drv = driver;
+#ifdef RT_USING_DEVICE_OPS    
     device->ops = driver->dev_ops;
+#endif    
     device->fdt_node = node;
 
     return RT_EOK;
@@ -109,10 +111,12 @@ rt_err_t rt_driver_register(rt_driver_t drv)
     root_node = get_dtb_node_head();
     if(drv->dev_match->compatible != RT_NULL)
     {
+#ifdef PKG_USING_FDT        
         ret = fdt_find_all_active_compatible_node(root_node,drv->dev_match->compatible,node_list,MAX_COMPATIBLE_NUM,&device_num);
         if(!ret)
         {
         }
+#endif        
     }
     else
     {

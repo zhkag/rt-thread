@@ -14,7 +14,9 @@ struct rt_device_id
 struct rt_driver
 {
     struct rt_object parent;
+#ifdef RT_USING_DEVICE_OPS    
     const struct rt_device_ops *dev_ops;
+#endif    
     const struct filesystem_ops *fops;
     const char *name;
     enum rt_device_class_type dev_type;
