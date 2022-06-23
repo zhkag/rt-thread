@@ -113,7 +113,7 @@ rt_err_t rt_driver_register(rt_driver_t drv)
         if(!ret)
         {
         }
-	}
+    }
     else
     {
         device_num = drv->total_device_num;  
