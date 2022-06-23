@@ -44,6 +44,7 @@ config RT_USING_SAL
         config SAL_USING_AF_UNIX
             bool "Enable support AF_UNIX socket"
             default n
+            default y if RT_USING_LWP
             select LWIP_NETIF_LINK_CALLBACK
 
         if !SAL_USING_POSIX
