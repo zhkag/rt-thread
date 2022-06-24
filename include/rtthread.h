@@ -518,8 +518,12 @@ rt_size_t rt_device_write(rt_device_t dev,
                           rt_size_t   size);
 rt_err_t  rt_device_control(rt_device_t dev, int cmd, void *arg);
 
-rt_err_t rt_driver_register(rt_driver_t drv);
-rt_err_t rt_driver_unregister(rt_driver_t drv);
+rt_err_t rt_device_driver_bind(rt_device_t device, rt_driver_t driver, void *node);
+rt_device_t rt_device_create_since_driver(rt_driver_t drv,int device_id);
+rt_err_t rt_device_probe_and_init(rt_device_t device);
+rt_err_t rt_driver_device_match_with_id(const rt_driver_t drv,int device_id);
+rt_err_t rt_driver_device_match_with_dtb(const rt_driver_t drv,void *from_node,int max_dev_num);
+rt_err_t rt_driver_unregister(const rt_driver_t drv);
 
 /**@}*/
 #endif
