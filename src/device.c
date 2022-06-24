@@ -477,6 +477,7 @@ rt_device_set_tx_complete(rt_device_t dev,
 }
 RTM_EXPORT(rt_device_set_tx_complete);
 
+#ifdef RT_USING_DDM
 /**
  * This function  bind drvier and device
  *
@@ -568,5 +569,5 @@ rt_err_t rt_device_probe_and_init(rt_device_t device)
     return ret;
 }
 RTM_EXPORT(rt_device_probe_and_init);
-
+#endif
 #endif

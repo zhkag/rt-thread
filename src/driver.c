@@ -72,7 +72,7 @@ rt_err_t rt_driver_device_match_with_dtb(const rt_driver_t drv,void *from_node,i
     {
         return -RT_ERROR;
     }
-    
+
     ret = fdt_find_all_active_compatible_node(from_node,drv->dev_match->compatible,node_list,max_dev_num,&active_dev_num);
     if((ret != 0) || (!active_dev_num))
     {
@@ -100,6 +100,7 @@ rt_err_t rt_driver_device_match_with_dtb(const rt_driver_t drv,void *from_node,i
 
     }
 
+    rt_free(node_list);
     return ret;
 }
 
