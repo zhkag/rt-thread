@@ -328,7 +328,9 @@ struct rt_lwp* lwp_new(void)
     pid = lwp_pid_get();
     if (pid == 0)
     {
+        lwp_user_object_lock_destroy(lwp);
         rt_free(lwp);
+        lwp = RT_NULL;
         LOG_E("pid slot fulled!\n");
         goto out;
     }
