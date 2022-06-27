@@ -11,26 +11,16 @@
 #include "mbox.h"
 #include "raspi4.h"
 #include "drv_sdio.h"
-#include "rthw.h"
-void *virtual_to_physical(void *v)
-{
-    return (void *)((uint64_t)v + PV_OFFSET);
-}
-void *physical_to_virtual(void *p)
-{
-    return (void *)((uint64_t)p - PV_OFFSET);
-}
+
 static rt_uint32_t mmc_base_clock = 0;
 
-static sdhci_adma2_descriptor32 adma2_descr_tbl[32] __attribute__((aligned(32)));
-
-static rt_uint32_t sd_command_table[] = {
+static rt_uint32_t sdCommandTable[] = {
     SD_CMD_INDEX(0),
     SD_CMD_RESERVED(1),
     SD_CMD_INDEX(2) | SD_RESP_R2,
     SD_CMD_INDEX(3) | SD_RESP_R1,
     SD_CMD_INDEX(4),
-    SD_CMD_RESERVED(5), // SD_CMD_INDEX(5) | SD_RESP_R4,
+    SD_CMD_RESERVED(5), //SD_CMD_INDEX(5) | SD_RESP_R4,
     SD_CMD_INDEX(6) | SD_RESP_R1,
     SD_CMD_INDEX(7) | SD_RESP_R1b,
     SD_CMD_INDEX(8) | SD_RESP_R1,
@@ -51,7 +41,7 @@ static rt_uint32_t sd_command_table[] = {
     SD_CMD_INDEX(23) | SD_RESP_R1,
     SD_CMD_INDEX(24) | SD_RESP_R1 | SD_DATA_WRITE,
     SD_CMD_INDEX(25) | SD_RESP_R1 | SD_DATA_WRITE | SD_CMD_MULTI_BLOCK | SD_CMD_BLKCNT_EN,
-    SD_CMD_INDEX(26) | SD_RESP_R1 | SD_DATA_WRITE, // add
+    SD_CMD_INDEX(26) | SD_RESP_R1 | SD_DATA_WRITE, //add
     SD_CMD_INDEX(27) | SD_RESP_R1 | SD_DATA_WRITE,
     SD_CMD_INDEX(28) | SD_RESP_R1b,
     SD_CMD_INDEX(29) | SD_RESP_R1b,
@@ -60,13 +50,13 @@ static rt_uint32_t sd_command_table[] = {
     SD_CMD_INDEX(32) | SD_RESP_R1,
     SD_CMD_INDEX(33) | SD_RESP_R1,
     SD_CMD_RESERVED(34),
-    SD_CMD_INDEX(35) | SD_RESP_R1, // add
-    SD_CMD_INDEX(36) | SD_RESP_R1, // add
+    SD_CMD_INDEX(35) | SD_RESP_R1, //add
+    SD_CMD_INDEX(36) | SD_RESP_R1, //add
     SD_CMD_RESERVED(37),
     SD_CMD_INDEX(38) | SD_RESP_R1b,
-    SD_CMD_INDEX(39) | SD_RESP_R4, // add
-    SD_CMD_INDEX(40) | SD_RESP_R5, // add
-    SD_CMD_INDEX(41) | SD_RESP_R3, // add, mov from harbote
+    SD_CMD_INDEX(39) | SD_RESP_R4, //add
+    SD_CMD_INDEX(40) | SD_RESP_R5, //add
+    SD_CMD_INDEX(41) | SD_RESP_R3, //add, mov from harbote
     SD_CMD_RESERVED(42) | SD_RESP_R1,
     SD_CMD_RESERVED(43),
     SD_CMD_RESERVED(44),
@@ -88,155 +78,45 @@ static rt_uint32_t sd_command_table[] = {
     SD_CMD_RESERVED(60),
     SD_CMD_RESERVED(61),
     SD_CMD_RESERVED(62),
-    SD_CMD_RESERVED(63)};
-
-static inline void write8(size_t addr, rt_uint8_t value)
-{
-    (*((volatile unsigned char *)(addr))) = value;
-}
-
-static inline rt_uint8_t read8(size_t addr)
-{
-    return (*((volatile unsigned char *)(addr)));
-}
-
-static inline rt_uint16_t read16(size_t addr)
-{
-    return (*((volatile unsigned short *)(addr)));
-}
-
-static inline rt_uint16_t write16(size_t addr, rt_uint16_t value)
-{
-    return (*((volatile unsigned short *)(addr))) = value;
-}
+    SD_CMD_RESERVED(63)
+};
 
 static inline rt_uint32_t read32(size_t addr)
 {
-    return (*((volatile unsigned int *)(addr)));
+    return (*((volatile unsigned int*)(addr)));
 }
 
 static inline void write32(size_t addr, rt_uint32_t value)
 {
-    (*((volatile unsigned int *)(addr))) = value;
+    (*((volatile unsigned int*)(addr))) = value;
 }
 
-rt_err_t sd_int(struct sdhci_pdata_t *pdat, rt_uint32_t mask)
+rt_err_t sd_int(struct sdhci_pdata_t * pdat, rt_uint32_t mask)
 {
     rt_uint32_t r;
     rt_uint32_t m = mask | INT_ERROR_MASK;
     int cnt = 1000000;
     while (!(read32(pdat->virt + EMMC_INTERRUPT) & (m | INT_ERROR_MASK)) && cnt--)
-    {
         DELAY_MICROS(1);
-        if (cnt % 10000 == 0)
-            mmcsd_dbg("wait %d\n", cnt);
-    }
     r = read32(pdat->virt + EMMC_INTERRUPT);
     if (cnt <= 0 || (r & INT_CMD_TIMEOUT) || (r & INT_DATA_TIMEOUT))
     {
         write32(pdat->virt + EMMC_INTERRUPT, r);
-        // qemu maybe can not use sdcard
-        rt_kprintf("send cmd/data timeout wait for %x int: %x, status: %x\n", mask, r, read32(pdat->virt + EMMC_STATUS));
+        //qemu maybe can not use sdcard
+        rt_kprintf("send cmd/data timeout wait for %x int: %x, status: %x\n",mask, r, read32(pdat->virt + EMMC_STATUS));
         return -RT_ETIMEOUT;
     }
     else if (r & INT_ERROR_MASK)
     {
         write32(pdat->virt + EMMC_INTERRUPT, r);
-        rt_kprintf("send cmd/data error %x -> %x\n", r, read32(pdat->virt + EMMC_INTERRUPT));
+        rt_kprintf("send cmd/data error %x -> %x\n",r, read32(pdat->virt + EMMC_INTERRUPT));
         return -RT_ERROR;
     }
     write32(pdat->virt + EMMC_INTERRUPT, mask);
     return RT_EOK;
 }
 
-/*****************************************************************************/
-/**
- *
- * @brief
- * API to setup ADMA2 descriptor table for 32-bit DMA
- *
- *
- * @param	instance_ptr is a pointer to the XSdPs instance.
- * @param	blkcnt - block count.
- * @param	buff pointer to data buffer.
- *
- * @return	None
- *
- * @note		None.
- *
- ******************************************************************************/
-void sdhci_setup_32adma2_desc_tbl(size_t base_addr, const uint8_t *buff, uint32_t blksize, uint32_t blkcnt)
-{
-    uint32_t total_desc_lines;
-    uint32_t desc_num;
-
-    void *adma2_descrtbl_p = virtual_to_physical(adma2_descr_tbl);
-    const uint8_t *buff_p = (const uint8_t *)virtual_to_physical(buff);
-
-    /* Setup ADMA2 - Write descriptor table and point ADMA SAR to it */
-
-    if ((blkcnt * blksize) < SDHCI_DESC_MAX_LENGTH)
-    {
-        total_desc_lines = 1U;
-    }
-    else
-    {
-        total_desc_lines = ((blkcnt * blksize) / SDHCI_DESC_MAX_LENGTH);
-        if (((blkcnt * blksize) % SDHCI_DESC_MAX_LENGTH) != 0U)
-        {
-            total_desc_lines += 1U;
-        }
-    }
-
-    for (desc_num = 0U; desc_num < (total_desc_lines - 1); desc_num++)
-    {
-        adma2_descr_tbl[desc_num].address =
-            (uint32_t)((uintptr_t)buff_p + (desc_num * SDHCI_DESC_MAX_LENGTH));
-        adma2_descr_tbl[desc_num].attribute =
-            SDHCI_DESC_TRAN | SDHCI_DESC_VALID | SDHCI_DESC_INT;
-        adma2_descr_tbl[desc_num].length = 0U;
-        rt_kprintf("Adma2_desc: %x\n", adma2_descr_tbl[desc_num].address);
-    }
-    adma2_descr_tbl[total_desc_lines - 1].address = (uint32_t)((uintptr_t)buff_p + (desc_num * SDHCI_DESC_MAX_LENGTH));
-
-    adma2_descr_tbl[total_desc_lines - 1].attribute =
-        SDHCI_DESC_TRAN | SDHCI_DESC_END | SDHCI_DESC_VALID | SDHCI_DESC_INT;
-
-    adma2_descr_tbl[total_desc_lines - 1].length =
-        (uint16_t)((blkcnt * blksize) - (uint32_t)(desc_num * SDHCI_DESC_MAX_LENGTH));
-
-    write32(base_addr + EMMC_ADMA_SAR_OFFSET, (uint32_t)((uintptr_t)adma2_descrtbl_p & (uint32_t)~0x0));
-    rt_hw_cpu_dcache_ops(RT_HW_CACHE_FLUSH, adma2_descr_tbl, sizeof(sdhci_adma2_descriptor32) * 32U);
-}
-
-/*****************************************************************************/
-/**
- * @brief
- * This function is used to do the DMA transfer to or from SD card.
- *
- * @param	instance_ptr is a pointer to the instance to be worked on.
- * @param	blkcnt - Block count passed by the user.
- * @param	blksize - Block size passed by the user.
- * @param	buff - Pointer to the data buffer for a DMA transfer.
- *
- * @return
- * 		- XST_SUCCESS if initialization was successful
- * 		- XST_FAILURE if failure - could be because another transfer
- * 			is in progress or command or data inhibit is set
- *
- ******************************************************************************/
-void xsdps_setup_rw_dma(size_t base_addr, uint8_t *buff)
-{
-    uint32_t blksize;
-    uint32_t blkcnt;
-
-    blksize = (uint32_t)read16(base_addr + EMMC_BLKSIZECNT) & SDHCI_BLK_SIZE_MASK;
-    blkcnt = (uint32_t)read16(base_addr + EMMC_BLKCOUNT) & SDHCI_BLK_CNT_MASK;
-    sdhci_setup_32adma2_desc_tbl(base_addr, buff, blksize, blkcnt);
-    rt_hw_cpu_dcache_ops(RT_HW_CACHE_INVALIDATE, buff, blkcnt * blksize);
-}
-
-rt_err_t sd_status(struct sdhci_pdata_t *pdat, unsigned int mask)
+rt_err_t sd_status(struct sdhci_pdata_t * pdat, unsigned int mask)
 {
     int cnt = 500000;
     while ((read32(pdat->virt + EMMC_STATUS) & mask) && !(read32(pdat->virt + EMMC_INTERRUPT) & INT_ERROR_MASK) && cnt--)
@@ -247,52 +127,33 @@ rt_err_t sd_status(struct sdhci_pdata_t *pdat, unsigned int mask)
     }
     else if (read32(pdat->virt + EMMC_INTERRUPT) & INT_ERROR_MASK)
     {
-        return -RT_ERROR;
-    }
+        return  -RT_ERROR;
+    } 
 
     return RT_EOK;
 }
 
-static rt_err_t raspi_transfer_command(struct sdhci_pdata_t *pdat, struct sdhci_cmd_t *cmd)
+static rt_err_t raspi_transfer_command(struct sdhci_pdata_t * pdat, struct sdhci_cmd_t * cmd)
 {
     rt_uint32_t cmdidx;
     rt_err_t ret = RT_EOK;
     ret = sd_status(pdat, SR_CMD_INHIBIT);
     if (ret)
     {
-        rt_kprintf("ERROR: EMMC cmd busy %d\n", ret);
+        rt_kprintf("ERROR: EMMC busy %d\n", ret);
         return ret;
     }
 
-    cmdidx = sd_command_table[cmd->cmdidx];
+    cmdidx = sdCommandTable[cmd->cmdidx];
     if (cmdidx == 0xFFFFFFFF)
         return -RT_EINVAL;
     if (cmd->datarw == DATA_READ)
-    {
         cmdidx |= SD_DATA_READ;
-        cmdidx |= SDHCI_TM_DMA_EN_MASK;
-        cmdidx |= (SD_CMD_IXCHK_EN | SD_CMD_CRCCHK_EN | SD_CMD_BLKCNT_EN);
-        if (cmd->cmdidx == READ_MULTIPLE_BLOCK)
-        {
-            cmdidx |= (SD_CMD_AUTO_CMD_EN_CMD23 | SDHCI_TM_MUL_SIN_BLK_SEL_MASK);
-        }
-    }
     if (cmd->datarw == DATA_WRITE)
-    {
         cmdidx |= SD_DATA_WRITE;
-        cmdidx |= SDHCI_TM_DMA_EN_MASK;
-        cmdidx |= (SD_CMD_IXCHK_EN | SD_CMD_CRCCHK_EN | SD_CMD_BLKCNT_EN);
-        if (cmd->cmdidx == WRITE_MULTIPLE_BLOCK)
-        {
-            cmdidx |= (SD_CMD_AUTO_CMD_EN_CMD23 | SDHCI_TM_MUL_SIN_BLK_SEL_MASK);
-        }
-    }
-    write8(pdat->virt + EMMC_TIMECTL, 0xEU);
+    mmcsd_dbg("transfer cmd %x(%d) %x %x\n", cmdidx, cmd->cmdidx, cmd->cmdarg, read32(pdat->virt + EMMC_INTERRUPT));
+    write32(pdat->virt + EMMC_INTERRUPT,read32(pdat->virt + EMMC_INTERRUPT));
     write32(pdat->virt + EMMC_ARG1, cmd->cmdarg);
-
-    write16(pdat->virt + EMMC_INTERRUPT, SDHCI_NORM_INTR_ALL_MASK);
-    write16(pdat->virt + EMMC_ERR_INTERRUPT, SDHCI_ERROR_INTR_ALL_MASK);
-
     write32(pdat->virt + EMMC_CMDTM, cmdidx);
     if (cmd->cmdidx == SD_APP_OP_COND)
         DELAY_MICROS(1000);
@@ -316,10 +177,10 @@ static rt_err_t raspi_transfer_command(struct sdhci_pdata_t *pdat, struct sdhci_
             resp[3] = read32(pdat->virt + EMMC_RESP3);
             if (cmd->resptype == RESP_R2)
             {
-                cmd->response[0] = resp[3] << 8 | ((resp[2] >> 24) & 0xff);
-                cmd->response[1] = resp[2] << 8 | ((resp[1] >> 24) & 0xff);
-                cmd->response[2] = resp[1] << 8 | ((resp[0] >> 24) & 0xff);
-                cmd->response[3] = resp[0] << 8;
+                cmd->response[0] = resp[3]<<8 |((resp[2]>>24)&0xff);
+                cmd->response[1] = resp[2]<<8 |((resp[1]>>24)&0xff);
+                cmd->response[2] = resp[1]<<8 |((resp[0]>>24)&0xff);
+                cmd->response[3] = resp[0]<<8 ;
             }
             else
             {
@@ -332,12 +193,11 @@ static rt_err_t raspi_transfer_command(struct sdhci_pdata_t *pdat, struct sdhci_
         else
             cmd->response[0] = read32(pdat->virt + EMMC_RESP0);
     }
-    mmcsd_dbg("response: %x: %x %x %x %x (%x, %x)\n", cmd->resptype, cmd->response[0], cmd->response[1], cmd->response[2], cmd->response[3], read32(pdat->virt + EMMC_STATUS), read32(pdat->virt + EMMC_INTERRUPT));
-    mmcsd_dbg("response: %x: %x \n", cmd->resptype, cmd->response[0]);
+    mmcsd_dbg("response: %x: %x %x %x %x (%x, %x)\n", cmd->resptype, cmd->response[0], cmd->response[1], cmd->response[2], cmd->response[3], read32(pdat->virt + EMMC_STATUS),read32(pdat->virt + EMMC_INTERRUPT));
     return ret;
 }
 
-static rt_err_t read_bytes(struct sdhci_pdata_t *pdat, rt_uint32_t *buf, rt_uint32_t blkcount, rt_uint32_t blksize)
+static rt_err_t read_bytes(struct sdhci_pdata_t * pdat, rt_uint32_t * buf, rt_uint32_t blkcount, rt_uint32_t blksize)
 {
     int c = 0;
     rt_err_t ret;
@@ -346,10 +206,10 @@ static rt_err_t read_bytes(struct sdhci_pdata_t *pdat, rt_uint32_t *buf, rt_uint
     {
         if ((ret = sd_int(pdat, INT_READ_RDY)))
         {
-            rt_kprintf("timeout happens when reading block %d\n", c);
+            rt_kprintf("timeout happens when reading block %d\n",c);
             return ret;
         }
-        for (d = 0; d < blksize / 4; d++)
+        for (d=0; d < blksize / 4; d++)
             if (read32(pdat->virt + EMMC_STATUS) & SR_READ_AVAILABLE)
                 buf[d] = read32(pdat->virt + EMMC_DATA);
         c++;
@@ -358,7 +218,7 @@ static rt_err_t read_bytes(struct sdhci_pdata_t *pdat, rt_uint32_t *buf, rt_uint
     return RT_EOK;
 }
 
-static rt_err_t write_bytes(struct sdhci_pdata_t *pdat, rt_uint32_t *buf, rt_uint32_t blkcount, rt_uint32_t blksize)
+static rt_err_t write_bytes(struct sdhci_pdata_t * pdat, rt_uint32_t * buf, rt_uint32_t blkcount, rt_uint32_t blksize)
 {
     int c = 0;
     rt_err_t ret;
@@ -369,7 +229,7 @@ static rt_err_t write_bytes(struct sdhci_pdata_t *pdat, rt_uint32_t *buf, rt_uin
         {
             return ret;
         }
-        for (d = 0; d < blksize / 4; d++)
+        for (d=0; d < blksize / 4; d++)
             write32(pdat->virt + EMMC_DATA, buf[d]);
         c++;
         buf += blksize / 4;
@@ -382,13 +242,13 @@ static rt_err_t write_bytes(struct sdhci_pdata_t *pdat, rt_uint32_t *buf, rt_uin
     return RT_EOK;
 }
 
-static rt_err_t raspi_transfer_data(struct sdhci_pdata_t *pdat, struct sdhci_cmd_t *cmd, struct sdhci_data_t *dat)
+static rt_err_t raspi_transfer_data(struct sdhci_pdata_t * pdat, struct sdhci_cmd_t * cmd, struct sdhci_data_t * dat)
 {
     rt_uint32_t dlen = (rt_uint32_t)(dat->blkcnt * dat->blksz);
     rt_err_t ret = sd_status(pdat, SR_DAT_INHIBIT);
     if (ret)
     {
-        rt_kprintf("ERROR: EMMC data busy\n");
+        rt_kprintf("ERROR: EMMC busy\n");
         return ret;
     }
     if (dat->blkcnt > 1)
@@ -398,11 +258,10 @@ static rt_err_t raspi_transfer_data(struct sdhci_pdata_t *pdat, struct sdhci_cmd
         newcmd.cmdarg = dat->blkcnt;
         newcmd.resptype = RESP_R1;
         ret = raspi_transfer_command(pdat, &newcmd);
-        if (ret)
-            return ret;
+        if (ret) return ret;
     }
 
-    if (dlen < 512)
+    if(dlen < 512)
     {
         write32(pdat->virt + EMMC_BLKSIZECNT, dlen | 1 << 16);
     }
@@ -410,37 +269,28 @@ static rt_err_t raspi_transfer_data(struct sdhci_pdata_t *pdat, struct sdhci_cmd
     {
         write32(pdat->virt + EMMC_BLKSIZECNT, 512 | (dat->blkcnt) << 16);
     }
-
     if (dat->flag & DATA_DIR_READ)
     {
         cmd->datarw = DATA_READ;
-        xsdps_setup_rw_dma(pdat->virt, dat->buf);
         ret = raspi_transfer_command(pdat, cmd);
-        if (ret)
-            return ret;
-        rt_hw_cpu_dcache_ops(RT_HW_CACHE_INVALIDATE, dat->buf, dat->blkcnt * dat->blksz);
-        mmcsd_dbg("read_block %d, %d\n", dat->blkcnt, dat->blksz);
+        if (ret) return ret;
+        mmcsd_dbg("read_block %d, %d\n", dat->blkcnt, dat->blksz );
+        ret = read_bytes(pdat, (rt_uint32_t *)dat->buf, dat->blkcnt, dat->blksz);
     }
     else if (dat->flag & DATA_DIR_WRITE)
     {
         cmd->datarw = DATA_WRITE;
-        xsdps_setup_rw_dma(pdat->virt, dat->buf);
         ret = raspi_transfer_command(pdat, cmd);
-        if (ret)
-            return ret;
-        mmcsd_dbg("write_block %d, %d\n", dat->blkcnt, dat->blksz);
-    }
-    ret = sd_int(pdat, INT_DATA_DONE);
-    if (ret)
-    {
-        return ret;
+        if (ret) return ret;
+        mmcsd_dbg("write_block %d, %d", dat->blkcnt, dat->blksz );
+        ret = write_bytes(pdat, (rt_uint32_t *)dat->buf, dat->blkcnt, dat->blksz);
     }
     return ret;
 }
 
-static rt_err_t sdhci_transfer(struct sdhci_t *sdhci, struct sdhci_cmd_t *cmd, struct sdhci_data_t *dat)
+static rt_err_t sdhci_transfer(struct sdhci_t * sdhci, struct sdhci_cmd_t * cmd, struct sdhci_data_t * dat)
 {
-    struct sdhci_pdata_t *pdat = (struct sdhci_pdata_t *)sdhci->priv;
+    struct sdhci_pdata_t * pdat = (struct sdhci_pdata_t *)sdhci->priv;
     if (!dat)
         return raspi_transfer_command(pdat, cmd);
 
@@ -459,7 +309,7 @@ static void mmc_request_send(struct rt_mmcsd_host *host, struct rt_mmcsd_req *re
 
     cmd.cmdidx = req->cmd->cmd_code;
     cmd.cmdarg = req->cmd->arg;
-    cmd.resptype = resp_type(req->cmd);
+    cmd.resptype =resp_type(req->cmd);
     if (req->data)
     {
         dat.buf = (rt_uint8_t *)req->data->buf;
@@ -483,7 +333,7 @@ static void mmc_request_send(struct rt_mmcsd_host *host, struct rt_mmcsd_req *re
     {
         stop.cmdidx = req->stop->cmd_code;
         stop.cmdarg = req->stop->arg;
-        cmd.resptype = resp_type(req->stop);
+        cmd.resptype =resp_type(req->stop);
         req->stop->err = sdhci_transfer(sdhci, &stop, RT_NULL);
     }
 
@@ -495,43 +345,40 @@ rt_int32_t mmc_card_status(struct rt_mmcsd_host *host)
     return 0;
 }
 
-static rt_err_t sdhci_detect(struct sdhci_t *sdhci)
+static rt_err_t sdhci_detect(struct sdhci_t * sdhci)
 {
-    struct sdhci_pdata_t *pdat = (struct sdhci_pdata_t *)sdhci->priv;
-    // sdhci_version
-    sdhci->sdhci_version4 = read16(pdat->virt + EMMC_MY_CONTROL2) & SDHCI_CTL2_SHCVER_MASK;
-    sdhci->dma_64bit_addr = read16(pdat->virt + EMMC_MY_CONTROL2) & SDHCI_CTL2_BITADDR_MASK;
     return RT_EOK;
 }
 
-static rt_err_t sdhci_setwidth(struct sdhci_t *sdhci, rt_uint32_t width)
+static rt_err_t sdhci_setwidth(struct sdhci_t * sdhci, rt_uint32_t width)
 {
     rt_uint32_t temp = 0;
-    struct sdhci_pdata_t *pdat = (struct sdhci_pdata_t *)sdhci->priv;
+    struct sdhci_pdata_t * pdat = (struct sdhci_pdata_t *)sdhci->priv;
     if (width == MMCSD_BUS_WIDTH_4)
     {
         temp = read32((pdat->virt + EMMC_CONTROL0));
         temp |= C0_HCTL_HS_EN;
-        temp |= C0_HCTL_DWITDH; // always use 4 data lines:
+        temp |= C0_HCTL_DWITDH;   // always use 4 data lines:
         write32((pdat->virt + EMMC_CONTROL0), temp);
     }
     return RT_EOK;
 }
 
-static uint32_t sd_get_clock_divider(rt_uint32_t sd_host_ver, rt_uint32_t base_clock, rt_uint32_t target_rate)
+
+static uint32_t sd_get_clock_divider(rt_uint32_t sdHostVer ,rt_uint32_t base_clock, rt_uint32_t target_rate)
 {
     rt_uint32_t targetted_divisor = 0;
     rt_uint32_t freq_select = 0;
     rt_uint32_t upper_bits = 0;
     rt_uint32_t ret = 0;
 
-    if (target_rate > base_clock)
+    if(target_rate > base_clock)
         targetted_divisor = 1;
     else
     {
         targetted_divisor = base_clock / target_rate;
         rt_uint32_t mod = base_clock % target_rate;
-        if (mod)
+        if(mod)
             targetted_divisor--;
     }
 
@@ -544,14 +391,14 @@ static uint32_t sd_get_clock_divider(rt_uint32_t sd_host_ver, rt_uint32_t base_c
 
     // Find the first bit set
     int divisor = -1;
-    for (int first_bit = 31; first_bit >= 0; first_bit--)
+    for(int first_bit = 31; first_bit >= 0; first_bit--)
     {
         rt_uint32_t bit_test = (1 << first_bit);
-        if (targetted_divisor & bit_test)
+        if(targetted_divisor & bit_test)
         {
             divisor = first_bit;
             targetted_divisor &= ~bit_test;
-            if (targetted_divisor)
+            if(targetted_divisor)
             {
                 // The divisor is not a power-of-two, increase it
                 divisor++;
@@ -560,15 +407,15 @@ static uint32_t sd_get_clock_divider(rt_uint32_t sd_host_ver, rt_uint32_t base_c
         }
     }
 
-    if (divisor == -1)
+    if(divisor == -1)
         divisor = 31;
-    if (divisor >= 32)
+    if(divisor >= 32)
         divisor = 31;
 
-    if (divisor != 0)
+    if(divisor != 0)
         divisor = (1 << (divisor - 1));
 
-    if (divisor >= 0x400)
+    if(divisor >= 0x400)
         divisor = 0x3ff;
 
     freq_select = divisor & 0xff;
@@ -578,43 +425,43 @@ static uint32_t sd_get_clock_divider(rt_uint32_t sd_host_ver, rt_uint32_t base_c
     return ret;
 }
 
-static rt_err_t sdhci_setclock(struct sdhci_t *sdhci, rt_uint32_t clock)
+static rt_err_t sdhci_setclock(struct sdhci_t * sdhci, rt_uint32_t clock)
 {
     rt_uint32_t temp = 0;
-    rt_uint32_t sd_host_ver = 0;
+    rt_uint32_t sdHostVer = 0;
     int count = 100000;
-    struct sdhci_pdata_t *pdat = (struct sdhci_pdata_t *)(sdhci->priv);
+    struct sdhci_pdata_t * pdat = (struct sdhci_pdata_t *)(sdhci->priv);
 
     while ((read32(pdat->virt + EMMC_STATUS) & (SR_CMD_INHIBIT | SR_DAT_INHIBIT)) && (--count))
         DELAY_MICROS(1);
     if (count <= 0)
     {
-        rt_kprintf("EMMC: Set clock: timeout waiting for inhibit flags. Status %08x.\n", read32(pdat->virt + EMMC_STATUS));
+        rt_kprintf("EMMC: Set clock: timeout waiting for inhibit flags. Status %08x.\n",read32(pdat->virt + EMMC_STATUS));
         return RT_ERROR;
     }
 
     // Switch clock off.
     temp = read32((pdat->virt + EMMC_CONTROL1));
     temp &= ~C1_CLK_EN;
-    write32((pdat->virt + EMMC_CONTROL1), temp);
+    write32((pdat->virt + EMMC_CONTROL1),temp);
     DELAY_MICROS(10);
     // Request the new clock setting and enable the clock
     temp = read32(pdat->virt + EMMC_SLOTISR_VER);
-    sd_host_ver = (temp & HOST_SPEC_NUM) >> HOST_SPEC_NUM_SHIFT;
-    int cdiv = sd_get_clock_divider(sd_host_ver, mmc_base_clock, clock);
+    sdHostVer = (temp & HOST_SPEC_NUM) >> HOST_SPEC_NUM_SHIFT;
+    int cdiv = sd_get_clock_divider(sdHostVer, mmc_base_clock, clock);
     temp = read32((pdat->virt + EMMC_CONTROL1));
-    temp |= 1;
+    temp |= 1;    
     temp |= cdiv;
     temp |= (7 << 16);
 
     temp = (temp & 0xffff003f) | cdiv;
-    write32((pdat->virt + EMMC_CONTROL1), temp);
+    write32((pdat->virt + EMMC_CONTROL1),temp);
     DELAY_MICROS(10);
 
     // Enable the clock.
     temp = read32(pdat->virt + EMMC_CONTROL1);
     temp |= C1_CLK_EN;
-    write32((pdat->virt + EMMC_CONTROL1), temp);
+    write32((pdat->virt + EMMC_CONTROL1),temp);
     DELAY_MICROS(10);
 
     // Wait for clock to be stable.
@@ -626,51 +473,44 @@ static rt_err_t sdhci_setclock(struct sdhci_t *sdhci, rt_uint32_t clock)
         rt_kprintf("EMMC: ERROR: failed to get stable clock %d.\n", clock);
         return RT_ERROR;
     }
+
     mmcsd_dbg("set stable clock %d.\n", clock);
     return RT_EOK;
 }
 
 static void mmc_set_iocfg(struct rt_mmcsd_host *host, struct rt_mmcsd_io_cfg *io_cfg)
 {
-    struct sdhci_t *sdhci = (struct sdhci_t *)host->private_data;
+    struct sdhci_t * sdhci = (struct sdhci_t *)host->private_data;
     sdhci_setclock(sdhci, io_cfg->clock);
     sdhci_setwidth(sdhci, io_cfg->bus_width);
 }
 
-static rt_uint32_t mmc_get_adma_ver(struct rt_mmcsd_host *host)
-{
-    struct sdhci_t *sdhci = (struct sdhci_t *)host->private_data;
-    struct sdhci_pdata_t *pdat = (struct sdhci_pdata_t *)(sdhci->priv);
-    return read32(pdat->virt + EMMC_CAPABILITIES_0);
-}
-
 static const struct rt_mmcsd_host_ops ops =
-    {
-        mmc_request_send,
-        mmc_set_iocfg,
-        RT_NULL,
-        RT_NULL,
-        mmc_get_adma_ver,
+{
+    mmc_request_send,
+    mmc_set_iocfg,
+    RT_NULL,
+    RT_NULL,
 };
 
-static rt_err_t reset_emmc(struct sdhci_pdata_t *pdat)
+static rt_err_t reset_emmc(struct sdhci_pdata_t * pdat)
 {
     rt_uint32_t control1;
 
-    // Reset the controller
+    //Reset the controller
     control1 = read32((pdat->virt + EMMC_CONTROL1));
     control1 |= (1 << 24);
     // Disable clock
     control1 &= ~(1 << 2);
     control1 &= ~(1 << 0);
-    // temp |= C1_CLK_INTLEN | C1_TOUNIT_MAX;
-    write32((pdat->virt + EMMC_CONTROL1), control1);
+    //temp |= C1_CLK_INTLEN | C1_TOUNIT_MAX;
+    write32((pdat->virt + EMMC_CONTROL1),control1);
     int cnt = 10000;
     do
     {
         DELAY_MICROS(10);
         cnt = cnt - 1;
-        if (cnt == 0)
+        if(cnt == 0)
         {
             break;
         }
@@ -682,6 +522,8 @@ static rt_err_t reset_emmc(struct sdhci_pdata_t *pdat)
     write32(pdat->virt + EMMC_CONTROL0, control0);
 
     rt_thread_delay(100);
+    //usleep(2000);
+
 
     // Check for a valid card
     mmcsd_dbg("EMMC: checking for an inserted card\n");
@@ -690,7 +532,7 @@ static rt_err_t reset_emmc(struct sdhci_pdata_t *pdat)
     {
         DELAY_MICROS(10);
         cnt = cnt - 1;
-        if (cnt == 0)
+        if(cnt == 0)
         {
             break;
         }
@@ -698,7 +540,7 @@ static rt_err_t reset_emmc(struct sdhci_pdata_t *pdat)
 
     rt_uint32_t status_reg = read32(pdat->virt + EMMC_STATUS);
 
-    if ((status_reg & (1 << 16)) == 0)
+    if((status_reg & (1 << 16)) == 0)
     {
         rt_kprintf("EMMC: no card inserted\n");
         return -1;
@@ -712,7 +554,7 @@ static rt_err_t reset_emmc(struct sdhci_pdata_t *pdat)
     write32(pdat->virt + EMMC_CONTROL2, 0);
     // Get the base clock rate //12
     mmc_base_clock = bcm271x_mbox_clock_get_rate(EMMC_CLK_ID);
-    if (mmc_base_clock == 0)
+    if(mmc_base_clock == 0)
     {
         rt_kprintf("EMMC: assuming clock rate to be 100MHz\n");
         mmc_base_clock = 100000000;
@@ -721,28 +563,8 @@ static rt_err_t reset_emmc(struct sdhci_pdata_t *pdat)
     return RT_EOK;
 }
 
-/*****************************************************************************/
-/**
- * @brief
- * This function is used configure the Interrupts.
- *
- * @param	instance_ptr is a pointer to the instance to be worked on.
- *
- * @return	None
- *
- ******************************************************************************/
-void sdhci_config_interrupt(struct sdhci_pdata_t *pdat)
-{
-    /* Enable all interrupt status except card interrupt initially */
-    write16(pdat->virt + EMMC_NOR_IRTR_STS_EN_OFFSET, SDHCI_NORM_INTR_ALL_MASK);
-    write16(pdat->virt + EMMC_ERR_INTR_STS_EN_OFFSET, SDHCI_ERROR_INTR_ALL_MASK);
-
-    write16(pdat->virt + EMMC_IRPT_EN, 0x13b);
-    write16(pdat->virt + SDHCI_ERR_INTR_SIG_EN_OFFSET, 0x13b);
-}
-
 #ifdef RT_MMCSD_DBG
-void dump_registers(struct sdhci_pdata_t *pdat)
+void dump_registers(struct sdhci_pdata_t * pdat)
 {
     rt_kprintf("EMMC registers:");
     int i = EMMC_ARG2;
@@ -764,9 +586,9 @@ void dump_registers(struct sdhci_pdata_t *pdat)
 int raspi_sdmmc_init(void)
 {
     size_t virt;
-    struct rt_mmcsd_host *host = RT_NULL;
-    struct sdhci_pdata_t *pdat = RT_NULL;
-    struct sdhci_t *sdhci = RT_NULL;
+    struct rt_mmcsd_host * host = RT_NULL;
+    struct sdhci_pdata_t * pdat = RT_NULL;
+    struct sdhci_t * sdhci = RT_NULL;
 
 #ifdef BSP_USING_SDIO0
     host = mmcsd_alloc_host();
@@ -800,14 +622,6 @@ int raspi_sdmmc_init(void)
     sdhci->setclock = sdhci_setclock;
     sdhci->transfer = sdhci_transfer;
     sdhci->priv = pdat;
-    sdhci->detect(sdhci);
-
-    /* Enable ADMA2 in 32bit mode. */
-    rt_uint8_t tmp = read8(pdat->virt + EMMC_CONTROL0);
-    write8(pdat->virt + EMMC_CONTROL0, 0x10 | tmp);
-    tmp = read8(pdat->virt + EMMC_HOST_CONTROL2);
-    write8(pdat->virt + EMMC_HOST_CONTROL2, 0x4000 | tmp);
-
     host->ops = &ops;
     host->freq_min = 400000;
     host->freq_max = 50000000;
@@ -819,8 +633,8 @@ int raspi_sdmmc_init(void)
     host->max_blk_count = 16;
 
     host->private_data = sdhci;
-
-    sdhci_config_interrupt(pdat);
+    write32((pdat->virt + EMMC_IRPT_EN),0xffffffff);
+    write32((pdat->virt + EMMC_IRPT_MASK),0xffffffff);
 #ifdef RT_MMCSD_DBG
     dump_registers(pdat);
 #endif
@@ -828,15 +642,9 @@ int raspi_sdmmc_init(void)
 #endif
     return RT_EOK;
 err:
-    if (host)
-    {
-        rt_free(host);
-    }
+    if (host)  rt_free(host);
+    if (sdhci) rt_free(sdhci);
 
-    if (sdhci)
-    {
-        rt_free(sdhci);
-    }
     return -RT_EIO;
 }
 
