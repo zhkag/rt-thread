@@ -477,7 +477,7 @@ rt_device_set_tx_complete(rt_device_t dev,
 }
 RTM_EXPORT(rt_device_set_tx_complete);
 
-#ifdef RT_USING_DDM
+#ifdef RT_USING_DM
 /**
  * This function  bind drvier and device
  *
@@ -487,7 +487,7 @@ RTM_EXPORT(rt_device_set_tx_complete);
  *
  * @return the error code, RT_EOK on successfully.
  */
-rt_err_t rt_device_driver_bind(rt_device_t device, rt_driver_t driver, void *node)
+rt_err_t rt_device_bind_driver(rt_device_t device, rt_driver_t driver, void *node)
 {
     if((!driver) || (!device))
     {
@@ -502,7 +502,7 @@ rt_err_t rt_device_driver_bind(rt_device_t device, rt_driver_t driver, void *nod
 
     return RT_EOK;
 } 
-RTM_EXPORT(rt_device_driver_bind);
+RTM_EXPORT(rt_device_bind_driver);
 
 /**
  * This function  create rt_device according to driver infomation
@@ -562,9 +562,9 @@ rt_err_t rt_device_probe_and_init(rt_device_t device)
     {
         ret = device->drv->probe((rt_device_t)device);
     }
-    if(device->drv->init)
+    if(device->drv->probe_init)
     {
-        ret = device->drv->init((rt_device_t)device);
+        ret = device->drv->probe_init((rt_device_t)device);
     }
     return ret;
 }

@@ -347,8 +347,8 @@ config RT_VER_NUM
     help
         RT-Thread version number
 
-config RT_USING_DDM
-    bool "Enable rt device driver mode"
+config RT_USING_DM
+    bool "Enable rt device driver model"
     default n
  
 endmenu

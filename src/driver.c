@@ -5,20 +5,22 @@
  */
 
 #include <rtthread.h>
+#ifdef PKG_USING_FDT
 #include <dtb_node.h>
+#endif
 #if defined(RT_USING_POSIX)
 #include <rtdevice.h> /* for wqueue_init */
 #endif
 
 /**
- * This function registers a device driver with specified name.
+ * This function driver device match with id
  *
  * @param drv the pointer of driver structure
  * @param device_id the id of the device
  *
  * @return the error code, RT_EOK on successfully.
  */
-rt_err_t rt_driver_device_match_with_id(const rt_driver_t drv,int device_id)
+rt_err_t rt_driver_match_with_id(const rt_driver_t drv,int device_id)
 {
     rt_device_t device;
     int ret;
@@ -31,7 +33,7 @@ rt_err_t rt_driver_device_match_with_id(const rt_driver_t drv,int device_id)
     {
         return -RT_ERROR;
     }
-    ret = rt_device_driver_bind(device,drv,RT_NULL);
+    ret = rt_device_bind_driver(device,drv,RT_NULL);
     if(ret != 0)
     {
         return -RT_ERROR;
@@ -44,19 +46,19 @@ rt_err_t rt_driver_device_match_with_id(const rt_driver_t drv,int device_id)
     return ret;
 }
 
-RTM_EXPORT(rt_driver_device_match_with_id);
+RTM_EXPORT(rt_driver_match_with_id);
 
 #ifdef PKG_USING_FDT
 /**
- * This function registers a device driver with specified name.
+ * This function driver device match with dtb_node
  *
  * @param drv the pointer of driver structure
- * @param from_node eth entry ftd node 
+ * @param from_node dtb node entry 
  * @param max_dev_num the max device support 
  * 
  * @return the error code, RT_EOK on successfully.
  */
-rt_err_t rt_driver_device_match_with_dtb(const rt_driver_t drv,void *from_node,int max_dev_num)
+rt_err_t rt_driver_match_with_dtb(const rt_driver_t drv,void *from_node,int max_dev_num)
 {
     struct dtb_node** node_list; 
     rt_device_t device;
@@ -87,7 +89,7 @@ rt_err_t rt_driver_device_match_with_dtb(const rt_driver_t drv,void *from_node,i
             return -RT_ERROR;
         }
     
-        ret = rt_device_driver_bind(device,drv,node_list[i]);
+        ret = rt_device_bind_driver(device,drv,node_list[i]);
         if(ret != 0)
         {
             return -RT_ERROR;
@@ -97,27 +99,11 @@ rt_err_t rt_driver_device_match_with_dtb(const rt_driver_t drv,void *from_node,i
         {
             return -RT_ERROR;
         }
-
     }
-
     rt_free(node_list);
     return ret;
 }
 
-RTM_EXPORT(rt_driver_device_match_with_dtb);
+RTM_EXPORT(rt_driver_match_with_dtb);
 #endif  
-
-/**
- * This function removes a previously registered device driver
- *
- * @param dev the pointer of device driver structure
- *
- * @return the error code, RT_EOK on successfully.
- */
-rt_err_t rt_driver_unregister(const rt_driver_t drv)
-{
-    /*todo*/
-    return RT_EOK;
-}
-RTM_EXPORT(rt_driver_unregister);
 
