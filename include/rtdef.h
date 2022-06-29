@@ -1093,7 +1093,7 @@ typedef struct rt_wqueue rt_wqueue_t;
 struct rt_device
 {
     struct rt_object          parent;                   /**< inherit from rt_object */
-#ifdef RT_USING_DDM    
+#ifdef RT_USING_DM    
     const struct rt_driver    *drv;
     void *dtb_node; 
 #endif    
@@ -1127,6 +1127,32 @@ struct rt_device
 
     void                     *user_data;                /**< device private data */
 };
+
+#define RT_DRIVER_MATCH_DTS (1<<0)
+struct rt_device_id 
+{
+	const char *compatible;
+	void *data;
+};
+
+struct rt_driver
+{
+#ifdef RT_USING_DEVICE_OPS    
+    const struct rt_device_ops *dev_ops;
+#endif    
+    const struct filesystem_ops *fops;
+    const char *name;
+    enum rt_device_class_type dev_type;
+    int device_priv_data_size;
+    int device_size;
+    int flag;
+    const struct rt_device_id *dev_match;
+	int (*probe)(struct rt_device *dev);
+    int (*probe_init)(struct rt_device *dev);
+    int (*remove)(struct rt_device *dev);
+	const void *ops;	/* driver-specific operations */
+};
+typedef struct rt_driver *rt_driver_t;
 
 /**
  * Notify structure
