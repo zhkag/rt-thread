@@ -498,7 +498,7 @@ rt_err_t rt_device_driver_bind(rt_device_t device, rt_driver_t driver, void *nod
 #ifdef RT_USING_DEVICE_OPS    
     device->ops = driver->dev_ops;
 #endif    
-    device->fdt_node = node;
+    device->dtb_node = node;
 
     return RT_EOK;
 } 

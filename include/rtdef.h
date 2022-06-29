@@ -1095,7 +1095,7 @@ struct rt_device
     struct rt_object          parent;                   /**< inherit from rt_object */
 #ifdef RT_USING_DDM    
     const struct rt_driver    *drv;
-    void *fdt_node; 
+    void *dtb_node; 
 #endif    
     enum rt_device_class_type type;                     /**< device type */
     rt_uint16_t               flag;                     /**< device flag */
