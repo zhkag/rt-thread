@@ -33,10 +33,6 @@ struct mem_desc platform_mem_desc[] = {
 
 const rt_uint32_t platform_mem_desc_size = sizeof(platform_mem_desc)/sizeof(platform_mem_desc[0]);
 
-#define SYS_CTRL                        __REG32(REALVIEW_SCTL_BASE)
-
-extern void rt_hw_ipi_handler_install(int ipi_vector, rt_isr_handler_t ipi_isr_handler);
-
 void idle_wfi(void)
 {
     asm volatile ("wfi");

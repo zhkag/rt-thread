@@ -51,9 +51,9 @@ msh />
 | 驱动 | 支持情况  |  备注  |
 | ------ | ----  | :------:  |
 | UART | 支持 | UART0 |
-| SD/MMC | 不支持 |  |
-| CLCD | 不支持 |  |
-| Key | 不支持 |  |
-| Mouse | 不支持 |  |
-| EMAC | 不支持 |  |
+| RTC  | 支持 | - |
+| VIRTIO BLK | 支持 | - |
+| VIRTIO NET | 支持 | - |
+| VIRTIO GPU | 支持 | 2D |
+| VIRTIO Input | 支持 | Keyboard, Mouse, Tablet |
 

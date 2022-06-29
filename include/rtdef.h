@@ -1243,12 +1243,13 @@ struct rt_device_graphic_info
 {
     rt_uint8_t  pixel_format;                           /**< graphic format */
     rt_uint8_t  bits_per_pixel;                         /**< bits per pixel */
-    rt_uint16_t reserved;                               /**< reserved field */
+    rt_uint16_t pitch;                                  /**< bytes per line */
 
     rt_uint16_t width;                                  /**< width of graphic device */
     rt_uint16_t height;                                 /**< height of graphic device */
 
     rt_uint8_t *framebuffer;                            /**< frame buffer */
+    rt_uint32_t smem_len;                               /**< allocated frame buffer size */
 };
 
 /**
