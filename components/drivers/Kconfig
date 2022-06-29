@@ -653,6 +653,40 @@ menuconfig RT_USING_WIFI
         endif
     endif
 
+menuconfig RT_USING_VIRTIO
+    bool "Using VirtIO device drivers"
+    default n
+
+    if RT_USING_VIRTIO
+        choice
+            prompt "VirtIO Version"
+            default RT_USING_VIRTIO10
+
+            config RT_USING_VIRTIO10
+                bool "VirtIO v1.0"
+        endchoice
+
+        config RT_USING_VIRTIO_QUEUE_MAX_NR
+        int "Number of queues for VirtIO devices"
+        default 4
+
+        config RT_USING_VIRTIO_BLK
+            bool "Using VirtIO BLK"
+            default y
+
+        config RT_USING_VIRTIO_NET
+            bool "Using VirtIO NET"
+            default y
+
+        config RT_USING_VIRTIO_GPU
+            bool "Using VirtIO GPU"
+            default y
+
+        config RT_USING_VIRTIO_INPUT
+            bool "Using VirtIO Input"
+            default y
+    endif
+
 menu "Using USB"
     config RT_USING_USB_HOST
         bool "Using USB host"

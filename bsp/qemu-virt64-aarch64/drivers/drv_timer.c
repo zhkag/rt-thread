@@ -14,6 +14,8 @@
 #include "cp15.h"
 #include "board.h"
 
+#define TIMER_IRQ   30
+
 static rt_uint64_t timerStep = 0;
 
 int rt_hw_get_gtimer_frq(void);
