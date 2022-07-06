@@ -1113,24 +1113,31 @@ rt_err_t sys_mutex_release(rt_mutex_t mutex)
 
 #ifdef RT_USING_USERSPACE
 /* memory allocation */
-extern rt_base_t lwp_brk(void *addr);
 rt_base_t sys_brk(void *addr)
 {
     return lwp_brk(addr);
 }
 
-extern void *lwp_mmap2(void *addr, size_t length, int prot,
-        int flags, int fd, off_t pgoffset);
 void *sys_mmap2(void *addr, size_t length, int prot,
         int flags, int fd, off_t pgoffset)
 {
     return lwp_mmap2(addr, length, prot, flags, fd, pgoffset);
 }
 
-extern int lwp_munmap(void *addr);
 int sys_munmap(void *addr, size_t length)
 {
     return lwp_munmap(addr);
+}
+
+void *sys_mremap(void *old_address, size_t old_size,
+             size_t new_size, int flags, void *new_address)
+{
+    return (void *)-1;
+}
+
+int sys_madvise(void *addr, size_t len, int behav)
+{
+    return -ENOSYS;
 }
 #endif
 
@@ -2404,8 +2411,6 @@ rt_err_t sys_channel_recv_timeout(int fd, rt_channel_msg_t data, rt_int32_t time
 {
     return lwp_channel_recv_timeout(FDT_TYPE_LWP, fd, data, time);
 }
-
-/*****/
 
 static struct rt_semaphore critical_lock;
 
@@ -3985,20 +3990,6 @@ int sys_getrandom(void *buf, size_t buflen, unsigned int flags)
 #endif
     return ret;
 }
-
-#ifdef RT_USING_USERSPACE
-/* memory allocation */
-void *sys_mremap(void *old_address, size_t old_size,
-             size_t new_size, int flags, void *new_address)
-{
-    return (void *)-1;
-}
-
-int sys_madvise(void *addr, size_t len, int behav)
-{
-    return -ENOSYS;
-}
-#endif
 
 int sys_setaffinity(pid_t pid, size_t size, void *set)
 {
