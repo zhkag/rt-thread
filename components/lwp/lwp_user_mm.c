@@ -353,14 +353,13 @@ void* lwp_mmap2(void *addr, size_t length, int prot,
         int flags, int fd, off_t pgoffset)
 {
     void *ret = (void *)-1;
-    struct rt_lwp *lwp = RT_NULL;
 
     if (fd == -1)
     {
-        lwp = rt_thread_self()->lwp;
         rt_mm_lock();
-        ret = lwp_map_user(lwp, addr, length, 0);
+        ret = lwp_map_user(lwp_self(), addr, length, 0);
         rt_mm_unlock();
+
         if (ret)
         {
             if ((flags & MAP_ANONYMOUS) != 0)
@@ -373,18 +372,40 @@ void* lwp_mmap2(void *addr, size_t length, int prot,
             ret = (void *)-1;
         }
     }
+    else
+    {
+        struct dfs_fd *d;
+
+        d = fd_get(fd);
+        if (d && d->fnode->type == FT_DEVICE)
+        {
+            struct dfs_mmap2_args mmap2;
+        
+            mmap2.addr = addr;
+            mmap2.length = length;
+            mmap2.prot = prot;
+            mmap2.flags = flags;
+            mmap2.pgoffset = pgoffset;
+            mmap2.ret = (void*) -1;
+
+            if (dfs_file_mmap2(d, &mmap2) == 0)
+            {
+                ret = mmap2.ret;
+            }
+        }
+    }
+
     return ret;
 }
 
 int lwp_munmap(void *addr)
 {
     int ret = 0;
-    struct rt_lwp *lwp = RT_NULL;
 
     rt_mm_lock();
-    lwp = rt_thread_self()->lwp;
-    ret = lwp_unmap_user(lwp, addr);
+    ret = lwp_unmap_user(lwp_self(), addr);
     rt_mm_unlock();
+
     return ret;
 }
 
