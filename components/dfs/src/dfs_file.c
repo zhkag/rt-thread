@@ -723,6 +723,30 @@ int dfs_file_ftruncate(struct dfs_fd *fd, off_t length)
     return result;
 }
 
+int dfs_file_mmap2(struct dfs_fd *fd, struct dfs_mmap2_args *mmap2)
+{
+    int ret = 0;
+
+    if (fd && mmap2)
+    {
+        if (fd->fnode->type != FT_DEVICE || !fd->fnode->fops->ioctl)
+        {
+            rt_set_errno(EINVAL);
+        }
+        else if (fd->fnode->type == FT_DEVICE && fd->fnode->fops->ioctl)
+        {
+            ret = fd->fnode->fops->ioctl(fd, RT_FIOMMAP2, mmap2);
+            if (ret != 0)
+            {
+                ret = ret > 0? ret : -ret;
+                rt_set_errno(ret);
+            }
+        }
+    }
+
+    return ret;
+}
+
 #ifdef RT_USING_FINSH
 #include <finsh.h>
 

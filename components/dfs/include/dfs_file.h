@@ -64,6 +64,17 @@ struct dfs_fd
     void *data;                  /* Specific fd data */
 };
 
+struct dfs_mmap2_args
+{
+    void *addr;
+    size_t length;
+    int prot;
+    int flags;
+    off_t pgoffset;
+
+    void *ret;
+};
+
 void dfs_fnode_mgr_init(void);
 int dfs_file_is_open(const char *pathname);
 int dfs_file_open(struct dfs_fd *fd, const char *path, int flags);
@@ -79,10 +90,12 @@ int dfs_file_lseek(struct dfs_fd *fd, off_t offset);
 int dfs_file_stat(const char *path, struct stat *buf);
 int dfs_file_rename(const char *oldpath, const char *newpath);
 int dfs_file_ftruncate(struct dfs_fd *fd, off_t length);
+int dfs_file_mmap2(struct dfs_fd *fd, struct dfs_mmap2_args *mmap2);
 
 /* 0x5254 is just a magic number to make these relatively unique ("RT") */
 #define RT_FIOFTRUNCATE  0x52540000U
 #define RT_FIOGETADDR    0x52540001U
+#define RT_FIOMMAP2      0x52540002U
 
 #ifdef __cplusplus
 }
