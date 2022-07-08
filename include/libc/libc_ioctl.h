@@ -11,6 +11,16 @@
 #ifndef LIBC_IOCTL_H__
 #define LIBC_IOCTL_H__
 
+#if defined(RT_USING_MUSL)
+#include <sys/ioctl.h>
+#ifndef FIONWRITE
+#define FIONWRITE       _IOR('f', 121, int)
+#endif
+#ifdef SIOCATMARK
+#undef SIOCATMARK
+#endif
+
+#else
 #define _IOC(a,b,c,d) ( ((a)<<30) | ((b)<<8) | (c) | ((d)<<16) )
 #define _IOC_NONE  0U
 #define _IOC_WRITE 1U
@@ -228,3 +238,4 @@ struct winsize {
 
 #endif
 
+#endif
