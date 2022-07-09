@@ -16,10 +16,6 @@
 
 #include <virtio_net.h>
 
-#if RT_USING_VIRTIO_QUEUE_MAX_NR < 2
-#error "VirtIO BLK uses at least 2 virtio queues"
-#endif
-
 static rt_err_t virtio_net_tx(rt_device_t dev, struct pbuf *p)
 {
     rt_uint16_t id;
@@ -275,6 +271,11 @@ rt_err_t rt_virtio_net_init(rt_ubase_t *mmio_base, rt_uint32_t irq)
 
     virtio_status_driver_ok(virtio_dev);
 
+    if (virtio_queues_alloc(virtio_dev, 2) != RT_EOK)
+    {
+        goto _alloc_fail;
+    }
+
     if (virtio_queue_init(virtio_dev, VIRTIO_NET_QUEUE_RX, VIRTIO_NET_RTX_QUEUE_SIZE) != RT_EOK)
     {
         goto _alloc_fail;
@@ -316,6 +317,7 @@ _alloc_fail:
 
     if (virtio_net_dev != RT_NULL)
     {
+        virtio_queues_free(virtio_dev);
         rt_free(virtio_net_dev);
     }
     return -RT_ENOMEM;
