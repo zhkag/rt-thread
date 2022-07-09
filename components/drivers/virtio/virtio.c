@@ -54,6 +54,38 @@ void virtio_interrupt_ack(struct virtio_device *dev)
     }
 }
 
+rt_bool_t virtio_has_feature(struct virtio_device *dev, rt_uint32_t feature_bit)
+{
+    _virtio_dev_check(dev);
+
+    return !!(dev->mmio_config->device_features & (1UL << feature_bit));
+}
+
+rt_err_t virtio_queues_alloc(struct virtio_device *dev, rt_size_t queues_num)
+{
+    _virtio_dev_check(dev);
+
+    dev->queues = rt_malloc(sizeof(struct virtq) * queues_num);
+
+    if (dev->queues != RT_NULL)
+    {
+        dev->queues_num = queues_num;
+
+        return RT_EOK;
+    }
+
+    return -RT_ENOMEM;
+}
+
+void virtio_queues_free(struct virtio_device *dev)
+{
+    if (dev->queues != RT_NULL)
+    {
+        dev->queues_num = 0;
+        rt_free(dev->queues);
+    }
+}
+
 rt_err_t virtio_queue_init(struct virtio_device *dev, rt_uint32_t queue_index, rt_size_t ring_size)
 {
     int i;
@@ -173,7 +205,7 @@ rt_uint16_t virtio_alloc_desc(struct virtio_device *dev, rt_uint32_t queue_index
 
     _virtio_dev_check(dev);
 
-    RT_ASSERT(queue_index < RT_USING_VIRTIO_QUEUE_MAX_NR);
+    RT_ASSERT(queue_index < dev->queues_num);
 
     queue = &dev->queues[queue_index];
 
@@ -204,7 +236,7 @@ void virtio_free_desc(struct virtio_device *dev, rt_uint32_t queue_index, rt_uin
 
     queue = &dev->queues[queue_index];
 
-    RT_ASSERT(queue_index + 1 < RT_USING_VIRTIO_QUEUE_MAX_NR);
+    RT_ASSERT(queue_index < dev->queues_num);
     RT_ASSERT(!queue->free[desc_index]);
 
     queue->desc[desc_index].addr = 0;
