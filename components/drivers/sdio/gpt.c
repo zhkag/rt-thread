@@ -433,7 +433,6 @@ static int find_valid_gpt(struct rt_mmcsd_card *card, gpt_header **gpt,
     }
 
     lastlba = last_lba(card);
-    rt_kprintf("total_sectors:%d, lastlba:%d\n", total_sectors, lastlba);
     if (!force_gpt)
     {
         /* This will be added to the EFI Spec. per Intel after v1.02. */
