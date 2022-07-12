@@ -5,7 +5,7 @@
  */
 
 #include <rtthread.h>
-#ifdef PKG_USING_FDT
+#ifdef RT_USING_FDT
 #include <dtb_node.h>
 #endif
 #if defined(RT_USING_POSIX)
@@ -48,7 +48,7 @@ rt_err_t rt_driver_match_with_id(const rt_driver_t drv,int device_id)
 
 RTM_EXPORT(rt_driver_match_with_id);
 
-#ifdef PKG_USING_FDT
+#ifdef RT_USING_FDT
 /**
  * This function driver device match with dtb_node
  *
@@ -63,8 +63,8 @@ rt_err_t rt_driver_match_with_dtb(const rt_driver_t drv,void *from_node,int max_
     struct dtb_node** node_list; 
     rt_device_t device;
     int ret,i;
-    int active_dev_num = 0;
-    if ((!drv)||(!drv->dev_match)||(!drv->dev_match->compatible)||(!from_node))
+    int total_dev_num = 0;
+    if ((!drv)||(!drv->dev_match)||(!drv->dev_match->compatible)||(!from_node)||(!drv->device_size)||(!drv->device_priv_data_size))
     {
         return -RT_EINVAL;
     }
@@ -75,29 +75,33 @@ rt_err_t rt_driver_match_with_dtb(const rt_driver_t drv,void *from_node,int max_
         return -RT_ERROR;
     }
 
-    ret = dtb_node_find_all_active_compatible_node(from_node,drv->dev_match->compatible,node_list,max_dev_num,&active_dev_num);
-    if((ret != 0) || (!active_dev_num))
+    ret = dtb_node_find_all_compatible_node(from_node,drv->dev_match->compatible,node_list,max_dev_num,&total_dev_num);
+    if((ret != 0) || (!total_dev_num))
     {
         return -RT_ERROR;
     }
     
-    for(i = 0; i < active_dev_num; i ++)
+    for(i = 0; i < total_dev_num; i ++)
     {
+        if (!dtb_node_device_is_available(node_list[i]))
+        {
+            continue;
+        }
         device = rt_device_create_since_driver(drv,i);
         if(!device)
         {
-            return -RT_ERROR;
+            continue;
         }
     
         ret = rt_device_bind_driver(device,drv,node_list[i]);
         if(ret != 0)
         {
-            return -RT_ERROR;
+            continue;
         }
         ret = rt_device_probe_and_init(device);
         if(ret != 0)
         {
-            return -RT_ERROR;
+            continue;
         }
     }
     rt_free(node_list);
