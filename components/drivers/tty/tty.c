@@ -54,7 +54,7 @@ rt_inline int tty_sigismember(lwp_sigset_t *set, int _sig)
 
 static int is_ignored(int sig)
 {
-    return (tty_sigismember(&current->signal, sig) ||
+    return (tty_sigismember(&current->signal_mask, sig) ||
         current->signal_handler[sig-1] == SIG_IGN);
 }
 
@@ -92,7 +92,7 @@ int __tty_check_change(struct tty_struct *tty, int sig)
     pgrp = current->__pgrp;
     tty_pgrp = tty->pgrp;
 
-    if (tty_pgrp && pgrp != tty->pgrp)
+    if (tty_pgrp && (pgrp != tty->pgrp))
     {
         if (is_ignored(sig))
         {
