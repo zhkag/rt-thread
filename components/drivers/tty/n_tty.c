@@ -49,6 +49,20 @@
 #define ECHO_BLOCK      256
 #define ECHO_DISCARD_WATERMARK  RT_TTY_BUF - (ECHO_BLOCK + 32)
 
+rt_inline void tty_sigaddset(lwp_sigset_t *set, int _sig)
+{
+    unsigned long sig = _sig - 1;
+
+    if (_LWP_NSIG_WORDS == 1)
+    {
+        set->sig[0] |= 1UL << sig;
+    }
+    else
+    {
+        set->sig[sig / _LWP_NSIG_BPW] |= 1UL << (sig % _LWP_NSIG_BPW);
+    }
+}
+
 struct n_tty_data
 {
     /* producer-published */
@@ -530,6 +544,7 @@ static void __isig(int sig, struct tty_struct *tty)
                     ld->ops->set_termios(tty, &old_termios);
                 }
             }
+            tty_sigaddset(&lwp->signal_mask, SIGTTOU);
             tty->foreground = RT_NULL;  
         }
         else
