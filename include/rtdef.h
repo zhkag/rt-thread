@@ -1102,7 +1102,7 @@ struct rt_device
 {
     struct rt_object          parent;                   /**< inherit from rt_object */
 #ifdef RT_USING_DM    
-    const struct rt_driver    *drv;
+    struct rt_driver    *drv;
     void *dtb_node; 
 #endif    
     enum rt_device_class_type type;                     /**< device type */
@@ -1147,11 +1147,18 @@ struct rt_driver
 {
 #ifdef RT_USING_DEVICE_OPS    
     const struct rt_device_ops *dev_ops;
+#else
+    /* common device interface */
+    rt_err_t  (*init)   (rt_device_t dev);
+    rt_err_t  (*open)   (rt_device_t dev, rt_uint16_t oflag);
+    rt_err_t  (*close)  (rt_device_t dev);
+    rt_size_t (*read)   (rt_device_t dev, rt_off_t pos, void *buffer, rt_size_t size);
+    rt_size_t (*write)  (rt_device_t dev, rt_off_t pos, const void *buffer, rt_size_t size);
+    rt_err_t  (*control)(rt_device_t dev, int cmd, void *args);    
 #endif
     const struct filesystem_ops *fops;
     const char *name;
     enum rt_device_class_type dev_type;
-    int device_priv_data_size;
     int device_size;
     int flag;
     const struct rt_device_id *dev_match;
@@ -1159,6 +1166,7 @@ struct rt_driver
     int (*probe_init)(struct rt_device *dev);
     int (*remove)(struct rt_device *dev);
     const void *ops;    /* driver-specific operations */
+    void *drvpriv_data;
 };
 typedef struct rt_driver *rt_driver_t;
 
