@@ -34,7 +34,7 @@
 
 - 返回 bsp 目录 `cd ..`
 
-- 设置环境变量 `./smart-env.sh`
+- 设置环境变量 `source smart-env.sh riscv64`
 
 ### 编译环境验证
 
