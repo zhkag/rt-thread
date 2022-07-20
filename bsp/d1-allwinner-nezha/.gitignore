@@ -1,6 +1,7 @@
 __pycache__/
 rtthread.bin
 rtthread.elf
+rtthread.img
 *.map
 build/
 .sconsign.dblite
