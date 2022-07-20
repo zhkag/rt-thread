@@ -525,16 +525,6 @@ rt_device_t rt_device_create_since_driver(rt_driver_t drv,int device_id)
     {
         return RT_NULL;
     }
-    if(drv->device_priv_data_size != 0)
-    {
-        device->user_data = (void *)(rt_calloc(1,drv->device_priv_data_size));
-        if(device->user_data == RT_NULL)
-        {
-            rt_free(device);
-            return RT_NULL;
-        }   
-    }
-
     device->device_id = device_id;
     rt_snprintf(device->parent.name, sizeof(device->parent.name), "%s%d", drv->name, device_id);
     return device;

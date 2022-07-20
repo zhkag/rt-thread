@@ -64,7 +64,7 @@ rt_err_t rt_driver_match_with_dtb(const rt_driver_t drv,void *from_node,int max_
     rt_device_t device;
     int ret,i;
     int total_dev_num = 0;
-    if ((!drv)||(!drv->dev_match)||(!drv->dev_match->compatible)||(!from_node)||(!drv->device_size)||(!drv->device_priv_data_size))
+    if ((!drv)||(!drv->dev_match)||(!drv->dev_match->compatible)||(!from_node)||(!drv->device_size))
     {
         return -RT_EINVAL;
     }
