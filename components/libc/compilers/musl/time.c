@@ -12,7 +12,8 @@
 #ifdef RT_USING_DEVICE
 int gettimeofday(struct timeval *tp, void *ignore)
 {
-    time_t time;
+    time_t time = 0;
+#ifdef RT_USING_RTC
     rt_device_t device;
 
     device = rt_device_find("rtc");
@@ -24,7 +25,7 @@ int gettimeofday(struct timeval *tp, void *ignore)
         tp->tv_sec = time;
         tp->tv_usec = 0;
     }
-
+#endif
     return time;
 }
 #endif

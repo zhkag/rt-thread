@@ -97,6 +97,10 @@
 #define RT_SERIAL_RB_BUFSZ 64
 #define RT_USING_TTY
 #define RT_USING_PIN
+#define RT_USING_NULL
+#define RT_USING_ZERO
+#define RT_USING_RANDOM
+#define RT_USING_RTC
 
 /* Using USB */
 
@@ -156,6 +160,11 @@
 
 /* language packages */
 
+/* JSON: JavaScript Object Notation, a lightweight data-interchange format */
+
+
+/* XML: Extensible Markup Language */
+
 
 /* multimedia packages */
 
@@ -192,6 +201,8 @@
 
 
 /* miscellaneous packages */
+
+/* project laboratory */
 
 /* samples: kernel and components samples */
 

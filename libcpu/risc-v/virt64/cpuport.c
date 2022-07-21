@@ -114,3 +114,9 @@ void rt_hw_cpu_shutdown()
         RT_ASSERT(0);
     }
 }
+
+void set_process_id(int pid)
+{
+    //TODO
+}
+

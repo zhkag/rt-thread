@@ -54,4 +54,7 @@ void rt_hw_mmu_unmap(rt_mmu_info *mmu_info,void *v_addr,rt_size_t size);
 void *_rt_hw_mmu_v2p(rt_mmu_info *mmu_info,void *v_addr);
 void *rt_hw_mmu_v2p(rt_mmu_info *mmu_info,void *v_addr);
 
+void rt_mm_lock(void);
+void rt_mm_unlock(void);
+
 #endif
