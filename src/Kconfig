@@ -71,7 +71,7 @@ config RT_TICK_PER_SECOND
     range 10 1000
     default 100
     help
-        System's tick frequency, Hz.
+        Tick frequency, Hz of system.
 
 config RT_USING_OVERFLOW_CHECK
     bool "Using stack overflow checking"
@@ -319,6 +319,21 @@ menu "Kernel Device Object"
         bool "Using ops for each device object"
         default n
 
+    config RT_USING_DM
+        bool "Enable device driver model with device tree"
+        default n
+        help
+            Enable device driver model with device tree (FDT). It will use more memory
+            to parse and support device tree feature.
+
+    config RT_USING_DM_FDT
+        bool "Enablie builtin libfdt"
+        depends on RT_USING_DM
+        default y
+        help
+            libfdt - Flat Device Tree manipulation. If your code already contains the
+            libfdt, you can cancel this built-in libfdt to avoid link issue.
+
     config RT_USING_INTERRUPT_INFO
         bool "Enable additional interrupt trace information"
         default n
@@ -347,8 +362,4 @@ config RT_VER_NUM
     help
         RT-Thread version number
 
-config RT_USING_DM
-    bool "Enable rt device driver model"
-    default n
- 
 endmenu

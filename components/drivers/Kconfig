@@ -167,6 +167,19 @@ config RT_USING_PM
     bool "Using Power Management device drivers"
     default n
 
+config RT_USING_FDT
+    bool "Using fdt interface for device drivers"
+    default n
+    if RT_USING_FDT
+        config RT_USING_FDTLIB
+            bool "Using fdt lib for device drivers"
+            default y
+        config FDT_USING_DEBUG
+            bool "Using fdt debug function "
+            default n
+            
+    endif
+    
 config RT_USING_RTC
     bool "Using RTC device drivers"
     default n
@@ -666,10 +679,6 @@ menuconfig RT_USING_VIRTIO
                 bool "VirtIO v1.0"
         endchoice
 
-        config RT_USING_VIRTIO_QUEUE_MAX_NR
-        int "Number of queues for VirtIO devices"
-        default 4
-
         config RT_USING_VIRTIO_BLK
             bool "Using VirtIO BLK"
             default y
@@ -677,6 +686,16 @@ menuconfig RT_USING_VIRTIO
         config RT_USING_VIRTIO_NET
             bool "Using VirtIO NET"
             default y
+
+        menuconfig RT_USING_VIRTIO_CONSOLE
+            bool "Using VirtIO Console"
+            default y
+
+            if RT_USING_VIRTIO_CONSOLE
+                config RT_USING_VIRTIO_CONSOLE_PORT_MAX_NR
+                    int "Max number of port in VirtIO Console"
+                    default 4
+            endif
 
         config RT_USING_VIRTIO_GPU
             bool "Using VirtIO GPU"
