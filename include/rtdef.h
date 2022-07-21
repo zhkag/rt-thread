@@ -1043,14 +1043,6 @@ enum rt_device_class_type
 #define RT_DEVICE_CTRL_GET_INT          0x08            /**< get interrupt status */
 #define RT_DEVICE_CTRL_MASK             0x1f            /**< mask for contrl commands */
 
-#ifdef RT_USING_LWP
-#define RT_DEVICE_CTRL_IOREMAP          0x13            /**< user device ioremap */
-#define RT_DEVICE_CTRL_IOUNREMAP        0x14            /**< user device unioremap */
-#define RT_DEVICE_CTRL_SET_INT_HANDLER  0x15            /**< user device interrupt install */
-#define RT_DEVICE_CTRL_INT_UNMASK       0x16            /**< user device unmask interrupt */
-#define RT_DEVICE_CTRL_CREATE           0x17
-#endif
-
 /**
  * special device commands
  */
