@@ -129,6 +129,7 @@ int lwp_unmap_user(struct rt_lwp *lwp, void *va)
     int pa_need_free = 0;
 
     rt_mm_lock();
+    va = (void *)((size_t)va & ~ARCH_PAGE_MASK);
     ma_avl_node = lwp_map_find(lwp->map_area, (size_t)va);
     if (!ma_avl_node)
     {
