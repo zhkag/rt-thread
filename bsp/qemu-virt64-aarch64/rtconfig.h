@@ -299,6 +299,6 @@
 #define BSP_USING_VIRTIO_GPU
 #define BSP_USING_VIRTIO_INPUT
 #define BSP_USING_GIC
-#define BSP_USING_GIC390
+#define BSP_USING_GICV2
 
 #endif

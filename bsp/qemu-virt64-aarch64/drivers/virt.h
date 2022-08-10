@@ -60,15 +60,39 @@ extern rt_mmu_info mmu_info;
 #define GIC_PL390_HYPERVISOR_BASE       0x08030000
 #define GIC_PL390_VIRTUAL_CPU_BASE      0x08040000
 
+/* GICv3 */
+#define GIC_PL500_DISTRIBUTOR_PPTR      GIC_PL390_DISTRIBUTOR_PPTR
+#define GIC_PL500_REDISTRIBUTOR_PPTR    0x080a0000
+#define GIC_PL500_CONTROLLER_PPTR       GIC_PL390_CONTROLLER_PPTR
+#define GIC_PL500_ITS_PPTR              0x08080000
+
 /* the basic constants and interfaces needed by gic */
 rt_inline rt_ubase_t platform_get_gic_dist_base(void)
 {
+#ifdef BSP_USING_GICV2
     return GIC_PL390_DISTRIBUTOR_PPTR;
+#else
+    return GIC_PL500_DISTRIBUTOR_PPTR;
+#endif
+}
+
+rt_inline rt_ubase_t platform_get_gic_redist_base(void)
+{
+    return GIC_PL500_REDISTRIBUTOR_PPTR;
 }
 
 rt_inline rt_ubase_t platform_get_gic_cpu_base(void)
 {
+#ifdef BSP_USING_GICV2
     return GIC_PL390_CONTROLLER_PPTR;
+#else
+    return GIC_PL500_CONTROLLER_PPTR;
+#endif
+}
+
+rt_inline rt_ubase_t platform_get_gic_its_base(void)
+{
+    return GIC_PL500_ITS_PPTR;
 }
 
 #endif

@@ -14,6 +14,8 @@
 #include <rthw.h>
 #include <rtthread.h>
 
+#if defined(BSP_USING_GIC) && defined(BSP_USING_GICV2)
+
 #include "gic.h"
 #include "cp15.h"
 
@@ -514,3 +516,4 @@ long gic_dump(void)
 }
 MSH_CMD_EXPORT(gic_dump, show gic status);
 
+#endif /* defined(BSP_USING_GIC) && defined(BSP_USING_GICV2) */
