@@ -10,6 +10,10 @@
 
 #include <rtthread.h>
 
+#ifdef RT_USING_POSIX
+#include <console.h>
+#endif
+
 #include <virtio_console.h>
 
 static int console_init()
@@ -31,3 +35,47 @@ static int console_init()
     return status;
 }
 INIT_ENV_EXPORT(console_init);
+
+#ifdef FINSH_USING_MSH
+
+static int console(int argc, char **argv)
+{
+    rt_err_t result = RT_EOK;
+
+    if (argc > 1)
+    {
+        if (!rt_strcmp(argv[1], "set"))
+        {
+            rt_kprintf("console change to %s\n", argv[2]);
+            rt_console_set_device(argv[2]);
+
+        #ifdef RT_USING_POSIX
+            {
+                rt_device_t dev = rt_device_find(argv[2]);
+
+                if (dev != RT_NULL)
+                {
+                    console_set_iodev(dev);
+                }
+            }
+        #else
+            finsh_set_device(argv[2]);
+        #endif /* RT_USING_POSIX */
+        }
+        else
+        {
+            rt_kprintf("Unknown command. Please enter 'console' for help\n");
+            result = -RT_ERROR;
+        }
+    }
+    else
+    {
+        rt_kprintf("Usage: \n");
+        rt_kprintf("console set <name>   - change console by name\n");
+        result = -RT_ERROR;
+    }
+    return result;
+}
+MSH_CMD_EXPORT(console, set console name);
+
+#endif /* FINSH_USING_MSH */

@@ -34,6 +34,8 @@ struct port_device
     struct rt_spinlock spinlock_rx, spinlock_tx;
 #endif
 
+    struct rt_device_notify rx_notify_helper;
+
     struct
     {
         char rx_char, tx_char;
@@ -234,12 +236,6 @@ static rt_err_t virtio_console_port_open(rt_device_t dev, rt_uint16_t oflag)
 {
     struct port_device *port_dev = (struct port_device *)dev;
 
-    /* Can't use by others, just support only one */
-    if (port_dev->parent.ref_count > 1)
-    {
-        return -RT_EBUSY;
-    }
-
     if (port_dev->port_id == 0 && virtio_has_feature(&port_dev->console->virtio_dev, VIRTIO_CONSOLE_F_MULTIPORT))
     {
         /* Port0 is reserve in multiport */
@@ -383,6 +379,14 @@ static rt_err_t virtio_console_port_control(rt_device_t dev, int cmd, void *args
 
     switch (cmd)
     {
+    case RT_DEVICE_CTRL_NOTIFY_SET:
+        if (args == RT_NULL)
+        {
+            status = -RT_ERROR;
+            break;
+        }
+        rt_memcpy(&port_dev->rx_notify_helper, args, sizeof(port_dev->rx_notify_helper));
+        break;
     case RT_DEVICE_CTRL_CLR_INT:
         /* Disable RX */
         port_dev->rx_notify = RT_FALSE;
@@ -606,13 +610,22 @@ static void virtio_console_isr(int irqno, void *param)
             id = queue_rx->used->ring[queue_rx->used_idx % queue_rx->num].id;
             len = queue_rx->used->ring[queue_rx->used_idx % queue_rx->num].len;
 
-            if (port_dev->parent.rx_indicate != RT_NULL && port_dev->rx_notify)
+            if (port_dev->rx_notify)
             {
             #ifdef RT_USING_SMP
                 rt_spin_unlock_irqrestore(&port_dev->spinlock_rx, level);
             #endif
-                /* rx_indicate call virtio_console_port_read to inc used_idx */
-                port_dev->parent.rx_indicate(&port_dev->parent, len);
+                /* Will call virtio_console_port_read to inc used_idx */
+
+                if (port_dev->parent.rx_indicate != RT_NULL)
+                {
+                    port_dev->parent.rx_indicate(&port_dev->parent, len);
+                }
+
+                if (port_dev->rx_notify_helper.notify != RT_NULL)
+                {
+                    port_dev->rx_notify_helper.notify(port_dev->rx_notify_helper.dev);
+                }
 
             #ifdef RT_USING_SMP
                 level = rt_spin_lock_irqsave(&port_dev->spinlock_rx);
