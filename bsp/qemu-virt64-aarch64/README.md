@@ -33,7 +33,7 @@ RAM starts at 0x4000_0000
 
 ## 3. 执行
 
-当要执行编译好的RT-Thread时，在这个bsp目录下已经提供了运行脚本文件：qemu.bat/qemu.sh
+当要执行编译好的RT-Thread时，在这个bsp目录下已经提供了运行脚本文件：qemu.bat/qemu.sh，工程可配置为使用`Cortex-A53/A57/A72`等芯片，GIC支持`V2/V3`版本，其中`V2`最多可配置8个处理器。
 
 这个执行脚本默认把串口输出到stdio（即控制台）上，所以直接执行脚本后就可以输出结果了。
 
@@ -49,6 +49,15 @@ msh />
 如果需要使用VirtIO-Console，请在新终端使用以下命令连接控制台：
 ```
 telnet 127.0.0.1 4321
+```
+
+如果使用tap网卡模式，以设备tap0为例，将qemu运行脚本
+```
+-netdev user,id=net0
+```
+修改为
+```
+-netdev tap,id=net0,ifname=tap0
 ```
 
 ## 4. 支持情况

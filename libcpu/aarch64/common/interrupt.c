@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2018, RT-Thread Development Team
+ * Copyright (c) 2006-2022, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -13,6 +13,7 @@
 #include <rtthread.h>
 #include "interrupt.h"
 #include "gic.h"
+#include "gicv3.h"
 
 /* exception and interrupt handler table */
 struct rt_irq_desc isr_table[MAX_HANDLERS];
@@ -22,6 +23,10 @@ struct rt_irq_desc isr_table[MAX_HANDLERS];
 rt_ubase_t rt_interrupt_from_thread        = 0;
 rt_ubase_t rt_interrupt_to_thread          = 0;
 rt_ubase_t rt_thread_switch_interrupt_flag = 0;
+#endif
+
+#ifndef RT_CPUS_NR
+#define RT_CPUS_NR 1
 #endif
 
 const unsigned int VECTOR_BASE = 0x00;
@@ -85,6 +90,9 @@ void rt_hw_interrupt_init(void)
 #else
     rt_uint64_t gic_cpu_base;
     rt_uint64_t gic_dist_base;
+#ifdef BSP_USING_GICV3
+    rt_uint64_t gic_rdist_base;
+#endif
     rt_uint64_t gic_irq_start;
 
     /* initialize vector table */
@@ -97,15 +105,23 @@ void rt_hw_interrupt_init(void)
 #ifdef RT_USING_USERSPACE
     gic_dist_base = (rt_uint64_t)rt_hw_mmu_map(&mmu_info, 0, (void*)platform_get_gic_dist_base(), 0x2000, MMU_MAP_K_DEVICE);
     gic_cpu_base = (rt_uint64_t)rt_hw_mmu_map(&mmu_info, 0, (void*)platform_get_gic_cpu_base(), 0x1000, MMU_MAP_K_DEVICE);
+#ifdef BSP_USING_GICV3
+    gic_rdist_base = (rt_uint64_t)rt_hw_mmu_map(&mmu_info, 0, (void*)platform_get_gic_redist_base(),
+            RT_CPUS_NR * (2 << 16), MMU_MAP_K_DEVICE);
+#endif
 #else
     gic_dist_base = platform_get_gic_dist_base();
     gic_cpu_base = platform_get_gic_cpu_base();
+    gic_rdist_base = platform_get_gic_redist_base();
 #endif
 
     gic_irq_start = GIC_IRQ_START;
 
     arm_gic_dist_init(0, gic_dist_base, gic_irq_start);
     arm_gic_cpu_init(0, gic_cpu_base);
+#ifdef BSP_USING_GICV3
+    arm_gic_redist_init(0, gic_rdist_base);
+#endif
 #endif
 }
 
@@ -359,7 +375,11 @@ rt_isr_handler_t rt_hw_interrupt_install(int vector, rt_isr_handler_t handler,
 #ifdef RT_USING_SMP
 void rt_hw_ipi_send(int ipi_vector, unsigned int cpu_mask)
 {
+#ifdef BSP_USING_GICV2
     arm_gic_send_sgi(0, ipi_vector, cpu_mask, 0);
+#elif defined(BSP_USING_GICV3)
+    arm_gic_send_affinity_sgi(0, ipi_vector, (unsigned int *)&cpu_mask, GICV3_ROUTED_TO_SPEC);
+#endif
 }
 
 void rt_hw_ipi_handler_install(int ipi_vector, rt_isr_handler_t ipi_isr_handler)
@@ -368,4 +388,3 @@ void rt_hw_ipi_handler_install(int ipi_vector, rt_isr_handler_t ipi_isr_handler)
     rt_hw_interrupt_install(ipi_vector, ipi_isr_handler, 0, "IPI_HANDLER");
 }
 #endif
-

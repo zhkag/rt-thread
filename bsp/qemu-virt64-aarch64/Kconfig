@@ -28,7 +28,6 @@ config SOC_VIRT64_AARCH64
     select RT_USING_USER_MAIN
     select RT_USING_GIC
     select BSP_USING_GIC
-    select BSP_USING_GIC390
     select ARCH_MM_MMU
     default y
 
