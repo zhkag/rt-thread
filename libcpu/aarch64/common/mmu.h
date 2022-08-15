@@ -135,4 +135,6 @@ void *rt_hw_mmu_v2p(rt_mmu_info *mmu_info, void* v_addr);
 void rt_mm_lock(void);
 void rt_mm_unlock(void);
 
+void kernel_mmu_switch(unsigned long tbl);
+
 #endif
