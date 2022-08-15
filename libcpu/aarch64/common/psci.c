@@ -70,10 +70,15 @@ static int _psci_init_with_version(int major, int minor);
 
 static struct dtb_node *psci_node;
 
+static int psci_ver_major;
+static int psci_ver_minor;
+
 /**
- * init psci operations.
+ * @brief init psci operations.
  * using device tree to probe version and psci-method,
  * setup psci ops for future use
+ *
+ * @return int 0 on success
  */
 int psci_init()
 {
@@ -85,7 +90,7 @@ int psci_init()
     }
     char *compatible = dtb_node_get_dtb_node_property_value(psci_node, "compatible", NULL);
     char *method = dtb_node_get_dtb_node_property_value(psci_node, "method", NULL);
-    int ver_major, ver_minor;
+    
     int retval = 0;
 
     // setup psci-method
@@ -103,12 +108,12 @@ int psci_init()
         return -1;
     }
 
-    retval = _psci_probe_version(compatible, &ver_major, &ver_minor);
+    retval = _psci_probe_version(compatible, &psci_ver_major, &psci_ver_minor);
     if (retval != 0)
         return retval;
 
     // init psci_ops with specified psci version
-    retval = _psci_init_with_version(ver_major, ver_minor);
+    retval = _psci_init_with_version(psci_ver_major, psci_ver_minor);
 
     return retval;
 }
@@ -168,7 +173,7 @@ static rt_uint32_t psci_0_2_get_version(void)
 static void psci_0_2_set_basic_ops()
 {
     psci_ops = (struct psci_operations){
-        .get_version = psci_0_2_get_version,
+        .get_version = psci_0_2_get_version, 
 
         // followings API are v0.1 compatible
         .cpu_suspend = psci_0_2_cpu_suspend,
