@@ -104,7 +104,7 @@ static int _cpus_init_data_hardcoded(int num_cpus, rt_uint64_t *cpu_hw_ids, stru
 
     for (int i = 0; i < num_cpus; i++)
     {
-        rt_cpu_mpidr_early[i] = cpu_hw_ids[i];
+        set_hwid(i, cpu_hw_ids[i]);
         cpu_ops_tbl[i] = cpu_ops[i];
     }
     return 0;
@@ -145,7 +145,7 @@ static int _read_and_set_hwid(struct dtb_node *cpu, int *id_pool, int *pcpuid)
 
     *pcpuid = *id_pool;
     *id_pool = *id_pool + 1;
-    rt_cpu_mpidr_early[*pcpuid] = mpid;
+    set_hwid(*pcpuid, mpid);
 
     LOG_I("Using MPID 0x%lx as cpu %d", mpid, *pcpuid);
 
@@ -198,6 +198,13 @@ static int _cpus_init_data_fdt()
         if (!_node_is_cpu(cpus))
         {
             continue;
+        }
+
+        if (id_pool > RT_CPUS_NR)
+        {
+            LOG_W("Reading more cpus from FDT than RT_CPUS_NR"
+                "\n  Parsing will not continue and only %d cpus will be used.", RT_CPUS_NR);
+            break;
         }
 
         _read_and_set_hwid(cpus, &id_pool, &cpuid);
@@ -261,7 +268,7 @@ static void _boot_secondary(void)
             retval = cpu_ops_tbl[i]->cpu_boot(i);
         if (retval)
         {
-            LOG_E("Failed to boot secondary CPU %d , error code %d", i, retval);
+            LOG_E("Failed to boot secondary CPU %d, error code %d", i, retval);
         } else {
             LOG_I("Secondary CPU %d booted", i);
         }

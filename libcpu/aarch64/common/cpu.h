@@ -29,8 +29,10 @@ struct cpu_ops_t {
 extern rt_uint64_t rt_cpu_mpidr_early[];
 extern struct dtb_node *_cpu_node[];
 
-#define cpuid_to_hwid(cpuid) ((cpuid >= 0) && (cpuid < RT_CPUS_NR) ? rt_cpu_mpidr_early[cpuid] : ID_ERROR)
-#define get_cpu_node(cpuid) ((cpuid >= 0) && (cpuid < RT_CPUS_NR) ? _cpu_node[cpuid] : 0)
+#define cpuid_to_hwid(cpuid) ((((cpuid) >= 0) && ((cpuid) < RT_CPUS_NR)) ? rt_cpu_mpidr_early[cpuid] : ID_ERROR)
+#define set_hwid(cpuid, hwid) ((((cpuid) >= 0) && ((cpuid) < RT_CPUS_NR)) ? (rt_cpu_mpidr_early[cpuid]=(hwid)) : ID_ERROR)
+#define get_cpu_node(cpuid) ((((cpuid) >= 0) && ((cpuid) < RT_CPUS_NR)) ? _cpu_node[cpuid] : NULL)
+#define set_cpu_node(cpuid, node) ((((cpuid) >= 0) && ((cpuid) < RT_CPUS_NR)) ? (_cpu_node[cpuid]=node) : NULL)
 
 extern void rt_hw_cpu_shutdown(void);
 
