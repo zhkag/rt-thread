@@ -221,7 +221,7 @@ static int _psci_probe_version(char *version, int *major, int *minor)
         LOG_E("[%s] was not a proper PSCI version", version);
         retval = -1;
     }
-    LOG_I("Using PSCI v%d.%d", *major, *minor);
+    LOG_D("Using PSCI v%d.%d", *major, *minor);
     return retval;
 }
 

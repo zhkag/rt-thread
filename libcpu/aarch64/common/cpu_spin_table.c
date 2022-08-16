@@ -31,7 +31,7 @@ static int spin_table_cpu_init(rt_uint32_t cpuid)
     rt_uint64_t *phead = (rt_uint64_t*)dtb_node_get_dtb_node_property_value(cpu, "cpu-release-addr", &size);
     cpu_release_addr[cpuid] = fdt64_to_cpu(*phead);
 
-    LOG_I("Using release address 0x%p for CPU %d", cpu_release_addr[cpuid], cpuid);
+    LOG_D("Using release address 0x%p for CPU %d", cpu_release_addr[cpuid], cpuid);
     return 0;
 }
 

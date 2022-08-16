@@ -180,7 +180,7 @@ static int _read_and_set_cpuops(struct dtb_node *cpu, int cpuid)
     }
     cpu_ops_tbl[cpuid] = cpu_ops;
 
-    LOG_I("Using boot method [%s] for cpu %d", cpu_ops->method, cpuid);
+    LOG_D("Using boot method [%s] for cpu %d", cpu_ops->method, cpuid);
     return 0;
 }
 
