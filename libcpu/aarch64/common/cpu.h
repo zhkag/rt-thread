@@ -45,6 +45,8 @@ extern int rt_hw_cpu_init();
 
 extern int rt_hw_cpu_boot_secondary(int num_cpus, rt_uint64_t *cpu_hw_ids, struct cpu_ops_t *cpu_ops[]);
 
+extern void rt_hw_secondary_cpu_idle_exec(void);
+
 extern struct cpu_ops_t cpu_ops_psci;
 
 extern struct cpu_ops_t cpu_ops_spin_tbl;

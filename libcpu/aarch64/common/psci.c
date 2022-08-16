@@ -124,7 +124,6 @@ static rt_uint32_t cpu_off_0_1;
 static rt_uint32_t cpu_on_0_1;
 static rt_uint32_t migrate_0_1;
 
-#ifdef RT_USING_FDT
 /* basic operations TEMPLATE for API since 0.1 version */
 COMMON_PSCI_OPS_TEMPLATE(0_1, cpu_suspend_0_1, cpu_off_0_1, cpu_on_0_1, migrate_0_1);
 
@@ -148,7 +147,6 @@ COMMON_PSCI_OPS_TEMPLATE(0_1, cpu_suspend_0_1, cpu_off_0_1, cpu_on_0_1, migrate_
 
 static int psci_0_1_init()
 {
-#ifdef RT_USING_FDT
     // reading function id from fdt
     rt_uint32_t *funcid;
     PROBE_AND_SET(cpu_suspend);
@@ -156,12 +154,7 @@ static int psci_0_1_init()
     PROBE_AND_SET(cpu_on);
     PROBE_AND_SET(migrate);
     return 0;
-#else
-    return -1;
-#endif
 }
-
-#endif /* RT_USING_FDT */
 
 COMMON_PSCI_OPS_TEMPLATE(0_2, PSCI_FN_NATIVE(0_2, CPU_SUSPEND), PSCI_0_2_FN_CPU_OFF, PSCI_FN_NATIVE(0_2, CPU_ON), PSCI_FN_NATIVE(0_2, MIGRATE));
 
