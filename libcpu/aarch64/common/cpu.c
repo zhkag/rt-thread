@@ -70,8 +70,6 @@ void rt_hw_spin_unlock(rt_hw_spinlock_t *lock)
 }
 
 #ifdef RT_CPUS_NR
-#define ID_ERROR __INT64_MAX__
-
 /**
  * cpu_ops_tbl contains cpu_ops_t for each cpu kernel observed,
  * given cpu logical id 'i', its cpu_ops_t is 'cpu_ops_tbl[i]'
@@ -106,7 +104,7 @@ static int _cpus_init_data_hardcoded(int num_cpus, rt_uint64_t *cpu_hw_ids, stru
 
     for (int i = 0; i < num_cpus; i++)
     {
-        cpuid_to_hwid(i) = cpu_hw_ids[i];
+        rt_cpu_mpidr_early[i] = cpu_hw_ids[i];
         cpu_ops_tbl[i] = cpu_ops[i];
     }
     return 0;
@@ -146,8 +144,13 @@ static int _read_and_set_hwid(struct dtb_node *cpu, int *id_pool, int *pcpuid)
     rt_uint64_t mpid = _read_be_number(id_start, address_cells);
 
     *pcpuid = *id_pool;
-    *id_pool = *pcpuid + 1;
+    *id_pool = *id_pool + 1;
     rt_cpu_mpidr_early[*pcpuid] = mpid;
+
+    LOG_I("Using MPID 0x%lx as cpu %d", mpid, *pcpuid);
+
+    // setting _cpu_node for cpu_init use
+    _cpu_node[*pcpuid] = cpu;
 
     return 0;
 }
@@ -176,6 +179,8 @@ static int _read_and_set_cpuops(struct dtb_node *cpu, int cpuid)
         LOG_E("Not supported cpu_ops: %s", method);
     }
     cpu_ops_tbl[cpuid] = cpu_ops;
+
+    LOG_I("Using boot method [%s] for cpu %d", cpu_ops->method, cpuid);
     return 0;
 }
 
@@ -224,7 +229,8 @@ static int _cpus_init(int num_cpus, rt_uint64_t *cpu_hw_ids, struct cpu_ops_t *c
         return retval;
 
     // using cpuid_to_hwid and cpu_ops_tbl to call method_init and cpu_init
-    for (int i = 0; i < RT_CPUS_NR; i++)
+    // assuming that cpuid 0 has already init
+    for (int i = 1; i < RT_CPUS_NR; i++)
     {
         if (cpuid_to_hwid(i) == ID_ERROR)
         {
@@ -232,14 +238,15 @@ static int _cpus_init(int num_cpus, rt_uint64_t *cpu_hw_ids, struct cpu_ops_t *c
             continue;
         }
 
-        if (cpu_ops_tbl[i]->cpu_init)
+        if (cpu_ops_tbl[i] && cpu_ops_tbl[i]->cpu_init)
         {
             retval = cpu_ops_tbl[i]->cpu_init(i);
             CHECK_RETVAL(retval);
         }
         else
         {
-            LOG_E("No cpu_init() supported in cpu %d", cpuid_to_hwid(i));
+            LOG_E("Failed to find cpu_init for cpu %d with cpu_ops[%p], cpu_ops->cpu_init[%p]"
+                , cpuid_to_hwid(i), cpu_ops_tbl[i], cpu_ops_tbl[i] ? cpu_ops_tbl[i]->cpu_init : NULL);
         }
     }
     return 0;

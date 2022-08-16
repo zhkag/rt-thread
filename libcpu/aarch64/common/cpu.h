@@ -20,9 +20,17 @@ struct cpu_ops_t {
 	void    (*cpu_shutdown)(void);
 };
 
-extern rt_uint64_t rt_cpu_mpidr_early[];
+/** 
+ * Identifier to mark a wrong CPU MPID.
+ * All elements in rt_cpu_mpidr_early[] should be initialized with this value 
+ */
+#define ID_ERROR __INT64_MAX__
 
-#define cpuid_to_hwid(cpuid) rt_cpu_mpidr_early[cpuid]
+extern rt_uint64_t rt_cpu_mpidr_early[];
+extern struct dtb_node *_cpu_node[];
+
+#define cpuid_to_hwid(cpuid) ((cpuid >= 0) && (cpuid < RT_CPUS_NR) ? rt_cpu_mpidr_early[cpuid] : ID_ERROR)
+#define get_cpu_node(cpuid) ((cpuid >= 0) && (cpuid < RT_CPUS_NR) ? _cpu_node[cpuid] : 0)
 
 extern void rt_hw_cpu_shutdown(void);
 
