@@ -18,7 +18,7 @@ struct cpu_ops_t
     const char *method;
     int     (*cpu_init)(rt_uint32_t id);
     int     (*cpu_boot)(rt_uint32_t id);
-	void    (*cpu_shutdown)(void);
+    void    (*cpu_shutdown)(void);
 };
 
 /**

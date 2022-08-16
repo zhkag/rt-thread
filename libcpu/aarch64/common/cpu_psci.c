@@ -20,7 +20,7 @@
 #include "psci_api.h"
 #include "entry_point.h"
 
-int (*_psci_init)(void) = psci_init;
+static int (*_psci_init)(void) = psci_init;
 
 static int __call_method_init()
 {
