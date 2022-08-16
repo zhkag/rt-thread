@@ -69,7 +69,6 @@ void rt_hw_spin_unlock(rt_hw_spinlock_t *lock)
         : "memory");
 }
 
-#ifdef RT_CPUS_NR
 /**
  * cpu_ops_tbl contains cpu_ops_t for each cpu kernel observed,
  * given cpu logical id 'i', its cpu_ops_t is 'cpu_ops_tbl[i]'
@@ -83,10 +82,6 @@ rt_uint64_t rt_cpu_mpidr_early[RT_CPUS_NR] RT_WEAK = {[0 ... RT_CPUS_NR - 1] = I
 #include "dtb_node.h"
 struct dtb_node *_cpu_node[RT_CPUS_NR];
 #endif /* RT_USING_FDT */
-
-#else // RT_CPUS_NR not define
-#error "RT_CPUS_NR not define"
-#endif /* RT_CPUS_NR */
 
 #define MPIDR_AFF_MASK 0x000000FF00FFFFFFul
 #define REPORT_ERR(retval) LOG_E("got error code %d in %s(), %s:%d", (retval), __func__, __FILE__, __LINE__)
