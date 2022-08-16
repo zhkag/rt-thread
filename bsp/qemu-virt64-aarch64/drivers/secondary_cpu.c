@@ -28,7 +28,7 @@ void rt_hw_secondary_cpu_bsp_start(void)
 
     arm_gic_cpu_init(0, 0);
 
-    // rt_hw_timers_init();
+    // local timer init
 
     rt_system_scheduler_start();
 }
