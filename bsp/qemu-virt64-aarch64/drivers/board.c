@@ -84,7 +84,7 @@ void rt_hw_board_init(void)
     rt_hw_uart_init();
     rt_console_set_device(RT_CONSOLE_DEVICE_NAME);
 
-#ifdef RT_USING_FDT
+#if defined(RT_USING_FDT) && defined(RT_USING_SMP)
     // TODO 0x44000000 should be replace by a variable
     void * fdt_start = (void *)0x44000000 - PV_OFFSET;
     device_tree_setup(fdt_start);

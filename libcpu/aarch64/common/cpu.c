@@ -302,8 +302,6 @@ int rt_hw_cpu_boot_secondary(int num_cpus, rt_uint64_t *cpu_hw_ids, struct cpu_o
     return retval;
 }
 
-#endif /*RT_USING_SMP*/
-
 #define CPU_INIT_USING_FDT 0,0,0
 
 /**
@@ -320,6 +318,8 @@ int rt_hw_cpu_init()
     return -0xa; /* no fdt support */
 #endif /* RT_USING_FDT */
 }
+
+#endif /*RT_USING_SMP*/
 
 /**
  * @addtogroup ARM CPU
