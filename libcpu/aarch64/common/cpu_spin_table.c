@@ -16,6 +16,7 @@
 #include <rtdbg.h>
 #include "cpu_ops_common.h"
 
+#ifdef RT_USING_SMP
 #ifdef RT_USING_FDT
 #include <dtb_node.h>
 
@@ -65,3 +66,5 @@ struct cpu_ops_t cpu_ops_spin_tbl = {
     .cpu_boot = spin_table_cpu_boot,
 #endif
 };
+
+#endif /* RT_USING_SMP */
