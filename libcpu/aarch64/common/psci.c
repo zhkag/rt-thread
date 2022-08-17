@@ -41,7 +41,7 @@
 #ifdef RT_USING_FDT
 #include "dtb_node.h"
 
-struct psci_operations psci_ops;
+struct psci_ops_t psci_ops;
 
 #if __SIZE_WIDTH__ == 64
 #define PSCI_FN_NATIVE(version, name) PSCI_##version##_FN64_##name
@@ -165,7 +165,7 @@ static rt_uint32_t psci_0_2_get_version(void)
 
 static void psci_0_2_set_basic_ops()
 {
-    psci_ops = (struct psci_operations){
+    psci_ops = (struct psci_ops_t){
         .get_version = psci_0_2_get_version, 
 
         // followings API are v0.1 compatible

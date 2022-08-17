@@ -15,7 +15,7 @@
 #include "psci_api.h"
 
 /** generic psci ops supported v0.1 v0.2 v1.0 v1.1 */
-struct psci_operations
+struct psci_ops_t
 {
     uint32_t (*get_version)(void);
     int32_t (*cpu_suspend)(uint32_t state, unsigned long entry_point);
@@ -24,7 +24,7 @@ struct psci_operations
     int32_t (*migrate)(unsigned long cpuid);
 };
 
-extern struct psci_operations psci_ops;
+extern struct psci_ops_t psci_ops;
 
 extern int psci_init(void);
 

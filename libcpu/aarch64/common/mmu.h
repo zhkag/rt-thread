@@ -137,4 +137,6 @@ void rt_mm_unlock(void);
 
 void kernel_mmu_switch(unsigned long tbl);
 
+extern rt_mmu_info mmu_info;
+
 #endif
