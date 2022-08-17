@@ -21,12 +21,14 @@ extern unsigned char __bss_end;
 
 #ifdef RT_USING_USERSPACE
 #define HEAP_END    (rt_size_t)(KERNEL_VADDR_START + 64 * 1024 * 1024)
-#define PAGE_START  HEAP_END
+#define PAGE_START  HEAP_END + 1 * 1024 * 1024
 #define PAGE_END    ((rt_size_t)KERNEL_VADDR_START + 128 * 1024 * 1024)
 #else
 #define HEAP_END    ((void *)HEAP_BEGIN + 64 * 1024 * 1024)
 #endif
 
 void rt_hw_board_init(void);
+
+int rt_hw_uart_init(void);
 
 #endif

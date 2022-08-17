@@ -17,6 +17,7 @@
 
 #include <time.h>
 #include <string.h>
+#include <stdlib.h>
 
 /* Using NTP auto sync RTC time */
 #ifdef RTC_SYNC_USING_NTP

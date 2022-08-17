@@ -20,6 +20,12 @@
 #endif
 #include "board.h"
 
+#ifdef RT_USING_FDT
+#include "interrupt.h"
+#include "dtb_node.h"
+#include <cpu.h>
+#endif
+
 #ifdef RT_USING_USERSPACE
 struct mem_desc platform_mem_desc[] = {
     {KERNEL_VADDR_START, KERNEL_VADDR_START + 0x0fffffff, KERNEL_VADDR_START + PV_OFFSET, NORMAL_MEM}
@@ -74,8 +80,18 @@ void rt_hw_board_init(void)
     /* initialize system heap */
     rt_system_heap_init((void *)HEAP_BEGIN, (void *)HEAP_END);
 
-    rt_components_board_init();
+    /* support debug feature before components init */
+    rt_hw_uart_init();
     rt_console_set_device(RT_CONSOLE_DEVICE_NAME);
+
+#if defined(RT_USING_FDT) && defined(RT_USING_SMP)
+    // TODO 0x44000000 should be replace by a variable
+    void * fdt_start = (void *)0x44000000 - PV_OFFSET;
+    device_tree_setup(fdt_start);
+    rt_hw_cpu_init();
+#endif
+
+    rt_components_board_init();
 
     rt_thread_idle_sethook(idle_wfi);
 
