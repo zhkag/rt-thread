@@ -14,10 +14,10 @@
 #define DBG_TAG "libcpu.aarch64.cpu_spin_table"
 #define DBG_LVL DBG_INFO
 #include <rtdbg.h>
+#include "cpu_ops_common.h"
 
 #ifdef RT_USING_FDT
 #include <dtb_node.h>
-#include "entry_point.h"
 
 static rt_uint64_t cpu_release_addr[RT_CPUS_NR];
 
@@ -37,7 +37,7 @@ static int spin_table_cpu_init(rt_uint32_t cpuid)
 
 static int spin_table_cpu_boot(rt_uint32_t cpuid)
 {
-    rt_uint64_t secondary_entry_pa = (rt_uint64_t)_secondary_cpu_entry + PV_OFFSET;
+    rt_uint64_t secondary_entry_pa = get_secondary_entry_pa();
     // map release_addr to addressable place
     void *rel_va = rt_ioremap((void *)cpu_release_addr[cpuid], sizeof(cpu_release_addr[0]));
 

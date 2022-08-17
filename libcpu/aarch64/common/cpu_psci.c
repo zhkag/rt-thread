@@ -13,12 +13,12 @@
 #define DBG_TAG "libcpu.aarch64.cpu_psci"
 #define DBG_LVL DBG_INFO
 #include <rtdbg.h>
+#include "cpu_ops_common.h"
 
 #include "cpu.h"
 #include "errno.h"
 #include "psci.h"
 #include "psci_api.h"
-#include "entry_point.h"
 
 static int (*_psci_init)(void) = psci_init;
 
@@ -41,7 +41,7 @@ static int cpu_psci_cpu_init(rt_uint32_t cpuid)
 
 static int cpu_psci_cpu_boot(rt_uint32_t cpuid)
 {
-    rt_uint64_t secondary_entry_pa = (rt_uint64_t)_secondary_cpu_entry + PV_OFFSET;
+    rt_uint64_t secondary_entry_pa = get_secondary_entry_pa();
     if (!psci_ops.cpu_on) {
         LOG_E("Uninitialized psci operation");
         return -1;
