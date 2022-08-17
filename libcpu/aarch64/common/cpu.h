@@ -13,6 +13,7 @@
 #include <rtthread.h>
 #include <stdbool.h>
 
+#ifdef RT_USING_SMP
 struct cpu_ops_t
 {
     const char *method;
@@ -39,8 +40,6 @@ extern struct dtb_node *_cpu_node[];
 #define set_cpu_node(cpuid, node) \
     ((((cpuid) >= 0) && ((cpuid) < RT_CPUS_NR)) ? (_cpu_node[cpuid] = node) : NULL)
 
-extern void rt_hw_cpu_shutdown(void);
-
 extern int rt_hw_cpu_init();
 
 extern int rt_hw_cpu_boot_secondary(int num_cpus, rt_uint64_t *cpu_hw_ids, struct cpu_ops_t *cpu_ops[]);
@@ -50,5 +49,9 @@ extern void rt_hw_secondary_cpu_idle_exec(void);
 extern struct cpu_ops_t cpu_ops_psci;
 
 extern struct cpu_ops_t cpu_ops_spin_tbl;
+
+#endif /* RT_USING_SMP */
+
+extern void rt_hw_cpu_shutdown(void);
 
 #endif /* __RT_HW_CPU_H__ */

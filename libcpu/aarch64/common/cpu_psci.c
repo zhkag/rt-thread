@@ -10,6 +10,8 @@
 #include <rtthread.h>
 #include <stdint.h>
 
+#ifdef RT_USING_SMP
+
 #define DBG_TAG "libcpu.aarch64.cpu_psci"
 #define DBG_LVL DBG_INFO
 #include <rtdbg.h>
@@ -59,3 +61,5 @@ struct cpu_ops_t cpu_ops_psci = {
     .cpu_init = cpu_psci_cpu_init,
     .cpu_shutdown = RT_NULL
 };
+
+#endif /* RT_USING_SMP */
