@@ -38,6 +38,9 @@ static int spin_table_cpu_init(rt_uint32_t cpuid)
 static int spin_table_cpu_boot(rt_uint32_t cpuid)
 {
     rt_uint64_t secondary_entry_pa = get_secondary_entry_pa();
+    if (!secondary_entry_pa)
+        return -1;
+
     // map release_addr to addressable place
     void *rel_va = rt_ioremap((void *)cpu_release_addr[cpuid], sizeof(cpu_release_addr[0]));
 

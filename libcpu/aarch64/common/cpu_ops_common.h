@@ -13,7 +13,7 @@ static inline rt_uint64_t get_secondary_entry_pa(void)
     if (!secondary_entry_pa)
     {
         LOG_E("Failed to translate 'secondary_entry_pa' to physical address");
-        return -1;
+        return 0;
     }
     return secondary_entry_pa;
 }

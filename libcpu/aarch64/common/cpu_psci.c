@@ -42,6 +42,10 @@ static int cpu_psci_cpu_init(rt_uint32_t cpuid)
 static int cpu_psci_cpu_boot(rt_uint32_t cpuid)
 {
     rt_uint64_t secondary_entry_pa = get_secondary_entry_pa();
+
+    if (!secondary_entry_pa)
+        return -1;
+
     if (!psci_ops.cpu_on) {
         LOG_E("Uninitialized psci operation");
         return -1;
