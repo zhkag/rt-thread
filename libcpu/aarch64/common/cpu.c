@@ -26,7 +26,7 @@ void rt_hw_spin_lock_init(rt_hw_spinlock_t *lock)
     lock->slock = 0;
 }
 
-#define TICKET_SHIFT    16
+#define TICKET_SHIFT 16
 void rt_hw_spin_lock(rt_hw_spinlock_t *lock)
 {
     unsigned int tmp;
@@ -277,11 +277,11 @@ RT_WEAK void rt_hw_secondary_cpu_up(void)
 
 /**
  * @brief boot cpu with hardcoded data
- * 
+ *
  * @param num_cpus number of cpus
  * @param cpu_hw_ids each element represents a hwid of cpu[i]
  * @param cpu_ops each element represents a pointer to cpu_ops of cpu[i]
- * @return int 0 on success, 
+ * @return int 0 on success,
  */
 int rt_hw_cpu_boot_secondary(int num_cpus, rt_uint64_t *cpu_hw_ids, struct cpu_ops_t *cpu_ops[])
 {
@@ -292,8 +292,6 @@ int rt_hw_cpu_boot_secondary(int num_cpus, rt_uint64_t *cpu_hw_ids, struct cpu_o
     retval = _cpus_init(num_cpus, cpu_hw_ids, cpu_ops);
     CHECK_RETVAL(retval);
 
-    if (!retval)
-        _boot_secondary();
     return retval;
 }
 
@@ -301,8 +299,8 @@ int rt_hw_cpu_boot_secondary(int num_cpus, rt_uint64_t *cpu_hw_ids, struct cpu_o
 
 /**
  * @brief Initialize cpu infomation from fdt
- * 
- * @return int 
+ *
+ * @return int
  */
 int rt_hw_cpu_init()
 {
@@ -319,7 +317,6 @@ RT_WEAK void rt_hw_secondary_cpu_idle_exec(void)
     asm volatile("wfe" ::
                      : "memory", "cc");
 }
-
 
 #endif /*RT_USING_SMP*/
 
