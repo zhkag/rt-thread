@@ -38,41 +38,89 @@ struct termios tty_std_termios = {  /* for the benefit of tty drivers  */
     .__c_ospeed = 38400
 };
 
-void tty_initstack(struct list_node *node)
+void tty_initstack(struct tty_node *node)
 {
-    node->p = NULL;
+    node->lwp = RT_NULL;
     node->next = node;
 }
 
-int tty_push(struct list_node **head, struct rt_lwp *lwp)
+static struct tty_node tty_node_cache = { RT_NULL, RT_NULL };
+
+static struct tty_node *_tty_node_alloc(void)
 {
-    struct list_node *s = rt_calloc(1, sizeof(struct list_node));
-    if (!s)
+    struct tty_node *node = tty_node_cache.next;
+
+    if (node == RT_NULL)
+    {
+        node = rt_calloc(1, sizeof(struct tty_node));
+    }
+    else
+    {
+        tty_node_cache.next = node->next;
+    }
+
+    return node;
+}
+
+static void _tty_node_free(struct tty_node *node)
+{
+    node->next = tty_node_cache.next;
+    tty_node_cache.next = node;
+}
+
+int tty_push(struct tty_node **head, struct rt_lwp *lwp)
+{
+    struct tty_node *node = _tty_node_alloc();
+
+    if (!node)
     {
         return -1;
     }
-    s->p = lwp;
-    s->next = *head;
-    *head = s;
+
+    node->lwp = lwp;
+    node->next = *head;
+    *head = node;
 
     return 0;
 }
 
-struct rt_lwp *tty_pop(struct list_node **head)
+struct rt_lwp *tty_pop(struct tty_node **head, struct rt_lwp *target_lwp)
 {
-    struct list_node *s;
-    struct rt_lwp *lwp;
+    struct tty_node *node;
+    struct rt_lwp *lwp = RT_NULL;
 
-    if (!*head)
+    if (!head || !*head)
     {
         return RT_NULL;
     }
 
-    lwp = (*head)->p;
-    s = *head;
-    *head = (*head)->next;
-    s->p = NULL;
-    rt_free(s);
+    node = *head;
+
+    if (target_lwp != RT_NULL && node->lwp != target_lwp)
+    {
+        struct tty_node *prev = RT_NULL;
+
+        while (node != RT_NULL && node->lwp != target_lwp)
+        {
+            prev = node;
+            node = node->next;
+        }
+
+        if (node != RT_NULL)
+        {
+            /* prev is impossible equ RT_NULL */
+            prev->next = node->next;
+            lwp = target_lwp;
+            _tty_node_free(node);
+        }
+    }
+    else
+    {
+        lwp = (*head)->lwp;
+        *head = (*head)->next;
+        node->lwp = RT_NULL;
+        _tty_node_free(node);
+    }
 
     return lwp;
 }

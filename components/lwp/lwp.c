@@ -1008,6 +1008,7 @@ void lwp_cleanup(struct rt_thread *tid)
 {
     rt_base_t level;
     struct rt_lwp *lwp;
+    struct tty_node *tty_head;
 
     if (tid == NULL)
     {
@@ -1022,8 +1023,12 @@ void lwp_cleanup(struct rt_thread *tid)
     lwp_tid_put(tid->tid);
     rt_list_remove(&tid->sibling);
     rt_hw_interrupt_enable(level);
-    lwp_ref_dec(lwp);
-
+    tty_head = lwp->tty->head;
+    if (!lwp_ref_dec(lwp))
+    {
+        tty_pop(&tty_head, lwp);
+    }
+    
     return;
 }
 
@@ -1205,11 +1210,13 @@ pid_t lwp_execve(char *filename, int debug, int argc, char **argv, char **envp)
                     struct rt_lwp *old_lwp;
                     tty = (struct tty_struct *)console_tty_get();
                     old_lwp = tty->foreground;
+                    rt_mutex_take(&tty->mutex, RT_WAITING_FOREVER);
                     ret = tty_push(&tty->head, old_lwp);
                     if (ret < 0)
                     {
                         rt_kprintf("malloc fail!\n");
                     }
+                    rt_mutex_release(&tty->mutex);
                     lwp->tty = tty;
                     lwp->tty->pgrp = lwp->__pgrp;
                     lwp->tty->session = lwp->session;
@@ -1223,11 +1230,13 @@ pid_t lwp_execve(char *filename, int debug, int argc, char **argv, char **envp)
                 {
                     if (self_lwp != RT_NULL)
                     {
+                        rt_mutex_take(&self_lwp->tty->mutex, RT_WAITING_FOREVER);
                         ret = tty_push(&self_lwp->tty->head, self_lwp);
                         if (ret < 0)
                         {
                             rt_kprintf("malloc fail!\n");
                         }
+                        rt_mutex_release(&self_lwp->tty->mutex);
                         lwp->tty = self_lwp->tty;
                         lwp->tty->pgrp = lwp->__pgrp;
                         lwp->tty->session = lwp->session;

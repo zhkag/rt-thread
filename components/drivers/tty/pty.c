@@ -341,13 +341,14 @@ static int ptmx_register(void)
 
     ptm_drv->type = TTY_DRIVER_TYPE_PTY;
     ptm_drv->subtype = PTY_TYPE_MASTER;
-    ptm_drv->head = rt_calloc(1, sizeof(struct list_node));
+    ptm_drv->head = rt_calloc(1, sizeof(struct tty_node));
     if (!ptm_drv->head)
     {
         return -RT_ENOMEM;
     }
     tty_initstack(ptm_drv->head);
-    
+
+    rt_mutex_init(&ptm_drv->mutex, "pty", RT_IPC_FLAG_PRIO);
     ptm_drv->pgrp = -1;
     ptm_drv->session = -1;
     ptm_drv->foreground = RT_NULL;

@@ -447,8 +447,9 @@ void lwp_free(struct rt_lwp* lwp)
         level = rt_hw_interrupt_disable();
         if (lwp->tty != RT_NULL)
         {
-            old_lwp = tty_pop(&lwp->tty->head);
-
+            rt_mutex_take(&lwp->tty->mutex, RT_WAITING_FOREVER);
+            old_lwp = tty_pop(&lwp->tty->head, RT_NULL);
+            rt_mutex_release(&lwp->tty->mutex);
             if (lwp->tty->foreground == lwp)
             {
                 lwp->tty->foreground = old_lwp;
@@ -485,16 +486,18 @@ void lwp_free(struct rt_lwp* lwp)
     }
 }
 
-void lwp_ref_inc(struct rt_lwp *lwp)
+int lwp_ref_inc(struct rt_lwp *lwp)
 {
     rt_base_t level;
 
     level = rt_hw_interrupt_disable();
     lwp->ref++;
     rt_hw_interrupt_enable(level);
+
+    return 0;
 }
 
-void lwp_ref_dec(struct rt_lwp *lwp)
+int lwp_ref_dec(struct rt_lwp *lwp)
 {
     rt_base_t level;
     int ref = -1;
@@ -522,7 +525,11 @@ void lwp_ref_dec(struct rt_lwp *lwp)
 #endif /* RT_LWP_USING_SHM */
 #endif /* not defined ARCH_MM_MMU */
         lwp_free(lwp);
+
+        return 0;
     }
+
+    return -1;
 }
 
 struct rt_lwp* lwp_from_pid(pid_t pid)

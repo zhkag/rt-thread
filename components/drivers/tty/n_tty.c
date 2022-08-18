@@ -547,7 +547,7 @@ static void __isig(int sig, struct tty_struct *tty)
                 }
             }
             tty_sigaddset(&lwp->signal_mask, SIGTTOU);
-            old_lwp = tty_pop(&tty->head);
+            old_lwp = tty_pop(&tty->head, RT_NULL);
             tty->foreground = old_lwp;  
         }
         else
