@@ -23,6 +23,15 @@
 #define current lwp_self()
 #define __DISABLED_CHAR '\0'
 
+struct list_node
+{
+    struct rt_lwp *p;
+    struct list_node *next;
+};
+
+void tty_initstack(struct list_node *node);
+int tty_push(struct list_node **head, struct rt_lwp *lwp);
+struct rt_lwp *tty_pop(struct list_node **head);
 /*
  * When a break, frame error, or parity error happens, these codes are
  * stuffed into the flags buffer.
@@ -144,6 +153,7 @@ struct tty_struct
     pid_t pgrp;
     pid_t session;
     struct rt_lwp *foreground;
+    struct list_node *head;
 
     struct tty_ldisc *ldisc;
     void *disc_data;

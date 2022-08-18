@@ -534,6 +534,8 @@ static void __isig(int sig, struct tty_struct *tty)
     {
         if (sig == SIGTSTP)
         {
+            struct rt_lwp *old_lwp;
+            
             rt_memcpy(&old_termios, &(tty->init_termios), sizeof(struct termios));
             tty->init_termios = *new_termios;
             ld = tty->ldisc;
@@ -545,7 +547,8 @@ static void __isig(int sig, struct tty_struct *tty)
                 }
             }
             tty_sigaddset(&lwp->signal_mask, SIGTTOU);
-            tty->foreground = RT_NULL;  
+            old_lwp = tty_pop(&tty->head);
+            tty->foreground = old_lwp;  
         }
         else
         {

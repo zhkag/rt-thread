@@ -38,6 +38,45 @@ struct termios tty_std_termios = {  /* for the benefit of tty drivers  */
     .__c_ospeed = 38400
 };
 
+void tty_initstack(struct list_node *node)
+{
+    node->p = NULL;
+    node->next = node;
+}
+
+int tty_push(struct list_node **head, struct rt_lwp *lwp)
+{
+    struct list_node *s = rt_calloc(1, sizeof(struct list_node));
+    if (!s)
+    {
+        return -1;
+    }
+    s->p = lwp;
+    s->next = *head;
+    *head = s;
+
+    return 0;
+}
+
+struct rt_lwp *tty_pop(struct list_node **head)
+{
+    struct list_node *s;
+    struct rt_lwp *lwp;
+
+    if (!*head)
+    {
+        return RT_NULL;
+    }
+
+    lwp = (*head)->p;
+    s = *head;
+    *head = (*head)->next;
+    s->p = NULL;
+    rt_free(s);
+
+    return lwp;
+}
+
 rt_inline int tty_sigismember(lwp_sigset_t *set, int _sig)
 {
     unsigned long sig = _sig - 1;

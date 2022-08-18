@@ -438,6 +438,8 @@ void lwp_free(struct rt_lwp* lwp)
     {
         struct termios *old_stdin_termios = get_old_termios();
         struct rt_lwp *self_lwp = (struct rt_lwp *)lwp_self();
+        struct rt_lwp *old_lwp = NULL;
+
         if (lwp->session == -1)
         {
             tcsetattr(1, 0, old_stdin_termios);
@@ -445,9 +447,11 @@ void lwp_free(struct rt_lwp* lwp)
         level = rt_hw_interrupt_disable();
         if (lwp->tty != RT_NULL)
         {
+            old_lwp = tty_pop(&lwp->tty->head);
+
             if (lwp->tty->foreground == lwp)
             {
-                lwp->tty->foreground = self_lwp;
+                lwp->tty->foreground = old_lwp;
                 lwp->tty = RT_NULL;
             }
         }

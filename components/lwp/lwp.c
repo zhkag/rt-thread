@@ -1097,6 +1097,7 @@ pid_t lwp_execve(char *filename, int debug, int argc, char **argv, char **envp)
     int bg = 0;
     struct process_aux *aux;
     int tid = 0;
+    int ret;
 
     if (filename == RT_NULL)
     {
@@ -1201,7 +1202,14 @@ pid_t lwp_execve(char *filename, int debug, int argc, char **argv, char **envp)
                 if (lwp->session == -1)
                 {
                     struct tty_struct *tty = RT_NULL;
+                    struct rt_lwp *old_lwp;
                     tty = (struct tty_struct *)console_tty_get();
+                    old_lwp = tty->foreground;
+                    ret = tty_push(&tty->head, old_lwp);
+                    if (ret < 0)
+                    {
+                        rt_kprintf("malloc fail!\n");
+                    }
                     lwp->tty = tty;
                     lwp->tty->pgrp = lwp->__pgrp;
                     lwp->tty->session = lwp->session;
@@ -1215,6 +1223,11 @@ pid_t lwp_execve(char *filename, int debug, int argc, char **argv, char **envp)
                 {
                     if (self_lwp != RT_NULL)
                     {
+                        ret = tty_push(&self_lwp->tty->head, self_lwp);
+                        if (ret < 0)
+                        {
+                            rt_kprintf("malloc fail!\n");
+                        }
                         lwp->tty = self_lwp->tty;
                         lwp->tty->pgrp = lwp->__pgrp;
                         lwp->tty->session = lwp->session;
