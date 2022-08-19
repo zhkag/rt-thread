@@ -1731,12 +1731,13 @@ int _sys_fork(void)
         old_lwp = lwp->tty->foreground;
         rt_mutex_take(&lwp->tty->mutex, RT_WAITING_FOREVER);
         ret = tty_push(&lwp->tty->head, old_lwp);
+        rt_mutex_release(&lwp->tty->mutex);
         if (ret < 0)
         {
-            rt_kprintf("malloc fail!\n");
+            LOG_E("malloc fail!\n");
             goto fail;
         }
-        rt_mutex_release(&lwp->tty->mutex);
+        
         lwp->tty->foreground = lwp;
     }
     rt_hw_interrupt_enable(level);

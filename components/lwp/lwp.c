@@ -1008,7 +1008,7 @@ void lwp_cleanup(struct rt_thread *tid)
 {
     rt_base_t level;
     struct rt_lwp *lwp;
-    struct tty_node *tty_head;
+    struct tty_node *tty_head = RT_NULL;
 
     if (tid == NULL)
     {
@@ -1023,10 +1023,16 @@ void lwp_cleanup(struct rt_thread *tid)
     lwp_tid_put(tid->tid);
     rt_list_remove(&tid->sibling);
     rt_hw_interrupt_enable(level);
-    tty_head = lwp->tty->head;
+    if (lwp->tty != RT_NULL)
+    {
+        tty_head = lwp->tty->head;
+    }
     if (!lwp_ref_dec(lwp))
     {
-        tty_pop(&tty_head, lwp);
+        if (tty_head)
+        {
+            tty_pop(&tty_head, lwp);
+        }
     }
     
     return;
@@ -1212,11 +1218,15 @@ pid_t lwp_execve(char *filename, int debug, int argc, char **argv, char **envp)
                     old_lwp = tty->foreground;
                     rt_mutex_take(&tty->mutex, RT_WAITING_FOREVER);
                     ret = tty_push(&tty->head, old_lwp);
+                    rt_mutex_release(&tty->mutex);
                     if (ret < 0)
                     {
-                        rt_kprintf("malloc fail!\n");
+                        lwp_tid_put(tid);
+                        lwp_ref_dec(lwp);
+                        LOG_E("malloc fail!\n");
+                        return -ENOMEM;
                     }
-                    rt_mutex_release(&tty->mutex);
+                    
                     lwp->tty = tty;
                     lwp->tty->pgrp = lwp->__pgrp;
                     lwp->tty->session = lwp->session;
@@ -1232,11 +1242,15 @@ pid_t lwp_execve(char *filename, int debug, int argc, char **argv, char **envp)
                     {
                         rt_mutex_take(&self_lwp->tty->mutex, RT_WAITING_FOREVER);
                         ret = tty_push(&self_lwp->tty->head, self_lwp);
+                        rt_mutex_release(&self_lwp->tty->mutex);
                         if (ret < 0)
                         {
-                            rt_kprintf("malloc fail!\n");
+                            lwp_tid_put(tid);
+                            lwp_ref_dec(lwp);
+                            LOG_E("malloc fail!\n");
+                            return -ENOMEM;
                         }
-                        rt_mutex_release(&self_lwp->tty->mutex);
+                        
                         lwp->tty = self_lwp->tty;
                         lwp->tty->pgrp = lwp->__pgrp;
                         lwp->tty->session = lwp->session;
