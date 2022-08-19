@@ -447,9 +447,9 @@ void lwp_free(struct rt_lwp* lwp)
         level = rt_hw_interrupt_disable();
         if (lwp->tty != RT_NULL)
         {
-            rt_mutex_take(&lwp->tty->mutex, RT_WAITING_FOREVER);
+            rt_spin_lock(&lwp->tty->spinlock);
             old_lwp = tty_pop(&lwp->tty->head, RT_NULL);
-            rt_mutex_release(&lwp->tty->mutex);
+            rt_spin_unlock(&lwp->tty->spinlock);
             if (lwp->tty->foreground == lwp)
             {
                 lwp->tty->foreground = old_lwp;

@@ -1216,9 +1216,9 @@ pid_t lwp_execve(char *filename, int debug, int argc, char **argv, char **envp)
                     struct rt_lwp *old_lwp;
                     tty = (struct tty_struct *)console_tty_get();
                     old_lwp = tty->foreground;
-                    rt_mutex_take(&tty->mutex, RT_WAITING_FOREVER);
+                    rt_spin_lock(&tty->spinlock);
                     ret = tty_push(&tty->head, old_lwp);
-                    rt_mutex_release(&tty->mutex);
+                    rt_spin_unlock(&tty->spinlock);
                     if (ret < 0)
                     {
                         lwp_tid_put(tid);
@@ -1240,9 +1240,9 @@ pid_t lwp_execve(char *filename, int debug, int argc, char **argv, char **envp)
                 {
                     if (self_lwp != RT_NULL)
                     {
-                        rt_mutex_take(&self_lwp->tty->mutex, RT_WAITING_FOREVER);
+                        rt_spin_lock(&self_lwp->tty->spinlock);
                         ret = tty_push(&self_lwp->tty->head, self_lwp);
-                        rt_mutex_release(&self_lwp->tty->mutex);
+                        rt_spin_unlock(&self_lwp->tty->spinlock);
                         if (ret < 0)
                         {
                             lwp_tid_put(tid);

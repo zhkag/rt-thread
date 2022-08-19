@@ -348,7 +348,7 @@ static int ptmx_register(void)
     }
     tty_initstack(ptm_drv->head);
 
-    rt_mutex_init(&ptm_drv->mutex, "pty", RT_IPC_FLAG_PRIO);
+    rt_spin_lock_init(&ptm_drv->spinlock);
     ptm_drv->pgrp = -1;
     ptm_drv->session = -1;
     ptm_drv->foreground = RT_NULL;
