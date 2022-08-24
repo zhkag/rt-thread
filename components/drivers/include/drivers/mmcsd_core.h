@@ -228,6 +228,7 @@ void mmcsd_set_chip_select(struct rt_mmcsd_host *host, rt_int32_t mode);
 void mmcsd_set_clock(struct rt_mmcsd_host *host, rt_uint32_t clk);
 void mmcsd_set_bus_mode(struct rt_mmcsd_host *host, rt_uint32_t mode);
 void mmcsd_set_bus_width(struct rt_mmcsd_host *host, rt_uint32_t width);
+void mmcsd_set_timing(struct rt_mmcsd_host *host, rt_uint32_t timing);
 void mmcsd_set_data_timeout(struct rt_mmcsd_data *data, const struct rt_mmcsd_card *card);
 rt_uint32_t mmcsd_select_voltage(struct rt_mmcsd_host *host, rt_uint32_t ocr);
 void mmcsd_change(struct rt_mmcsd_host *host);

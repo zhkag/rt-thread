@@ -46,6 +46,19 @@ struct rt_mmcsd_io_cfg {
 #define MMCSD_BUS_WIDTH_4       2
 #define MMCSD_BUS_WIDTH_8       3
 
+	unsigned char	timing;			/* timing specification used */
+
+#define MMCSD_TIMING_LEGACY	0
+#define MMCSD_TIMING_MMC_HS	1
+#define MMCSD_TIMING_SD_HS	2
+#define MMCSD_TIMING_UHS_SDR12	3
+#define MMCSD_TIMING_UHS_SDR25	4
+#define MMCSD_TIMING_UHS_SDR50	5
+#define MMCSD_TIMING_UHS_SDR104	6
+#define MMCSD_TIMING_UHS_DDR50	7
+#define MMCSD_TIMING_MMC_DDR52	8
+#define MMCSD_TIMING_MMC_HS200	9
+#define MMCSD_TIMING_MMC_HS400	10
 };
 
 struct rt_mmcsd_host;
@@ -56,6 +69,7 @@ struct rt_mmcsd_host_ops {
     void (*set_iocfg)(struct rt_mmcsd_host *host, struct rt_mmcsd_io_cfg *io_cfg);
     rt_int32_t (*get_card_status)(struct rt_mmcsd_host *host);
     void (*enable_sdio_irq)(struct rt_mmcsd_host *host, rt_int32_t en);
+    void (*execute_tuning)(struct rt_mmcsd_host *host, rt_int32_t opcode);
 };
 
 struct rt_mmcsd_host {
@@ -90,7 +104,9 @@ struct rt_mmcsd_host {
 #define MMCSD_HOST_IS_SPI   (1 << 3)
 #define controller_is_spi(host) (host->flags & MMCSD_HOST_IS_SPI)
 #define MMCSD_SUP_SDIO_IRQ  (1 << 4)    /* support signal pending SDIO IRQs */
-#define MMCSD_SUP_HIGHSPEED (1 << 5)    /* support high speed */
+#define MMCSD_SUP_HIGHSPEED (1 << 5)    /* support high speed SDR*/
+#define MMCSD_SUP_HIGHSPEED_DDR (1 << 6)/* HIGH SPEED DDR*/
+#define MMCSD_SUP_HS200     (1 << 7)
 
     rt_uint32_t max_seg_size;   /* maximum size of one dma segment */
     rt_uint32_t max_dma_segs;   /* maximum number of dma segments in one request */

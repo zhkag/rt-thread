@@ -438,6 +438,12 @@ void mmcsd_set_bus_width(struct rt_mmcsd_host *host, rt_uint32_t width)
     mmcsd_set_iocfg(host);
 }
 
+void mmcsd_set_timing(struct rt_mmcsd_host *host, rt_uint32_t timing)
+{
+    host->io_cfg.timing = timing;
+    mmcsd_set_iocfg(host);   
+}
+
 void mmcsd_set_data_timeout(struct rt_mmcsd_data       *data,
                             const struct rt_mmcsd_card *card)
 {
