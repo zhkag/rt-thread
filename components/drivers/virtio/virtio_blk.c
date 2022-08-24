@@ -17,9 +17,11 @@
 
 #include <virtio_blk.h>
 
-static void virtio_blk_rw(struct virtio_blk_device *virtio_blk_dev, rt_off_t pos, void *buffer, int flags)
+static void virtio_blk_rw(struct virtio_blk_device *virtio_blk_dev, rt_off_t pos, void *buffer, rt_size_t count,
+    int flags)
 {
     rt_uint16_t idx[3];
+    rt_size_t size = count * VIRTIO_BLK_BUF_DATA_SIZE;
     struct virtio_device *virtio_dev = &virtio_blk_dev->virtio_dev;
 
 #ifdef RT_USING_SMP
@@ -43,7 +45,7 @@ static void virtio_blk_rw(struct virtio_blk_device *virtio_blk_dev, rt_off_t pos
     virtio_blk_dev->info[idx[0]].valid = RT_TRUE;
     virtio_blk_dev->info[idx[0]].req.type = flags;
     virtio_blk_dev->info[idx[0]].req.ioprio = 0;
-    virtio_blk_dev->info[idx[0]].req.sector = pos * (VIRTIO_BLK_BUF_DATA_SIZE / 512);
+    virtio_blk_dev->info[idx[0]].req.sector = pos * count;
 
     flags = flags == VIRTIO_BLK_T_OUT ? 0 : VIRTQ_DESC_F_WRITE;
 
@@ -51,7 +53,7 @@ static void virtio_blk_rw(struct virtio_blk_device *virtio_blk_dev, rt_off_t pos
             VIRTIO_VA2PA(&virtio_blk_dev->info[idx[0]].req), sizeof(struct virtio_blk_req), VIRTQ_DESC_F_NEXT, idx[1]);
 
     virtio_fill_desc(virtio_dev, VIRTIO_BLK_QUEUE, idx[1],
-            VIRTIO_VA2PA(buffer), VIRTIO_BLK_BUF_DATA_SIZE, flags | VIRTQ_DESC_F_NEXT, idx[2]);
+            VIRTIO_VA2PA(buffer), size, flags | VIRTQ_DESC_F_NEXT, idx[2]);
 
     virtio_fill_desc(virtio_dev, VIRTIO_BLK_QUEUE, idx[2],
             VIRTIO_VA2PA(&virtio_blk_dev->info[idx[0]].status), sizeof(rt_uint8_t), VIRTQ_DESC_F_WRITE, 0);
@@ -80,18 +82,18 @@ static void virtio_blk_rw(struct virtio_blk_device *virtio_blk_dev, rt_off_t pos
 #endif
 }
 
-static rt_size_t virtio_blk_read(rt_device_t dev, rt_off_t pos, void *buffer, rt_size_t size)
+static rt_size_t virtio_blk_read(rt_device_t dev, rt_off_t pos, void *buffer, rt_size_t count)
 {
-    virtio_blk_rw((struct virtio_blk_device *)dev, pos, buffer, VIRTIO_BLK_T_IN);
+    virtio_blk_rw((struct virtio_blk_device *)dev, pos, buffer, count, VIRTIO_BLK_T_IN);
 
-    return size;
+    return count;
 }
 
-static rt_size_t virtio_blk_write(rt_device_t dev, rt_off_t pos, const void *buffer, rt_size_t size)
+static rt_size_t virtio_blk_write(rt_device_t dev, rt_off_t pos, const void *buffer, rt_size_t count)
 {
-    virtio_blk_rw((struct virtio_blk_device *)dev, pos, (void *)buffer, VIRTIO_BLK_T_OUT);
+    virtio_blk_rw((struct virtio_blk_device *)dev, pos, (void *)buffer, count, VIRTIO_BLK_T_OUT);
 
-    return size;
+    return count;
 }
 
 static rt_err_t virtio_blk_control(rt_device_t dev, int cmd, void *args)

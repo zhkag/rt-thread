@@ -52,6 +52,16 @@ struct virtio_mmio_config
     rt_uint32_t res8[21];               /* [0xa8] */
     rt_uint32_t config_generation;      /* [0xfc]<RO> Configuration atomicity value */
     rt_uint32_t config[];               /* [0x100+]<RO> Configuration space */
+
+/*
+ * According to the compiler's optimization ways, we should force compiler not
+ * to optimization here, but it will cause some compilers generate memory access
+ * instructions fail. So we allow user to choose a toggle of optimize here.
+ */
+#ifdef RT_USING_VIRTIO_MMIO_ALIGN
 } __attribute__((packed));
+#else
+};
+#endif
 
 #endif /* __VIRTIO_MMIO_H__ */

@@ -78,7 +78,7 @@ struct virtq
     struct virtq_used *used;
 
     /* Helper of driver */
-    rt_uint32_t used_idx;
+    rt_uint16_t used_idx;
     rt_bool_t *free;
     rt_size_t free_count;
 };
