@@ -834,7 +834,7 @@ FINSH_FUNCTION_EXPORT(rm, remove files or directories);
 void cat(const char *filename)
 {
     struct dfs_fd fd;
-    uint32_t length = 0;
+    int length = 0;
     char buffer[81];
 
     fd_init(&fd);
