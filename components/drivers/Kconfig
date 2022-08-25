@@ -679,6 +679,10 @@ menuconfig RT_USING_VIRTIO
                 bool "VirtIO v1.0"
         endchoice
 
+        config RT_USING_VIRTIO_MMIO_ALIGN
+            bool "Using VirtIO MMIO alignment"
+            default y
+
         config RT_USING_VIRTIO_BLK
             bool "Using VirtIO BLK"
             default y

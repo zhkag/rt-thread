@@ -75,8 +75,26 @@ static void virtio_console_send_ctrl(struct virtio_console_device *virtio_consol
 #endif
 }
 
-static rt_err_t virtio_console_port_create(struct virtio_console_device *virtio_console_dev,
-    const struct rt_device_ops *ops)
+static rt_err_t virtio_console_port_init(rt_device_t dev);
+static rt_err_t virtio_console_port_open(rt_device_t dev, rt_uint16_t oflag);
+static rt_err_t virtio_console_port_close(rt_device_t dev);
+static rt_size_t virtio_console_port_read(rt_device_t dev, rt_off_t pos, void *buffer, rt_size_t size);
+static rt_size_t virtio_console_port_write(rt_device_t dev, rt_off_t pos, const void *buffer, rt_size_t size);
+static rt_err_t virtio_console_port_control(rt_device_t dev, int cmd, void *args);
+
+#ifdef RT_USING_DEVICE_OPS
+const static struct rt_device_ops virtio_console_port_ops =
+{
+    virtio_console_port_init,
+    virtio_console_port_open,
+    virtio_console_port_close,
+    virtio_console_port_read,
+    virtio_console_port_write,
+    virtio_console_port_control
+};
+#endif
+
+static rt_err_t virtio_console_port_create(struct virtio_console_device *virtio_console_dev)
 {
     rt_uint32_t port_id;
     char dev_name[RT_NAME_MAX];
@@ -114,7 +132,16 @@ static rt_err_t virtio_console_port_create(struct virtio_console_device *virtio_
     }
 
     port_dev->parent.type = RT_Device_Class_Char;
-    port_dev->parent.ops  = ops;
+#ifdef RT_USING_DEVICE_OPS
+    port_dev->parent.ops  = &virtio_console_port_ops;
+#else
+    port_dev->parent.init     = virtio_console_port_init;
+    port_dev->parent.open     = virtio_console_port_open;
+    port_dev->parent.close    = virtio_console_port_close;
+    port_dev->parent.read     = virtio_console_port_read;
+    port_dev->parent.write    = virtio_console_port_write;
+    port_dev->parent.control  = virtio_console_port_control;
+#endif
 
     port_dev->parent.rx_indicate = RT_NULL;
     port_dev->parent.tx_complete = RT_NULL;
@@ -409,16 +436,6 @@ static rt_err_t virtio_console_port_control(rt_device_t dev, int cmd, void *args
     return status;
 }
 
-const static struct rt_device_ops virtio_console_port_ops =
-{
-    virtio_console_port_init,
-    virtio_console_port_open,
-    virtio_console_port_close,
-    virtio_console_port_read,
-    virtio_console_port_write,
-    virtio_console_port_control
-};
-
 static rt_err_t virtio_console_init(rt_device_t dev)
 {
     struct virtio_console_device *virtio_console_dev = (struct virtio_console_device *)dev;
@@ -463,7 +480,7 @@ static rt_err_t virtio_console_init(rt_device_t dev)
         virtio_queue_notify(virtio_dev, VIRTIO_CONSOLE_QUEUE_CTRL_RX);
     }
 
-    return virtio_console_port_create(virtio_console_dev, &virtio_console_port_ops);
+    return virtio_console_port_create(virtio_console_dev);
 }
 
 static rt_err_t virtio_console_control(rt_device_t dev, int cmd, void *args)
@@ -474,7 +491,7 @@ static rt_err_t virtio_console_control(rt_device_t dev, int cmd, void *args)
     switch (cmd)
     {
     case VIRTIO_DEVICE_CTRL_CONSOLE_PORT_CREATE:
-        status = virtio_console_port_create(virtio_console_dev, &virtio_console_port_ops);
+        status = virtio_console_port_create(virtio_console_dev);
         break;
     default:
         status = -RT_EINVAL;
@@ -484,6 +501,7 @@ static rt_err_t virtio_console_control(rt_device_t dev, int cmd, void *args)
     return status;
 }
 
+#ifdef RT_USING_DEVICE_OPS
 const static struct rt_device_ops virtio_console_ops =
 {
     virtio_console_init,
@@ -493,6 +511,7 @@ const static struct rt_device_ops virtio_console_ops =
     RT_NULL,
     virtio_console_control
 };
+#endif
 
 static void virtio_console_isr(int irqno, void *param)
 {
@@ -722,7 +741,16 @@ rt_err_t rt_virtio_console_init(rt_ubase_t *mmio_base, rt_uint32_t irq)
     }
 
     virtio_console_dev->parent.type = RT_Device_Class_Char;
+#ifdef RT_USING_DEVICE_OPS
     virtio_console_dev->parent.ops  = &virtio_console_ops;
+#else
+    virtio_console_dev->parent.init     = virtio_console_init;
+    virtio_console_dev->parent.open     = RT_NULL;
+    virtio_console_dev->parent.close    = RT_NULL;
+    virtio_console_dev->parent.read     = RT_NULL;
+    virtio_console_dev->parent.write    = RT_NULL;
+    virtio_console_dev->parent.control  = virtio_console_control;
+#endif
 
     virtio_console_dev->parent.rx_indicate = RT_NULL;
     virtio_console_dev->parent.tx_complete = RT_NULL;
