@@ -1008,6 +1008,7 @@ void lwp_cleanup(struct rt_thread *tid)
 {
     rt_base_t level;
     struct rt_lwp *lwp;
+    struct tty_node *tty_head = RT_NULL;
 
     if (tid == NULL)
     {
@@ -1022,8 +1023,18 @@ void lwp_cleanup(struct rt_thread *tid)
     lwp_tid_put(tid->tid);
     rt_list_remove(&tid->sibling);
     rt_hw_interrupt_enable(level);
-    lwp_ref_dec(lwp);
-
+    if (lwp->tty != RT_NULL)
+    {
+        tty_head = lwp->tty->head;
+    }
+    if (!lwp_ref_dec(lwp))
+    {
+        if (tty_head)
+        {
+            tty_pop(&tty_head, lwp);
+        }
+    }
+    
     return;
 }
 
@@ -1097,6 +1108,7 @@ pid_t lwp_execve(char *filename, int debug, int argc, char **argv, char **envp)
     int bg = 0;
     struct process_aux *aux;
     int tid = 0;
+    int ret;
 
     if (filename == RT_NULL)
     {
@@ -1201,7 +1213,20 @@ pid_t lwp_execve(char *filename, int debug, int argc, char **argv, char **envp)
                 if (lwp->session == -1)
                 {
                     struct tty_struct *tty = RT_NULL;
+                    struct rt_lwp *old_lwp;
                     tty = (struct tty_struct *)console_tty_get();
+                    old_lwp = tty->foreground;
+                    rt_spin_lock(&tty->spinlock);
+                    ret = tty_push(&tty->head, old_lwp);
+                    rt_spin_unlock(&tty->spinlock);
+                    if (ret < 0)
+                    {
+                        lwp_tid_put(tid);
+                        lwp_ref_dec(lwp);
+                        LOG_E("malloc fail!\n");
+                        return -ENOMEM;
+                    }
+                    
                     lwp->tty = tty;
                     lwp->tty->pgrp = lwp->__pgrp;
                     lwp->tty->session = lwp->session;
@@ -1215,6 +1240,17 @@ pid_t lwp_execve(char *filename, int debug, int argc, char **argv, char **envp)
                 {
                     if (self_lwp != RT_NULL)
                     {
+                        rt_spin_lock(&self_lwp->tty->spinlock);
+                        ret = tty_push(&self_lwp->tty->head, self_lwp);
+                        rt_spin_unlock(&self_lwp->tty->spinlock);
+                        if (ret < 0)
+                        {
+                            lwp_tid_put(tid);
+                            lwp_ref_dec(lwp);
+                            LOG_E("malloc fail!\n");
+                            return -ENOMEM;
+                        }
+                        
                         lwp->tty = self_lwp->tty;
                         lwp->tty->pgrp = lwp->__pgrp;
                         lwp->tty->session = lwp->session;

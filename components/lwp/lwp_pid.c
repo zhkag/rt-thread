@@ -438,6 +438,8 @@ void lwp_free(struct rt_lwp* lwp)
     {
         struct termios *old_stdin_termios = get_old_termios();
         struct rt_lwp *self_lwp = (struct rt_lwp *)lwp_self();
+        struct rt_lwp *old_lwp = NULL;
+
         if (lwp->session == -1)
         {
             tcsetattr(1, 0, old_stdin_termios);
@@ -445,9 +447,12 @@ void lwp_free(struct rt_lwp* lwp)
         level = rt_hw_interrupt_disable();
         if (lwp->tty != RT_NULL)
         {
+            rt_spin_lock(&lwp->tty->spinlock);
+            old_lwp = tty_pop(&lwp->tty->head, RT_NULL);
+            rt_spin_unlock(&lwp->tty->spinlock);
             if (lwp->tty->foreground == lwp)
             {
-                lwp->tty->foreground = self_lwp;
+                lwp->tty->foreground = old_lwp;
                 lwp->tty = RT_NULL;
             }
         }
@@ -481,16 +486,18 @@ void lwp_free(struct rt_lwp* lwp)
     }
 }
 
-void lwp_ref_inc(struct rt_lwp *lwp)
+int lwp_ref_inc(struct rt_lwp *lwp)
 {
     rt_base_t level;
 
     level = rt_hw_interrupt_disable();
     lwp->ref++;
     rt_hw_interrupt_enable(level);
+
+    return 0;
 }
 
-void lwp_ref_dec(struct rt_lwp *lwp)
+int lwp_ref_dec(struct rt_lwp *lwp)
 {
     rt_base_t level;
     int ref = -1;
@@ -518,7 +525,11 @@ void lwp_ref_dec(struct rt_lwp *lwp)
 #endif /* RT_LWP_USING_SHM */
 #endif /* not defined ARCH_MM_MMU */
         lwp_free(lwp);
+
+        return 0;
     }
+
+    return -1;
 }
 
 struct rt_lwp* lwp_from_pid(pid_t pid)

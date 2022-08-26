@@ -1725,6 +1725,19 @@ int _sys_fork(void)
     level = rt_hw_interrupt_disable();
     if (lwp->tty != RT_NULL)
     {
+        int ret;
+        struct rt_lwp *old_lwp;
+
+        old_lwp = lwp->tty->foreground;
+        rt_spin_lock(&lwp->tty->spinlock);
+        ret = tty_push(&lwp->tty->head, old_lwp);
+        rt_spin_unlock(&lwp->tty->spinlock);
+        if (ret < 0)
+        {
+            LOG_E("malloc fail!\n");
+            goto fail;
+        }
+        
         lwp->tty->foreground = lwp;
     }
     rt_hw_interrupt_enable(level);

@@ -23,6 +23,15 @@
 #define current lwp_self()
 #define __DISABLED_CHAR '\0'
 
+struct tty_node
+{
+    struct rt_lwp *lwp;
+    struct tty_node *next;
+};
+
+void tty_initstack(struct tty_node *node);
+int tty_push(struct tty_node **head, struct rt_lwp *lwp);
+struct rt_lwp *tty_pop(struct tty_node **head, struct rt_lwp *target_lwp);
 /*
  * When a break, frame error, or parity error happens, these codes are
  * stuffed into the flags buffer.
@@ -139,11 +148,15 @@ struct tty_struct
 
     struct winsize winsize;
     struct termios init_termios;
-    struct rt_mutex mutex;
-
+#ifdef RT_USING_SMP
+    struct rt_spinlock spinlock;
+#else
+    rt_spinlock_t spinlock;
+#endif
     pid_t pgrp;
     pid_t session;
     struct rt_lwp *foreground;
+    struct tty_node *head;
 
     struct tty_ldisc *ldisc;
     void *disc_data;

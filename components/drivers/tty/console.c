@@ -295,7 +295,14 @@ rt_err_t console_register(const char *name, struct rt_device *iodev)
     console->type = TTY_DRIVER_TYPE_CONSOLE;
     console->subtype = SERIAL_TYPE_NORMAL;
     console->driver = iodev;
+    console->head = rt_calloc(1, sizeof(struct tty_node));
+    if (!console->head)
+    {
+        return -RT_ENOMEM;
+    }
+    tty_initstack(console->head);
 
+    rt_spin_lock_init(&console->spinlock);
     console->pgrp = -1;
     console->session = -1;
     console->foreground = RT_NULL;
