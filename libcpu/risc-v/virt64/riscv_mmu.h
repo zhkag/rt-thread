@@ -11,6 +11,8 @@
 #ifndef __RISCV_MMU_H__
 #define __RISCV_MMU_H__
 
+#include <rtthread.h>
+#include <rthw.h>
 #include "riscv.h"
 
 #undef PAGE_SIZE
@@ -52,18 +54,43 @@
 #define PAGE_DEFAULT_ATTR_LEAF (PAGE_ATTR_RWX | PAGE_ATTR_USER | PTE_V | PTE_G)
 #define PAGE_DEFAULT_ATTR_NEXT (PAGE_ATTR_NEXT_LEVEL | PTE_V | PTE_G)
 
-#define PAGE_IS_LEAF(pte) __MASKVALUE(pte,PAGE_ATTR_RWX)
+#define PAGE_IS_LEAF(pte) __MASKVALUE(pte, PAGE_ATTR_RWX)
 
-#define PTE_USED(pte) __MASKVALUE(pte,PTE_V)
+#define PTE_USED(pte) __MASKVALUE(pte, PTE_V)
 
-#define mmu_flush_tlb() do{asm volatile("sfence.vma x0,x0");}while(0)
+/** 
+ * encoding of SATP (Supervisor Address Translation and Protection register)
+ */
+#define SATP_MODE_OFFSET    60
+#define SATP_MODE_BARE      0
+#define SATP_MODE_SV39      8
+#define SATP_MODE_SV48      9
+#define SATP_MODE_SV57      10
+#define SATP_MODE_SV64      11
 
-//compatible to rt-smart new version
-#define MMU_MAP_K_DEVICE (PAGE_ATTR_RWX | PTE_V | PTE_G)
-#define MMU_MAP_K_RWCB (PAGE_ATTR_RWX | PTE_V | PTE_G)
-#define ARCH_PAGE_SIZE PAGE_SIZE
-#define ARCH_PAGE_MASK (ARCH_PAGE_SIZE - 1)
-#define ARCH_PAGE_SHIFT PAGE_OFFSET_BIT
+#define ARCH_VA_WIDTH           39
+#define SATP_MODE               SATP_MODE_SV39
+
+#define mmu_flush_tlb()                   \
+    do                                    \
+    {                                     \
+        asm volatile("sfence.vma x0,x0"); \
+    } while (0)
+
+
+#define MMU_MAP_K_DEVICE        (PTE_G | PTE_W | PTE_R | PTE_V)
+#define MMU_MAP_K_RWCB          (PTE_G | PTE_X | PTE_W | PTE_R | PTE_V)
+#define MMU_MAP_U_RWCB          (PTE_U | PTE_X | PTE_W | PTE_R | PTE_V)
+#define MMU_MAP_U_RW            (PTE_U | PTE_X | PTE_W | PTE_R | PTE_V)
+
+#define PTE_XWR_MASK            0xe
+
+#define ARCH_PAGE_SIZE          PAGE_SIZE
+#define ARCH_PAGE_MASK          (ARCH_PAGE_SIZE - 1)
+#define ARCH_PAGE_SHIFT         PAGE_OFFSET_BIT
+#define ARCH_INDEX_WIDTH        9
+#define ARCH_INDEX_SIZE         (1ul << ARCH_INDEX_WIDTH)
+#define ARCH_INDEX_MASK         (ARCH_INDEX_SIZE - 1)
 
 void mmu_set_pagetable(rt_ubase_t addr);
 void mmu_enable_user_page_access();

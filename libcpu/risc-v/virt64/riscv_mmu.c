@@ -20,18 +20,20 @@
 
 void mmu_set_pagetable(rt_ubase_t addr)
 {
-    RT_ASSERT(__CHECKALIGN(addr,PAGE_OFFSET_BIT));
-    RT_ASSERT(__CHECKUPBOUND(addr,PHYSICAL_ADDRESS_WIDTH_BITS));
-    write_csr(satp,(((size_t)8) << 60) | (addr >> PAGE_OFFSET_BIT));
+    RT_ASSERT(__CHECKALIGN(addr, PAGE_OFFSET_BIT));
+    RT_ASSERT(__CHECKUPBOUND(addr, PHYSICAL_ADDRESS_WIDTH_BITS));
+
+    mmu_flush_tlb();
+    write_csr(satp, (((size_t)SATP_MODE) << SATP_MODE_OFFSET) | (addr >> PAGE_OFFSET_BIT));
     mmu_flush_tlb();
 }
 
 void mmu_enable_user_page_access()
 {
-    set_csr(sstatus,SSTATUS_PUM);
+    set_csr(sstatus, SSTATUS_PUM);
 }
 
 void mmu_disable_user_page_access()
 {
-    clear_csr(sstatus,SSTATUS_PUM);
+    clear_csr(sstatus, SSTATUS_PUM);
 }

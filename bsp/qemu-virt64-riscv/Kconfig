@@ -39,6 +39,10 @@ config RT_USING_USERSPACE_32BIT_LIMIT
     bool "Enable userspace 32bit limit"
     default n
 
+config RT_USING_VIRTIO_MMIO_ALIGN
+    bool "Open packed attribution, this may caused an error on virtio"
+    default n
+
 source "driver/Kconfig"
 
 config __STACKSIZE__

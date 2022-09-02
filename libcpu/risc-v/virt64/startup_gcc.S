@@ -14,6 +14,9 @@
 #define __ASSEMBLY__
 #include <cpuport.h>
 
+boot_hartid: .int
+  .global      boot_hartid
+
   .global	_start
   .section ".start", "ax"
 _start:
@@ -25,8 +28,15 @@ _start:
       .dword 1
       .dword 0
 1:
+  # save hartid
+  la t0, boot_hartid                # global varible rt_boot_hartid
+  mv t1, a0                         # get hartid in S-mode frome a0 register
+  sw t1, (t0)                       # store t1 register low 4 bits in memory address which is stored in t0
+
+  # clear Interrupt Registers
   csrw sie, 0
   csrw sip, 0
+  # set Trap Vector Base Address Register
   la t0, trap_entry
   csrw stvec, t0
 

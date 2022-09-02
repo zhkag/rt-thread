@@ -12,6 +12,7 @@
 #include "drv_uart.h"
 
 #include <stdio.h>
+#include <ioremap.h>
 #include "sbi.h"
 
 #define UART_DEFAULT_BAUDRATE               115200
@@ -165,7 +166,7 @@ int rt_hw_uart_init(void)
         serial->config           = config;
         serial->config.baud_rate = UART_DEFAULT_BAUDRATE;
 
-        uart->hw_base   = 0x10000000;
+        uart->hw_base   = (rt_size_t)rt_ioremap((void*)0x10000000, 4096);
         uart->irqno     = 0xa;
 
         rt_hw_serial_register(serial,
