@@ -163,7 +163,7 @@ static size_t find_vaddr(rt_mmu_info *mmu_info, int pages)
         return 0;
     }
 
-    loop_pages = mmu_info->vend - mmu_info->vstart + 1;
+    loop_pages = (mmu_info->vend - mmu_info->vstart) ? (mmu_info->vend - mmu_info->vstart) : 1;
     loop_pages <<= (ARCH_INDEX_WIDTH * 2);
     va = mmu_info->vstart;
     va <<= (ARCH_PAGE_SHIFT + ARCH_INDEX_WIDTH * 2);
