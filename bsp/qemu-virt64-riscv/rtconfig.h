@@ -147,9 +147,6 @@
 
 /* Utilities */
 
-#define RT_USING_UTEST
-#define UTEST_THR_STACK_SIZE 4096
-#define UTEST_THR_PRIORITY 20
 #define RT_USING_LWP
 #define RT_LWP_MAX_NR 30
 #define LWP_TASK_STACK_SIZE 16384
