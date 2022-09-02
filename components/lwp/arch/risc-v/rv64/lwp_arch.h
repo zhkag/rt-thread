@@ -11,6 +11,7 @@
 #define  LWP_ARCH_H__
 
 #include <lwp.h>
+#include <riscv_mmu.h>
 
 #ifdef RT_USING_USERSPACE
 
@@ -34,8 +35,14 @@
 #define LDSO_LOAD_VADDR     0x200000000
 #endif
 
+/* this attribution is cpu specified, and it should be defined in riscv_mmu.h */
+#ifndef MMU_MAP_U_RWCB
 #define MMU_MAP_U_RWCB 0
+#endif
+
+#ifndef MMU_MAP_U_RW
 #define MMU_MAP_U_RW 0
+#endif
 
 #ifdef __cplusplus
 extern "C" {

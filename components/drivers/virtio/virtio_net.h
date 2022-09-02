@@ -11,6 +11,8 @@
 #ifndef __VIRTIO_NET_H__
 #define __VIRTIO_NET_H__
 
+#ifdef RT_USING_VIRTIO_NET
+
 #include <rtdef.h>
 #include <netif/ethernetif.h>
 
@@ -111,5 +113,7 @@ struct virtio_net_device
 };
 
 rt_err_t rt_virtio_net_init(rt_ubase_t *mmio_base, rt_uint32_t irq);
+
+#endif /* RT_USING_VIRTIO_NET */
 
 #endif /* __VIRTIO_NET_H__ */
