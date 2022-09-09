@@ -506,6 +506,7 @@ static int load_elf(int fd, int len, struct rt_lwp *lwp, uint8_t *load_addr, str
 
     if (len < sizeof eheader)
     {
+        LOG_E("len < sizeof eheader!");
         return -RT_ERROR;
     }
 
@@ -515,6 +516,7 @@ static int load_elf(int fd, int len, struct rt_lwp *lwp, uint8_t *load_addr, str
 
     if (memcmp(elf_magic, &magic, 4) != 0)
     {
+        LOG_E("elf_magic not same, magic:0x%x!", magic);
         return -RT_ERROR;
     }
 
@@ -525,17 +527,20 @@ static int load_elf(int fd, int len, struct rt_lwp *lwp, uint8_t *load_addr, str
 #ifndef ARCH_CPU_64BIT
     if (eheader.e_ident[4] != 1)
     { /* not 32bit */
+        LOG_E("elf not 32bit, %d!", eheader.e_ident[4]);
         return -RT_ERROR;
     }
 #else
     if (eheader.e_ident[4] != 2)
     { /* not 64bit */
+        LOG_E("elf not 64bit, %d!", eheader.e_ident[4]);
         return -RT_ERROR;
     }
 #endif
 
     if (eheader.e_ident[6] != 1)
     { /* ver not 1 */
+        LOG_E("elf Version not 1,ver:%d!", eheader.e_ident[6]);
         return -RT_ERROR;
     }
 
@@ -546,6 +551,7 @@ static int load_elf(int fd, int len, struct rt_lwp *lwp, uint8_t *load_addr, str
     )
     {
         /* not pie or exec elf */
+        LOG_E("elf type not pie or exec, type:%d!", eheader.e_type);
         return -RT_ERROR;
     }
 
@@ -574,6 +580,7 @@ static int load_elf(int fd, int len, struct rt_lwp *lwp, uint8_t *load_addr, str
                 && (eheader.e_entry != LDSO_LOAD_VADDR))
         {
             /* the entry is invalidate */
+            LOG_E("elf entry is invalidate, entry:0x%x!", eheader.e_entry);
             return -RT_ERROR;
         }
     }
@@ -587,11 +594,13 @@ static int load_elf(int fd, int len, struct rt_lwp *lwp, uint8_t *load_addr, str
 #ifdef RT_USING_USERSPACE
         if (process_header_size > ARCH_PAGE_SIZE - sizeof(char[16]))
         {
+            LOG_E("process_header_size too big, size:0x%x!", process_header_size);
             return -RT_ERROR;
         }
         va = (uint8_t *)lwp_map_user(lwp, (void *)(USER_VADDR_TOP - ARCH_PAGE_SIZE * 2), process_header_size, 0);
         if (!va)
         {
+            LOG_E("lwp map user failed!");
             return -RT_ERROR;
         }
         pa = rt_hw_mmu_v2p(m_info, va);
@@ -600,6 +609,7 @@ static int load_elf(int fd, int len, struct rt_lwp *lwp, uint8_t *load_addr, str
         process_header = (uint8_t *)rt_malloc(process_header_size + sizeof(char[16]));
         if (!process_header)
         {
+            LOG_E("process_header malloc failed, size:0x%x!", process_header_size + sizeof(char[16]));
             return -RT_ERROR;
         }
 #endif
@@ -801,6 +811,7 @@ static int load_elf(int fd, int len, struct rt_lwp *lwp, uint8_t *load_addr, str
         {
             if (pheader.p_filesz > pheader.p_memsz)
             {
+                LOG_E("pheader.p_filesz > pheader.p_memsz, p_filesz:0x%x;p_memsz:0x%x!", pheader.p_filesz, pheader.p_memsz);
                 return -RT_ERROR;
             }
 
