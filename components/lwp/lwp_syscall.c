@@ -1168,7 +1168,7 @@ rt_err_t sys_event_recv(rt_event_t   event,
                        rt_int32_t   timeout,
                        rt_uint32_t *recved)
 {
-    if (!lwp_user_accessable((void *)recved, sizeof(rt_uint32_t *)))
+    if ((recved != NULL) && !lwp_user_accessable((void *)recved, sizeof(rt_uint32_t *)))
     {
         return -EFAULT;
     }
