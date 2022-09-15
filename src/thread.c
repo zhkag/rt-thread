@@ -508,12 +508,13 @@ RTM_EXPORT(rt_thread_yield);
  *
  * @param tick the sleep ticks
  *
- * @return RT_EOK
+ * @return RT_EOK on OK, -RT_ERROR on error
  */
 rt_err_t rt_thread_sleep(rt_tick_t tick)
 {
     register rt_base_t temp;
     struct rt_thread *thread;
+    int err;
 
     /* set to current thread */
     thread = rt_thread_self();
@@ -524,22 +525,29 @@ rt_err_t rt_thread_sleep(rt_tick_t tick)
     temp = rt_hw_interrupt_disable();
 
     /* suspend thread */
-    rt_thread_suspend_with_flag(thread, RT_INTERRUPTIBLE);
+    err = rt_thread_suspend_with_flag(thread, RT_INTERRUPTIBLE);
 
     /* reset the timeout of thread timer and start it */
-    rt_timer_control(&(thread->thread_timer), RT_TIMER_CTRL_SET_TIME, &tick);
-    rt_timer_start(&(thread->thread_timer));
+    if (err == RT_EOK)
+    {
+        rt_timer_control(&(thread->thread_timer), RT_TIMER_CTRL_SET_TIME, &tick);
+        rt_timer_start(&(thread->thread_timer));
 
-    /* enable interrupt */
-    rt_hw_interrupt_enable(temp);
+        /* enable interrupt */
+        rt_hw_interrupt_enable(temp);
 
-    rt_schedule();
+        rt_schedule();
 
-    /* clear error number of this thread to RT_EOK */
-    if (thread->error == -RT_ETIMEOUT)
-        thread->error = RT_EOK;
+        /* clear error number of this thread to RT_EOK */
+        if (thread->error == -RT_ETIMEOUT)
+            thread->error = RT_EOK;
+    }
+    else
+    {
+        rt_hw_interrupt_enable(temp);
+    }
 
-    return RT_EOK;
+    return err;
 }
 
 /**

@@ -1200,8 +1200,8 @@ pid_t lwp_execve(char *filename, int debug, int argc, char **argv, char **envp)
 
             thread->tid = tid;
             lwp_tid_set_thread(tid, thread);
-            LOG_D("lwp kernel => (0x%08x, 0x%08x)\n", (rt_uint32_t)thread->stack_addr,
-                    (rt_uint32_t)thread->stack_addr + thread->stack_size);
+            LOG_D("lwp kernel => (0x%08x, 0x%08x)\n", (rt_size_t)thread->stack_addr,
+                    (rt_size_t)thread->stack_addr + thread->stack_size);
             level = rt_hw_interrupt_disable();
             self_lwp = lwp_self();
             if (self_lwp)
