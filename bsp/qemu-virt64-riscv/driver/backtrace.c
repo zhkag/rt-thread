@@ -51,7 +51,6 @@ void rt_hw_backtrace(rt_uint32_t *ffp, rt_ubase_t sepc)
 
     for (i = j = 0; i < TRANCE_LEVEL; i++)
     {
-        // rt_kprintf("fp %d:%p\n", i, fp);
         if (RT_ALIGN((rt_ubase_t)fp, sizeof(void *)) != (rt_ubase_t)fp)
         {
             break;
