@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2006-2022, RT-Thread Development Team
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Change Logs:
+ * Date           Author       Notes
+ */
 // See LICENSE for license details.
 
 #ifndef RISCV_CSR_ENCODING_H
@@ -106,6 +114,18 @@
 #define SIP_STIP    MIP_STIP /* timer interrupt */
 #define SIP_SEIP    MIP_SEIP /* ext interrupt */
 
+#define SIE_SSIE            (1 << IRQ_S_SOFT)
+#define SIE_STIE            (1 << IRQ_S_TIMER)
+#define SIE_SEIE            (1 << IRQ_S_EXT)
+
+#define RISCV_XLEN    64
+
+#define SCAUSE_INTERRUPT    (1UL << (RISCV_XLEN - 1))
+
+#define SCAUSE_S_SOFTWARE_INTR  1
+#define SCAUSE_S_TIMER_INTR     5
+#define SCAUSE_S_EXTERNAL_INTR  9
+
 #define PRV_U 0
 #define PRV_S 1
 #define PRV_H 2
@@ -167,7 +187,7 @@
 #define RISCV_PGSHIFT 12
 #define RISCV_PGSIZE (1 << RISCV_PGSHIFT)
 
-#ifndef __ASSEMBLER__
+#ifndef __ASSEMBLY__
 
 #ifdef __GNUC__
 
@@ -208,7 +228,7 @@
 
 #endif /* end of __GNUC__ */
 
-#endif /* end of __ASSEMBLER__ */
+#endif /* end of __ASSEMBLY__ */
 
 #endif /* end of __riscv */
 

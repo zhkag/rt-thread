@@ -100,6 +100,10 @@ copy_context_loop_interrupt:
     #endif
 
 spurious_interrupt:
+    LOAD t0, 2 * REGBYTES(sp)
+    andi t0, t0, 0x100
+    beqz t0, ret_to_user
+
     RESTORE_ALL
     sret
 
@@ -153,7 +157,7 @@ copy_context_loop:
 .global syscall_exit
 syscall_exit:
 
-    #if defined(RT_USING_USERSPACE) && defined(RT_USING_SIGNALS)
+    #if defined(RT_USING_USERSPACE)
         LOAD s0, 2 * REGBYTES(sp)
         andi s0, s0, 0x100
         bnez s0, dont_ret_to_user
@@ -177,10 +181,12 @@ syscall_exit:
 
 .global rt_hw_interrupt_enable
 rt_hw_interrupt_enable:
+    fence.i
     csrs sstatus, a0    /* restore to old csr */
     jr ra
 
 .global rt_hw_interrupt_disable
 rt_hw_interrupt_disable:
     csrrci a0, sstatus, 2   /* clear SIE */
+    fence.i
     jr ra

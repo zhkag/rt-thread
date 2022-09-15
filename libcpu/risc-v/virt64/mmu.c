@@ -15,8 +15,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define DBG_TAG     "mmu"
-#define DBG_LVL     DBG_INFO
+#define DBG_TAG "mmu"
+#define DBG_LVL DBG_INFO
 #include <rtdbg.h>
 
 #include <string.h>
@@ -138,7 +138,7 @@ void rt_hw_mmu_kernel_map_init(rt_mmu_info *mmu_info, rt_size_t vaddr_start, rt_
     rt_size_t va_e = GET_L1(vaddr_start + size - 1);
     rt_size_t i;
 
-    for(i = va_s;i <= va_e;i++)
+    for (i = va_s; i <= va_e; i++)
     {
         mmu_info->vtable[i] = COMBINEPTE(paddr_start, PAGE_ATTR_RWX | PTE_G | PTE_V);
         paddr_start += L1_PAGE_SIZE;
@@ -148,8 +148,6 @@ void rt_hw_mmu_kernel_map_init(rt_mmu_info *mmu_info, rt_size_t vaddr_start, rt_
 }
 
 // find a range of free virtual address specified by pages
-
-
 static size_t find_vaddr(rt_mmu_info *mmu_info, int pages)
 {
     size_t loop_pages;
@@ -237,13 +235,11 @@ static int check_vaddr(rt_mmu_info *mmu_info, void *va, rt_size_t pages)
     return 0;
 }
 
-// TODO pages ref_cnt problem
 static void __rt_hw_mmu_unmap(rt_mmu_info *mmu_info, void *v_addr, rt_size_t npages)
 {
     rt_size_t loop_va = __UMASKVALUE((rt_size_t)v_addr, PAGE_OFFSET_MASK);
     rt_size_t l1_off, l2_off, l3_off;
     rt_size_t *mmu_l1, *mmu_l2, *mmu_l3;
-    rt_size_t *ref_cnt;
 
     RT_ASSERT(mmu_info);
 
@@ -267,26 +263,29 @@ static void __rt_hw_mmu_unmap(rt_mmu_info *mmu_info, void *v_addr, rt_size_t npa
         *mmu_l3 = 0;
         rt_hw_cpu_dcache_clean(mmu_l3, sizeof(*mmu_l3));
 
-        // ref_cnt recalc, page in 8KB size
+        // decrease reference from leaf page to l3 page
         mmu_l3 -= l3_off;
-        ref_cnt = mmu_l3 + __SIZE(VPN0_BIT);
-        (*ref_cnt)--;
+        rt_pages_free(mmu_l3, 0);
+        int free = rt_page_ref_get(mmu_l3, 0);
 
-        if (!*ref_cnt)
+        if (free == 1)
         {
-            // release level 3 page
-            rt_pages_free(mmu_l3, 1); // entry page and ref_cnt page
+            // free l3 page
+            rt_pages_free(mmu_l3, 0);
+
             *mmu_l2 = 0;
             rt_hw_cpu_dcache_clean(mmu_l2, sizeof(*mmu_l2));
+
+            // decrease reference from l3 page to l2 page
             mmu_l2 -= l2_off;
+            rt_pages_free(mmu_l2, 0);
 
-            ref_cnt = mmu_l2 + __SIZE(VPN1_BIT);
-            (*ref_cnt)--;
-
-            if (!*ref_cnt)
+            free = rt_page_ref_get(mmu_l2, 0);
+            if (free == 1)
             {
-                // release level 2 page
-                rt_pages_free(mmu_l2, 1); // entry page and ref_cnt page
+                // free l3 page
+                rt_pages_free(mmu_l2, 0);
+                // reset PTE in l1
                 *mmu_l1 = 0;
                 rt_hw_cpu_dcache_clean(mmu_l1, sizeof(*mmu_l1));
             }
@@ -296,13 +295,75 @@ static void __rt_hw_mmu_unmap(rt_mmu_info *mmu_info, void *v_addr, rt_size_t npa
     }
 }
 
+static int _mmu_map_one_page(rt_mmu_info *mmu_info, size_t va, size_t pa, size_t attr)
+{
+    rt_size_t l1_off, l2_off, l3_off;
+    rt_size_t *mmu_l1, *mmu_l2, *mmu_l3;
+
+    l1_off = GET_L1(va);
+    l2_off = GET_L2(va);
+    l3_off = GET_L3(va);
+
+    mmu_l1 = ((rt_size_t *)mmu_info->vtable) + l1_off;
+
+    if (PTE_USED(*mmu_l1))
+    {
+        RT_ASSERT(!PAGE_IS_LEAF(*mmu_l1));
+        mmu_l2 = (rt_size_t *)PPN_TO_VPN(GET_PADDR(*mmu_l1), mmu_info->pv_off);
+    }
+    else
+    {
+        mmu_l2 = (rt_size_t *)rt_pages_alloc(0);
+
+        if (mmu_l2)
+        {
+            rt_memset(mmu_l2, 0, PAGE_SIZE);
+            rt_hw_cpu_dcache_clean(mmu_l2, PAGE_SIZE);
+            *mmu_l1 = COMBINEPTE((rt_size_t)VPN_TO_PPN(mmu_l2, mmu_info->pv_off), PAGE_DEFAULT_ATTR_NEXT);
+            rt_hw_cpu_dcache_clean(mmu_l1, sizeof(*mmu_l1));
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
+    if (PTE_USED(*(mmu_l2 + l2_off)))
+    {
+        RT_ASSERT(!PAGE_IS_LEAF(*(mmu_l2 + l2_off)));
+        mmu_l3 = (rt_size_t *)PPN_TO_VPN(GET_PADDR(*(mmu_l2 + l2_off)), mmu_info->pv_off);
+    }
+    else
+    {
+        mmu_l3 = (rt_size_t *)rt_pages_alloc(0);
+
+        if (mmu_l3)
+        {
+            rt_memset(mmu_l3, 0, PAGE_SIZE);
+            rt_hw_cpu_dcache_clean(mmu_l3, PAGE_SIZE);
+            *(mmu_l2 + l2_off) = COMBINEPTE((rt_size_t)VPN_TO_PPN(mmu_l3, mmu_info->pv_off), PAGE_DEFAULT_ATTR_NEXT);
+            rt_hw_cpu_dcache_clean(mmu_l2, sizeof(*mmu_l2));
+            // declares a reference to parent page table
+            rt_page_ref_inc((void *)mmu_l2, 0);
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
+    RT_ASSERT(!PTE_USED(*(mmu_l3 + l3_off)));
+    // declares a reference to parent page table
+    rt_page_ref_inc((void *)mmu_l3, 0);
+    *(mmu_l3 + l3_off) = COMBINEPTE((rt_size_t)pa, attr);
+    rt_hw_cpu_dcache_clean(mmu_l3 + l3_off, sizeof(*(mmu_l3 + l3_off)));
+    return 0;
+}
+
 static int __rt_hw_mmu_map(rt_mmu_info *mmu_info, void *v_addr, void *p_addr, rt_size_t npages, rt_size_t attr)
 {
     rt_size_t loop_va = __UMASKVALUE((rt_size_t)v_addr, PAGE_OFFSET_MASK);
     rt_size_t loop_pa = __UMASKVALUE((rt_size_t)p_addr, PAGE_OFFSET_MASK);
-    rt_size_t l1_off, l2_off, l3_off;
-    rt_size_t *mmu_l1, *mmu_l2, *mmu_l3;
-    rt_size_t *ref_cnt;
 
     if (!mmu_info)
     {
@@ -311,64 +372,11 @@ static int __rt_hw_mmu_map(rt_mmu_info *mmu_info, void *v_addr, void *p_addr, rt
 
     while (npages--)
     {
-        l1_off = GET_L1(loop_va);
-        l2_off = GET_L2(loop_va);
-        l3_off = GET_L3(loop_va);
-        mmu_l1 = ((rt_size_t *)mmu_info->vtable) + l1_off;
-
-        if (PTE_USED(*mmu_l1))
+        if (_mmu_map_one_page(mmu_info, loop_va, loop_pa, attr) != 0)
         {
-            RT_ASSERT(!PAGE_IS_LEAF(*mmu_l1));
-            mmu_l2 = (rt_size_t *)PPN_TO_VPN(GET_PADDR(*mmu_l1), mmu_info->pv_off);
+            __rt_hw_mmu_unmap(mmu_info, v_addr, npages);
+            return -1;
         }
-        else
-        {
-            mmu_l2 = (rt_size_t *)rt_pages_alloc(1);
-
-            if (mmu_l2)
-            {
-                rt_memset(mmu_l2, 0, PAGE_SIZE * 2);
-                rt_hw_cpu_dcache_clean(mmu_l2, PAGE_SIZE * 2);
-                *mmu_l1 = COMBINEPTE((rt_size_t)VPN_TO_PPN(mmu_l2, mmu_info->pv_off), PAGE_DEFAULT_ATTR_NEXT);
-                rt_hw_cpu_dcache_clean(mmu_l1, sizeof(*mmu_l1));
-            }
-            else
-            {
-                __rt_hw_mmu_unmap(mmu_info, v_addr, npages);
-                return -1;
-            }
-        }
-
-        if (PTE_USED(*(mmu_l2 + l2_off)))
-        {
-            RT_ASSERT(!PAGE_IS_LEAF(*(mmu_l2 + l2_off)));
-            mmu_l3 = (rt_size_t *)PPN_TO_VPN(GET_PADDR(*(mmu_l2 + l2_off)), mmu_info->pv_off);
-        }
-        else
-        {
-            mmu_l3 = (rt_size_t *)rt_pages_alloc(1);
-
-            if (mmu_l3)
-            {
-                rt_memset(mmu_l3, 0, PAGE_SIZE * 2);
-                rt_hw_cpu_dcache_clean(mmu_l3, PAGE_SIZE * 2);
-                *(mmu_l2 + l2_off) = COMBINEPTE((rt_size_t)VPN_TO_PPN(mmu_l3, mmu_info->pv_off), PAGE_DEFAULT_ATTR_NEXT);
-                rt_hw_cpu_dcache_clean(mmu_l2, sizeof(*mmu_l2));
-                ref_cnt = mmu_l2 + __SIZE(VPN1_BIT);
-                (*ref_cnt)++;
-            }
-            else
-            {
-                __rt_hw_mmu_unmap(mmu_info, v_addr, npages);
-                return -1;
-            }
-        }
-
-        RT_ASSERT(!PTE_USED(*(mmu_l3 + l3_off)));
-        ref_cnt = mmu_l3 + __SIZE(VPN0_BIT);
-        (*ref_cnt)++;
-        *(mmu_l3 + l3_off) = COMBINEPTE((rt_size_t)loop_pa, attr);
-        rt_hw_cpu_dcache_clean(mmu_l3 + l3_off, sizeof(*(mmu_l3 + l3_off)));
 
         loop_va += PAGE_SIZE;
         loop_pa += PAGE_SIZE;

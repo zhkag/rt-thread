@@ -59,5 +59,9 @@ rt_hw_context_switch:
         jal lwp_mmu_switch
     #endif
 
+    LOAD t0, 2 * REGBYTES(sp)
+    andi t0, t0, 0x100
+    beqz t0, ret_to_user
+
     RESTORE_ALL
     sret

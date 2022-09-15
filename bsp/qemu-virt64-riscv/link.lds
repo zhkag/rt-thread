@@ -29,7 +29,7 @@ SECTIONS
     . = 0x80200000 ;
 
     /* __STACKSIZE__ = 4096; */
-
+    __text_start = .;
     .start :
     {
         *(.start);
@@ -81,6 +81,8 @@ SECTIONS
     .eh_frame : ONLY_IF_RO { KEEP (*(.eh_frame)) } > SRAM
 
     . = ALIGN(8);
+    __text_end = .;
+    __text_size = __text_end - __text_start;
 
     .data : 
     {

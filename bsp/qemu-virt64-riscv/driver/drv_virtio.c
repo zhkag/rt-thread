@@ -93,7 +93,6 @@ int rt_virtio_devices_init(void)
             init_handler((rt_ubase_t *)mmio_base, irq);
         }
     }
-    rt_kprintf("rt_virtio_devices_init done!\n");
 
     return 0;
 }
