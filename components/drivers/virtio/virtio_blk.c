@@ -21,7 +21,7 @@ static void virtio_blk_rw(struct virtio_blk_device *virtio_blk_dev, rt_off_t pos
     int flags)
 {
     rt_uint16_t idx[3];
-    rt_size_t size = count * VIRTIO_BLK_BUF_DATA_SIZE;
+    rt_size_t size = count * virtio_blk_dev->config->blk_size;
     struct virtio_device *virtio_dev = &virtio_blk_dev->virtio_dev;
 
 #ifdef RT_USING_SMP
@@ -45,7 +45,7 @@ static void virtio_blk_rw(struct virtio_blk_device *virtio_blk_dev, rt_off_t pos
     virtio_blk_dev->info[idx[0]].valid = RT_TRUE;
     virtio_blk_dev->info[idx[0]].req.type = flags;
     virtio_blk_dev->info[idx[0]].req.ioprio = 0;
-    virtio_blk_dev->info[idx[0]].req.sector = pos * count;
+    virtio_blk_dev->info[idx[0]].req.sector = pos * (virtio_blk_dev->config->blk_size / 512);
 
     flags = flags == VIRTIO_BLK_T_OUT ? 0 : VIRTQ_DESC_F_WRITE;
 
@@ -114,7 +114,7 @@ static rt_err_t virtio_blk_control(rt_device_t dev, int cmd, void *args)
             }
 
             geometry->bytes_per_sector = VIRTIO_BLK_BYTES_PER_SECTOR;
-            geometry->block_size = VIRTIO_BLK_BLOCK_SIZE;
+            geometry->block_size = virtio_blk_dev->config->blk_size;
             geometry->sector_count = virtio_blk_dev->config->capacity;
         }
         break;

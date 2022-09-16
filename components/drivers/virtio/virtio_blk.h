@@ -17,9 +17,7 @@
 #include <virtio.h>
 
 #define VIRTIO_BLK_QUEUE            0
-#define VIRTIO_BLK_BUF_DATA_SIZE    512
 #define VIRTIO_BLK_BYTES_PER_SECTOR 512
-#define VIRTIO_BLK_BLOCK_SIZE       512
 #define VIRTIO_BLK_QUEUE_RING_SIZE  4
 
 #define VIRTIO_BLK_F_RO             5   /* Disk is read-only */
@@ -43,10 +41,11 @@ struct virtio_blk_req
 
 struct virtio_blk_config
 {
-    rt_uint64_t capacity;
-    rt_uint32_t size_max;
-    rt_uint32_t seg_max;
+    rt_uint64_t capacity;           /* The capacity (in 512-byte sectors). */
+    rt_uint32_t size_max;           /* The maximum segment size (if VIRTIO_BLK_F_SIZE_MAX) */
+    rt_uint32_t seg_max;            /* The maximum number of segments (if VIRTIO_BLK_F_SEG_MAX) */
 
+    /* Geometry of the device (if VIRTIO_BLK_F_GEOMETRY) */
     struct virtio_blk_geometry
     {
         rt_uint16_t cylinders;
@@ -54,7 +53,7 @@ struct virtio_blk_config
         rt_uint8_t sectors;
     } geometry;
 
-    rt_uint32_t blk_size;
+    rt_uint32_t blk_size;           /* Block size of device (if VIRTIO_BLK_F_BLK_SIZE) */
 
     struct virtio_blk_topology
     {
