@@ -45,19 +45,21 @@
 #define CTX_REG_NR  (CTX_GENERAL_REG_NR + CTX_FPU_REG_NR + CTX_VECTOR_REG_NR)
 
 #ifndef __ASSEMBLY__
+#include <rtthread.h>
+
 rt_inline void rt_hw_dsb()
 {
-    asm volatile("fence":::"memory");
+    __asm__ volatile("fence":::"memory");
 }
 
 rt_inline void rt_hw_dmb()
 {
-    asm volatile("fence":::"memory");
+    __asm__ volatile("fence":::"memory");
 }
 
 rt_inline void rt_hw_isb()
 {
-    asm volatile(".long 0x0000100F":::"memory");
+    __asm__ volatile(".long 0x0000100F":::"memory");
 }
 
 #endif

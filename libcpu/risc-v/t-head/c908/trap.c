@@ -107,7 +107,7 @@ void dump_regs(struct rt_hw_stack_frame *regs)
     rt_kprintf("\t%s\n",(regs->sstatus & SSTATUS_SIE) ? "Supervisor Interrupt Enabled" : "Supervisor Interrupt Disabled");
     rt_kprintf("\t%s\n",(regs->sstatus & SSTATUS_SPIE) ? "Last Time Supervisor Interrupt Enabled" : "Last Time Supervisor Interrupt Disabled");
     rt_kprintf("\t%s\n",(regs->sstatus & SSTATUS_SPP) ? "Last Privilege is Supervisor Mode" : "Last Privilege is User Mode");
-    rt_kprintf("\t%s\n",(regs->sstatus & SSTATUS_PUM) ? "Permit to Access User Page" : "Not Permit to Access User Page");
+    rt_kprintf("\t%s\n",(regs->sstatus & SSTATUS_SUM) ? "Permit to Access User Page" : "Not Permit to Access User Page");
     rt_kprintf("\t%s\n",(regs->sstatus & (1 << 19)) ? "Permit to Read Executable-only Page" : "Not Permit to Read Executable-only Page");
     rt_size_t satp_v = read_csr(satp);
     rt_kprintf("satp = 0x%p\n",satp_v);

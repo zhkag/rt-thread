@@ -36,8 +36,8 @@
  */
 
 #include "sbi.h"
-#include <stdbool.h>
 #include <rtthread.h>
+#include <stdbool.h>
 
 /* SBI Implementation-Specific Definitions */
 #define OPENSBI_VERSION_MAJOR_OFFSET 16
@@ -51,20 +51,17 @@ static bool has_time_extension = false;
 static bool has_ipi_extension = false;
 static bool has_rfnc_extension = false;
 
-static struct sbi_ret
-sbi_get_spec_version(void)
+static struct sbi_ret sbi_get_spec_version(void)
 {
     return (SBI_CALL0(SBI_EXT_ID_BASE, SBI_BASE_GET_SPEC_VERSION));
 }
 
-static struct sbi_ret
-sbi_get_impl_id(void)
+static struct sbi_ret sbi_get_impl_id(void)
 {
     return (SBI_CALL0(SBI_EXT_ID_BASE, SBI_BASE_GET_IMPL_ID));
 }
 
-static struct sbi_ret
-sbi_get_impl_version(void)
+static struct sbi_ret sbi_get_impl_version(void)
 {
     return (SBI_CALL0(SBI_EXT_ID_BASE, SBI_BASE_GET_IMPL_VERSION));
 }
@@ -84,33 +81,34 @@ void sbi_print_version(void)
 
     switch (sbi_impl_id)
     {
-    case (SBI_IMPL_ID_BBL):
-        rt_kprintf("SBI: Berkely Boot Loader %lu\n", sbi_impl_version);
-        break;
-    case (SBI_IMPL_ID_XVISOR):
-        rt_kprintf("SBI: eXtensible Versatile hypervISOR %lu\n", sbi_impl_version);
-        break;
-    case (SBI_IMPL_ID_KVM):
-        rt_kprintf("SBI: Kernel-based Virtual Machine %lu\n", sbi_impl_version);
-        break;
-    case (SBI_IMPL_ID_RUSTSBI):
-        rt_kprintf("SBI: RustSBI %lu\n", sbi_impl_version);
-        break;
-    case (SBI_IMPL_ID_DIOSIX):
-        rt_kprintf("SBI: Diosix %lu\n", sbi_impl_version);
-        break;
-    case (SBI_IMPL_ID_OPENSBI):
-        major = sbi_impl_version >> OPENSBI_VERSION_MAJOR_OFFSET;
-        minor = sbi_impl_version & OPENSBI_VERSION_MINOR_MASK;
-        rt_kprintf("SBI: OpenSBI v%u.%u\n", major, minor);
-        break;
-    default:
-        rt_kprintf("SBI: Unrecognized Implementation: %lu\n", sbi_impl_id);
-        break;
+        case (SBI_IMPL_ID_BBL):
+            rt_kprintf("SBI: Berkely Boot Loader %lu\n", sbi_impl_version);
+            break;
+        case (SBI_IMPL_ID_XVISOR):
+            rt_kprintf("SBI: eXtensible Versatile hypervISOR %lu\n",
+                       sbi_impl_version);
+            break;
+        case (SBI_IMPL_ID_KVM):
+            rt_kprintf("SBI: Kernel-based Virtual Machine %lu\n", sbi_impl_version);
+            break;
+        case (SBI_IMPL_ID_RUSTSBI):
+            rt_kprintf("SBI: RustSBI %lu\n", sbi_impl_version);
+            break;
+        case (SBI_IMPL_ID_DIOSIX):
+            rt_kprintf("SBI: Diosix %lu\n", sbi_impl_version);
+            break;
+        case (SBI_IMPL_ID_OPENSBI):
+            major = sbi_impl_version >> OPENSBI_VERSION_MAJOR_OFFSET;
+            minor = sbi_impl_version & OPENSBI_VERSION_MINOR_MASK;
+            rt_kprintf("SBI: OpenSBI v%u.%u\n", major, minor);
+            break;
+        default:
+            rt_kprintf("SBI: Unrecognized Implementation: %lu\n", sbi_impl_id);
+            break;
     }
 
     major = (sbi_spec_version & SBI_SPEC_VERS_MAJOR_MASK) >>
-            SBI_SPEC_VERS_MAJOR_OFFSET;
+                                                          SBI_SPEC_VERS_MAJOR_OFFSET;
     minor = (sbi_spec_version & SBI_SPEC_VERS_MINOR_MASK);
     rt_kprintf("SBI Specification Version: %u.%u\n", major, minor);
 }
@@ -138,8 +136,7 @@ void sbi_send_ipi(const unsigned long *hart_mask)
     /* Use the IPI legacy replacement extension, if available. */
     if (has_ipi_extension)
     {
-        ret = SBI_CALL2(SBI_EXT_ID_IPI, SBI_IPI_SEND_IPI,
-                        *hart_mask, 0);
+        ret = SBI_CALL2(SBI_EXT_ID_IPI, SBI_IPI_SEND_IPI, *hart_mask, 0);
         RT_ASSERT(ret.error == SBI_SUCCESS);
     }
     else
@@ -155,8 +152,8 @@ void sbi_remote_fence_i(const unsigned long *hart_mask)
     /* Use the RFENCE legacy replacement extension, if available. */
     if (has_rfnc_extension)
     {
-        ret = SBI_CALL2(SBI_EXT_ID_RFNC, SBI_RFNC_REMOTE_FENCE_I,
-                        *hart_mask, 0);
+        ret =
+                SBI_CALL2(SBI_EXT_ID_RFNC, SBI_RFNC_REMOTE_FENCE_I, *hart_mask, 0);
         RT_ASSERT(ret.error == SBI_SUCCESS);
     }
     else
@@ -165,7 +162,7 @@ void sbi_remote_fence_i(const unsigned long *hart_mask)
     }
 }
 
-int sbi_remote_sfence_vma(const unsigned long *hart_mask, 
+int sbi_remote_sfence_vma(const unsigned long *hart_mask,
                           const unsigned long hart_mask_base,
                           unsigned long start, unsigned long size)
 {
@@ -176,17 +173,17 @@ int sbi_remote_sfence_vma(const unsigned long *hart_mask,
     {
         ret = SBI_CALL4(SBI_EXT_ID_RFNC, SBI_RFNC_REMOTE_SFENCE_VMA, *hart_mask,
                         hart_mask_base, start, size);
-        RT_ASSERT(ret.error == SBI_SUCCESS);
     }
     else
     {
-        (void)SBI_CALL3(SBI_REMOTE_SFENCE_VMA, 0, (uint64_t)hart_mask,
-                        start, size);
+        (void)SBI_CALL3(SBI_REMOTE_SFENCE_VMA, 0, (uint64_t)hart_mask, start,
+                        size);
     }
     return ret.error;
 }
 
-void sbi_remote_sfence_vma_asid(const unsigned long *hart_mask, unsigned long start, unsigned long size,
+void sbi_remote_sfence_vma_asid(const unsigned long *hart_mask,
+                                unsigned long start, unsigned long size,
                                 unsigned long asid)
 {
     struct sbi_ret ret;
@@ -200,12 +197,13 @@ void sbi_remote_sfence_vma_asid(const unsigned long *hart_mask, unsigned long st
     }
     else
     {
-        (void)SBI_CALL4(SBI_REMOTE_SFENCE_VMA_ASID, 0,
-                        (uint64_t)hart_mask, start, size, asid);
+        (void)SBI_CALL4(SBI_REMOTE_SFENCE_VMA_ASID, 0, (uint64_t)hart_mask,
+                        start, size, asid);
     }
 }
 
-int sbi_hsm_hart_start(unsigned long hart, unsigned long start_addr, unsigned long priv)
+int sbi_hsm_hart_start(unsigned long hart, unsigned long start_addr,
+                       unsigned long priv)
 {
     struct sbi_ret ret;
 

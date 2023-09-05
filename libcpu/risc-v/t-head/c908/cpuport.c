@@ -14,6 +14,7 @@
 #include <rtthread.h>
 
 #include "cpuport.h"
+#include "sbi.h"
 #include "stack.h"
 
 #include <lwp_arch.h>

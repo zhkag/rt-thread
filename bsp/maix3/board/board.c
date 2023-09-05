@@ -37,7 +37,9 @@
     };
 
     //内核页表
-    volatile rt_size_t MMUTable[__SIZE(VPN2_BIT)] __attribute__((aligned(4 * 1024)));
+    // volatile rt_size_t MMUTable[__SIZE(VPN2_BIT)] __attribute__((aligned(4 * 1024)));
+
+extern size_t MMUTable[];
 
 struct mem_desc platform_mem_desc[] = {
     {RTT_BASE, RAM_END - 1, RTT_BASE, NORMAL_MEM},

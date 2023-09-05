@@ -26,7 +26,7 @@
 #define MSTATUS_VS          0x00000600
 #define MSTATUS_XS          0x00018000
 #define MSTATUS_MPRV        0x00020000
-#define MSTATUS_PUM         0x00040000
+#define MSTATUS_SUM         0x00040000
 #define MSTATUS_MXR         0x00080000
 #define MSTATUS_VM          0x1F000000
 #define MSTATUS32_SD        0x80000000
@@ -46,7 +46,7 @@
 #define SSTATUS_VS_CLEAN    0x00000400
 #define SSTATUS_VS_DIRTY    0x00000600
 #define SSTATUS_XS          0x00018000
-#define SSTATUS_PUM         0x00040000
+#define SSTATUS_SUM         0x00040000
 #define SSTATUS32_SD        0x80000000
 #define SSTATUS64_SD        0x8000000000000000
 
