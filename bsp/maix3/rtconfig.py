@@ -13,7 +13,7 @@ if os.getenv('RTT_CC'):
 
 if  CROSS_TOOL == 'gcc':
     PLATFORM    = 'gcc'
-    EXEC_PATH   = r'/home/zhkag/.tools/gnu_gcc/riscv64-linux-musleabi_for_x86_64-pc-linux-gnu/bin'
+    EXEC_PATH   = r'/opt/riscv64-linux-musleabi_for_x86_64-pc-linux-gnu/bin'
 else:
     print('Please make sure your toolchains is GNU GCC!')
     exit(0)
@@ -49,8 +49,21 @@ if PLATFORM == 'gcc':
         AFLAGS += ' -g -gdwarf-2'
     else:
         CFLAGS += ' -O2 -g -gdwarf-2'
+        
+    # CFLAGS += ' ' +  os.getenv('KCFLAGS', '-DDBGLV=0')
 
     CXXFLAGS = CFLAGS
 
 # DUMP_ACTION = OBJDUMP + ' -D -S $TARGET > rtthread.asm\n'
 POST_ACTION = OBJCPY + ' -O binary $TARGET rtthread.bin\n' + SIZE + ' $TARGET \n '# + DUMP_ACTION
+
+opensbi_build = 'build'
+cd_opensbi_build = 'cd ' + opensbi_build +' && '
+
+POST_ACTION += 'cp rtthread.bin ./opensbi\n '
+POST_ACTION += 'make FW_PAYLOAD_PATH=rtthread.bin FW_FDT_PATH=hw.dtb PLATFORM=kendryte/fpgac908 CROSS_COMPILE=' + EXEC_PATH + '/riscv64-unknown-linux-musl- OPENSBI_QUIET=1 O=../build -C ./opensbi\n'
+POST_ACTION += cd_opensbi_build + 'cp platform/kendryte/fpgac908/firmware/fw_payload.bin ./\n'
+POST_ACTION += cd_opensbi_build + '../tools/k230_priv_gzip -n8 -f -k fw_payload.bin\n'
+POST_ACTION += cd_opensbi_build + 'sed -i -e "1s/\\x08/\\x09/" fw_payload.bin.gz\n'
+POST_ACTION += cd_opensbi_build + '../tools/mkimage -A riscv -O opensbi -T multi -C gzip -a 0x200000 -e 0x200000 -n rtt  -d  fw_payload.bin.gz  rtt.bin\n'
+POST_ACTION += cd_opensbi_build + 'cp rtt.bin tmp.bin; python3 ../tools/firmware_gen.py -i tmp.bin -o ../rtt_system.bin -n\n'
