@@ -1,8 +1,5 @@
 menu "RT-Thread rockchip common drivers"
 
-config RT_USING_RESET
-    bool "Enable reset support"
-
 config RT_USING_CACHE
     bool "Enable cache"
     default y

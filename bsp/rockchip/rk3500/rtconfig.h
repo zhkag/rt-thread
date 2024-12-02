@@ -3,8 +3,64 @@
 
 /* RT-Thread Kernel */
 
+/* klibc options */
+
+/* ------------rt_memset options------------ */
+
+
+/* ------------rt_memcpy options------------ */
+
+
+/* ------------rt_memmove options------------ */
+
+
+/* ------------rt_memcmp options------------ */
+
+
+/* ------------rt_strstr options------------ */
+
+
+/* ------------rt_strcasecmp options------------ */
+
+
+/* ------------rt_strncpy options------------ */
+
+
+/* ------------rt_strcpy options------------ */
+
+
+/* ------------rt_strncmp options------------ */
+
+
+/* ------------rt_strcmp options------------ */
+
+
+/* ------------rt_strlen options------------ */
+
+
+/* ------------rt_strlen options------------ */
+
+/* ------------rt_strnlen options------------ */
+
+
+/* ------------rt_vsscanf options------------ */
+
+
+/* ------------rt_vsnprintf options------------ */
+
+#define RT_KLIBC_USING_VSNPRINTF_LONGLONG
+#define RT_KLIBC_USING_VSNPRINTF_STANDARD
+#define RT_KLIBC_USING_VSNPRINTF_DECIMAL_SPECIFIERS
+#define RT_KLIBC_USING_VSNPRINTF_EXPONENTIAL_SPECIFIERS
+#define RT_KLIBC_USING_VSNPRINTF_WRITEBACK_SPECIFIER
+#define RT_KLIBC_USING_VSNPRINTF_CHECK_NUL_IN_FORMAT_SPECIFIER
+#define RT_KLIBC_USING_VSNPRINTF_INTEGER_BUFFER_SIZE 32
+#define RT_KLIBC_USING_VSNPRINTF_DECIMAL_BUFFER_SIZE 32
+#define RT_KLIBC_USING_VSNPRINTF_FLOAT_PRECISION 6
+#define RT_KLIBC_USING_VSNPRINTF_MAX_INTEGRAL_DIGITS_FOR_DECIMAL 9
+#define RT_KLIBC_USING_VSNPRINTF_LOG10_TAYLOR_TERMS 4
+/* end of klibc options */
 #define RT_NAME_MAX 8
-#define RT_USING_SMART
 #define RT_USING_SMP
 #define RT_CPUS_NR 4
 #define RT_ALIGN_SIZE 8
@@ -24,14 +80,9 @@
 #define RT_USING_TIMER_ALL_SOFT
 #define RT_USING_CPU_USAGE_TRACER
 
-/* kservice optimization */
+/* kservice options */
 
-/* end of kservice optimization */
-
-/* klibc optimization */
-
-#define RT_KLIBC_USING_VSNPRINTF_LONGLONG
-/* end of klibc optimization */
+/* end of kservice options */
 #define RT_USING_DEBUG
 #define RT_DEBUGING_COLOR
 
@@ -83,8 +134,8 @@
 #define ARCH_MM_MMU
 #define ARCH_ARM
 #define ARCH_ARM_MMU
-#define KERNEL_VADDR_START 0xffff000000000000
 #define ARCH_ARMV8
+#define ARCH_USING_ASID
 #define ARCH_USING_HW_THREAD_SELF
 #define ARCH_USING_IRQ_CTX_LIST
 
@@ -117,21 +168,8 @@
 #define DFS_FD_MAX 512
 #define RT_USING_DFS_V2
 #define RT_USING_DFS_DEVFS
-#define RT_USING_DFS_PTYFS
-#define RT_USING_DFS_CROMFS
 #define RT_USING_DFS_TMPFS
 #define RT_USING_DFS_MQUEUE
-#define RT_USING_PAGECACHE
-
-/* page cache config */
-
-#define RT_PAGECACHE_COUNT 128
-#define RT_PAGECACHE_ASPACE_COUNT 32
-#define RT_PAGECACHE_PRELOAD 4
-#define RT_PAGECACHE_HASH_NR 180
-#define RT_PAGECACHE_GC_WORK_LEVEL 90
-#define RT_PAGECACHE_GC_STOP_LEVEL 70
-/* end of page cache config */
 /* end of DFS: device virtual file system */
 
 /* Device Drivers */
@@ -157,6 +195,14 @@
 #define RT_MMCSD_STACK_SIZE 16384
 #define RT_MMCSD_THREAD_PREORITY 22
 #define RT_MMCSD_MAX_PARTITION 16
+#define RT_USING_BLK
+
+/* Partition Types */
+
+#define RT_BLK_PARTITION_DFS
+#define RT_BLK_PARTITION_EFI
+/* end of Partition Types */
+#define RT_USING_RESET
 #define RT_USING_OFW
 #define RT_FDT_EARLYCON_MSG_SIZE 128
 #define RT_USING_OFW_BUS_RANGES_NUMBER 8
@@ -191,11 +237,6 @@
 #define RT_USING_POSIX_STDIO
 #define RT_USING_POSIX_POLL
 #define RT_USING_POSIX_SELECT
-#define RT_USING_POSIX_EVENTFD
-#define RT_USING_POSIX_EPOLL
-#define RT_USING_POSIX_SIGNALFD
-#define RT_SIGNALFD_MAX_NUM 10
-#define RT_USING_POSIX_TIMERFD
 #define RT_USING_POSIX_SOCKET
 #define RT_USING_POSIX_TERMIOS
 #define RT_USING_POSIX_MMAN
@@ -297,24 +338,7 @@
 #define RT_USING_ADT_HASHMAP
 #define RT_USING_ADT_REF
 /* end of Utilities */
-#define RT_USING_LWP
-#define LWP_DEBUG
-#define LWP_DEBUG_INIT
-#define RT_LWP_MAX_NR 128
-#define LWP_TASK_STACK_SIZE 32768
-#define RT_CH_MSG_MAX_NR 1024
-#define LWP_TID_MAX_NR 128
-#define RT_LWP_SHM_MAX_NR 64
-#define RT_USING_LDSO
-#define LWP_USING_TERMINAL
-#define LWP_PTY_MAX_PARIS_LIMIT 64
-#define RT_USING_VDSO
-
-/* Memory management */
-
 #define RT_USING_MEMBLOCK
-#define RT_INIT_MEMORY_REGIONS 128
-/* end of Memory management */
 
 /* Using USB legacy version */
 
@@ -457,6 +481,10 @@
 
 /* end of STM32 HAL & SDK Drivers */
 
+/* Infineon HAL Packages */
+
+/* end of Infineon HAL Packages */
+
 /* Kendryte SDK */
 
 /* end of Kendryte SDK */
@@ -542,25 +570,12 @@
 /* end of Arduino libraries */
 /* end of RT-Thread online packages */
 
-/* Privated Packages of RealThread */
-
-
-/* Network Utilities */
-
-/* end of Network Utilities */
-
-/* RT-Thread Smart */
-
-/* end of RT-Thread Smart */
-/* end of Privated Packages of RealThread */
-
 /* RT-Thread rockchip RK3500 drivers */
 
 #define RT_CLK_ROCKCHIP
 #define RT_CLK_ROCKCHIP_RK3568
 #define RT_CLK_ROCKCHIP_RK3588
 #define RT_SERIAL_8250
-#define RT_USING_RESET
 #define RT_HWTIMER_ROCKCHIP
 /* end of RT-Thread rockchip RK3500 drivers */
 #define SOC_RK3568

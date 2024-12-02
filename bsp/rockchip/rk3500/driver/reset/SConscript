@@ -5,8 +5,8 @@ CPPPATH = [cwd]
 
 src = []
 
-if GetDepend(['RT_USING_RESET']):
-    src += ['reset.c']
+# if GetDepend(['RT_USING_RESET']):
+#     src += ['reset.c']
 
 group = DefineGroup('DeviceDrivers', src, depend = [''], CPPPATH = CPPPATH)
 

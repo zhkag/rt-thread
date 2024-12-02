@@ -101,7 +101,7 @@ static int rootfs_mnt_init(void)
          */
         for (; rootdelay || rootwait; --timeout)
         {
-            if (!rootwait && timeout == 0)
+            if (!rootwait || timeout == 0)
             {
                 LOG_E("Wait for /dev/%s init time out", dev);
 

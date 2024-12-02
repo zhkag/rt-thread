@@ -185,6 +185,8 @@ typedef int (*init_fn_t)(void);
 /* init platform, user code... */
 #define INIT_PLATFORM_EXPORT(fn)        INIT_EXPORT(fn, "1.2")
 
+#define INIT_DRIVER_EARLY_EXPORT(fn)    INIT_EXPORT(fn, "1.4")
+
 /* pre/device/component/env/app init routines will be called in init_thread */
 /* components pre-initialization (pure software initialization) */
 #define INIT_PREV_EXPORT(fn)            INIT_EXPORT(fn, "2")
