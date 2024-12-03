@@ -898,7 +898,7 @@ void rt_hw_mem_setup_early(unsigned long *tbl0, unsigned long *tbl1,
     unsigned long count = (size + ARCH_SECTION_MASK) >> ARCH_SECTION_SHIFT;
     unsigned long normal_attr = MMU_MAP_K_RWCB;
     extern unsigned char _start;
-    unsigned long va = (unsigned long) &_start - pv_off;
+    unsigned long va = (unsigned long) &_start - pv_off - 0x200000;
     va = RT_ALIGN_DOWN(va, 0x200000);
 
     /* setup pv off */
