@@ -94,11 +94,13 @@
 #define RT_USING_MAILBOX
 #define RT_USING_MESSAGEQUEUE
 #define RT_USING_MESSAGEQUEUE_PRIORITY
+#define RT_USING_SIGNALS
 /* end of Inter-Thread communication */
 
 /* Memory Management */
 
 #define RT_PAGE_MAX_ORDER 11
+#define RT_USING_MEMPOOL
 #define RT_USING_SLAB
 #define RT_USING_MEMHEAP
 #define RT_MEMHEAP_FAST_MODE
@@ -166,8 +168,11 @@
 #define DFS_USING_POSIX
 #define DFS_USING_WORKDIR
 #define DFS_FD_MAX 512
-#define RT_USING_DFS_V2
+#define RT_USING_DFS_V1
+#define DFS_FILESYSTEMS_MAX 4
+#define DFS_FILESYSTEM_TYPES_MAX 4
 #define RT_USING_DFS_DEVFS
+#define RT_USING_DFS_RAMFS
 #define RT_USING_DFS_TMPFS
 #define RT_USING_DFS_MQUEUE
 /* end of DFS: device virtual file system */
@@ -183,7 +188,7 @@
 #define RT_SYSTEM_WORKQUEUE_PRIORITY 23
 #define RT_USING_SERIAL
 #define RT_USING_SERIAL_V1
-#define RT_SERIAL_RB_BUFSZ 64
+#define RT_SERIAL_RB_BUFSZ 10240
 #define RT_USING_NULL
 #define RT_USING_ZERO
 #define RT_USING_RANDOM
@@ -328,6 +333,8 @@
 
 /* Utilities */
 
+#define RT_USING_RYM
+#define YMODEM_USING_FILE_TRANSFER
 #define RT_USING_UTEST
 #define UTEST_THR_STACK_SIZE 32768
 #define UTEST_THR_PRIORITY 20
@@ -452,6 +459,11 @@
 
 /* tools packages */
 
+#define PKG_USING_WAMR
+#define PKG_USING_WAMR_LATEST_VERSION
+#define WAMR_BUILD_INTERP
+#define WAMR_BUILD_FAST_INTERP
+#define WAMR_BUILD_LIBC_BUILTIN
 /* end of tools packages */
 
 /* system packages */
@@ -520,8 +532,6 @@
 /* entertainment: terminal games and other interesting software packages */
 
 /* end of entertainment: terminal games and other interesting software packages */
-#define PKG_USING_ZLIB
-#define PKG_USING_ZLIB_LATEST_VERSION
 /* end of miscellaneous packages */
 
 /* Arduino libraries */
