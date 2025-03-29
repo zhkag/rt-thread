@@ -2108,6 +2108,7 @@ typedef struct
 #define FMC_Bank3_R_BASE                (FMC_R_BASE + 0x0080UL)
 #define FMC_Bank5_6_R_BASE              (FMC_R_BASE + 0x0140UL)
 #define XSPI1_R_BASE                    (AHB5PERIPH_BASE + 0x5000UL)
+#define DLYB_XSPI1_BASE                 (AHB5PERIPH_BASE + 0x6000UL)
 #define SDMMC1_BASE                     (AHB5PERIPH_BASE + 0x7000UL)
 #define DLYB_SDMMC1_BASE                (AHB5PERIPH_BASE + 0x8000UL)
 #define RAMECC1_BASE                    (AHB5PERIPH_BASE + 0x9000UL)
@@ -2117,6 +2118,7 @@ typedef struct
 #define RAMECC1_Monitor3_BASE           (RAMECC1_BASE + 0x80UL)
 #define RAMECC1_Monitor4_BASE           (RAMECC1_BASE + 0xA0UL)
 #define XSPI2_R_BASE                    (AHB5PERIPH_BASE + 0xA000UL)
+#define DLYB_XSPI2_BASE                 (AHB5PERIPH_BASE + 0xB000UL)
 #define XSPIM_BASE                      (AHB5PERIPH_BASE + 0xB400UL)
 #define GFXMMU_BASE                     (AHB5PERIPH_BASE + 0x010000UL)
 
@@ -2380,6 +2382,8 @@ typedef struct
 #define DCMIPP                 ((DCMIPP_TypeDef *) DCMIPP_BASE)
 #define DLYB_SDMMC1            ((DLYB_TypeDef *) DLYB_SDMMC1_BASE)
 #define DLYB_SDMMC2            ((DLYB_TypeDef *) DLYB_SDMMC2_BASE)
+#define DLYB_XSPI1             ((DLYB_TypeDef *) DLYB_XSPI1_BASE)
+#define DLYB_XSPI2             ((DLYB_TypeDef *) DLYB_XSPI2_BASE)
 #define DMA2D                  ((DMA2D_TypeDef *) DMA2D_BASE)
 #define DTS                    ((DTS_TypeDef *) DTS_BASE)
 #define ETH                    ((ETH_TypeDef *)ETH_BASE)
@@ -4859,52 +4863,52 @@ typedef struct
 /*******************  Bit definition for DMA_MISR register  ****************/
 #define DMA_MISR_MIS0_Pos                   (0U)
 #define DMA_MISR_MIS0_Msk                   (0x1UL << DMA_MISR_MIS0_Pos)            /*!< 0x00000001 */
-#define DMA_MISR_MIS0                       DMA_MISR_MIS0_Msk                       /*!< Masked Interrupt State of Channel 0 */
+#define DMA_MISR_MIS0                       DMA_MISR_MIS0_Msk                       /*!< Masked Interrupt State of Non-Secure Channel 0 */
 #define DMA_MISR_MIS1_Pos                   (1U)
 #define DMA_MISR_MIS1_Msk                   (0x1UL << DMA_MISR_MIS1_Pos)            /*!< 0x00000002 */
-#define DMA_MISR_MIS1                       DMA_MISR_MIS1_Msk                       /*!< Masked Interrupt State of Channel 1 */
+#define DMA_MISR_MIS1                       DMA_MISR_MIS1_Msk                       /*!< Masked Interrupt State of Non-Secure Channel 1 */
 #define DMA_MISR_MIS2_Pos                   (2U)
 #define DMA_MISR_MIS2_Msk                   (0x1UL << DMA_MISR_MIS2_Pos)            /*!< 0x00000004 */
-#define DMA_MISR_MIS2                       DMA_MISR_MIS2_Msk                       /*!< Masked Interrupt State of Channel 2 */
+#define DMA_MISR_MIS2                       DMA_MISR_MIS2_Msk                       /*!< Masked Interrupt State of Non-Secure Channel 2 */
 #define DMA_MISR_MIS3_Pos                   (3U)
 #define DMA_MISR_MIS3_Msk                   (0x1UL << DMA_MISR_MIS3_Pos)            /*!< 0x00000008 */
-#define DMA_MISR_MIS3                       DMA_MISR_MIS3_Msk                       /*!< Masked Interrupt State of Channel 3 */
+#define DMA_MISR_MIS3                       DMA_MISR_MIS3_Msk                       /*!< Masked Interrupt State of Non-Secure Channel 3 */
 #define DMA_MISR_MIS4_Pos                   (4U)
 #define DMA_MISR_MIS4_Msk                   (0x1UL << DMA_MISR_MIS4_Pos)            /*!< 0x00000010 */
-#define DMA_MISR_MIS4                       DMA_MISR_MIS4_Msk                       /*!< Masked Interrupt State of Channel 4 */
+#define DMA_MISR_MIS4                       DMA_MISR_MIS4_Msk                       /*!< Masked Interrupt State of Non-Secure Channel 4 */
 #define DMA_MISR_MIS5_Pos                   (5U)
 #define DMA_MISR_MIS5_Msk                   (0x1UL << DMA_MISR_MIS5_Pos)            /*!< 0x00000020 */
-#define DMA_MISR_MIS5                       DMA_MISR_MIS5_Msk                       /*!< Masked Interrupt State of Channel 5 */
+#define DMA_MISR_MIS5                       DMA_MISR_MIS5_Msk                       /*!< Masked Interrupt State of Non-Secure Channel 5 */
 #define DMA_MISR_MIS6_Pos                   (6U)
 #define DMA_MISR_MIS6_Msk                   (0x1UL << DMA_MISR_MIS6_Pos)            /*!< 0x00000040 */
-#define DMA_MISR_MIS6                       DMA_MISR_MIS6_Msk                       /*!< Masked Interrupt State of Channel 6 */
+#define DMA_MISR_MIS6                       DMA_MISR_MIS6_Msk                       /*!< Masked Interrupt State of Non-Secure Channel 6 */
 #define DMA_MISR_MIS7_Pos                   (7U)
 #define DMA_MISR_MIS7_Msk                   (0x1UL << DMA_MISR_MIS7_Pos)            /*!< 0x00000080 */
-#define DMA_MISR_MIS7                       DMA_MISR_MIS7_Msk                       /*!< Masked Interrupt State of Channel 7 */
+#define DMA_MISR_MIS7                       DMA_MISR_MIS7_Msk                       /*!< Masked Interrupt State of Non-Secure Channel 7 */
 #define DMA_MISR_MIS8_Pos                   (8U)
 #define DMA_MISR_MIS8_Msk                   (0x1UL << DMA_MISR_MIS8_Pos)            /*!< 0x00000100 */
-#define DMA_MISR_MIS8                       DMA_MISR_MIS8_Msk                       /*!< Masked Interrupt State of Channel 8 */
+#define DMA_MISR_MIS8                       DMA_MISR_MIS8_Msk                       /*!< Masked Interrupt State of Non-Secure Channel 8 */
 #define DMA_MISR_MIS9_Pos                   (9U)
 #define DMA_MISR_MIS9_Msk                   (0x1UL << DMA_MISR_MIS9_Pos)            /*!< 0x00000200 */
-#define DMA_MISR_MIS9                       DMA_MISR_MIS9_Msk                       /*!< Masked Interrupt State of Channel 9 */
+#define DMA_MISR_MIS9                       DMA_MISR_MIS9_Msk                       /*!< Masked Interrupt State of Non-Secure Channel 9 */
 #define DMA_MISR_MIS10_Pos                  (10U)
 #define DMA_MISR_MIS10_Msk                  (0x1UL << DMA_MISR_MIS10_Pos)           /*!< 0x00000400 */
-#define DMA_MISR_MIS10                      DMA_MISR_MIS10_Msk                      /*!< Masked Interrupt State of Channel 10 */
+#define DMA_MISR_MIS10                      DMA_MISR_MIS10_Msk                      /*!< Masked Interrupt State of Non-Secure Channel 10 */
 #define DMA_MISR_MIS11_Pos                  (11U)
 #define DMA_MISR_MIS11_Msk                  (0x1UL << DMA_MISR_MIS11_Pos)           /*!< 0x00000800 */
-#define DMA_MISR_MIS11                      DMA_MISR_MIS11_Msk                      /*!< Masked Interrupt State of Channel 11 */
+#define DMA_MISR_MIS11                      DMA_MISR_MIS11_Msk                      /*!< Masked Interrupt State of Non-Secure Channel 11 */
 #define DMA_MISR_MIS12_Pos                  (12U)
 #define DMA_MISR_MIS12_Msk                  (0x1UL << DMA_MISR_MIS12_Pos)           /*!< 0x00001000 */
-#define DMA_MISR_MIS12                      DMA_MISR_MIS12_Msk                      /*!< Masked Interrupt State of Channel 12 */
+#define DMA_MISR_MIS12                      DMA_MISR_MIS12_Msk                      /*!< Masked Interrupt State of Non-Secure Channel 12 */
 #define DMA_MISR_MIS13_Pos                  (13U)
 #define DMA_MISR_MIS13_Msk                  (0x1UL << DMA_MISR_MIS13_Pos)           /*!< 0x00002000 */
-#define DMA_MISR_MIS13                      DMA_MISR_MIS13_Msk                      /*!< Masked Interrupt State of Channel 13 */
+#define DMA_MISR_MIS13                      DMA_MISR_MIS13_Msk                      /*!< Masked Interrupt State of Non-Secure Channel 13 */
 #define DMA_MISR_MIS14_Pos                  (14U)
 #define DMA_MISR_MIS14_Msk                  (0x1UL << DMA_MISR_MIS14_Pos)           /*!< 0x00004000 */
-#define DMA_MISR_MIS14                      DMA_MISR_MIS14_Msk                      /*!< Masked Interrupt State of Channel 14 */
+#define DMA_MISR_MIS14                      DMA_MISR_MIS14_Msk                      /*!< Masked Interrupt State of Non-Secure Channel 14 */
 #define DMA_MISR_MIS15_Pos                  (15U)
 #define DMA_MISR_MIS15_Msk                  (0x1UL << DMA_MISR_MIS15_Pos)           /*!< 0x00008000 */
-#define DMA_MISR_MIS15                      DMA_MISR_MIS14_Msk                      /*!< Masked Interrupt State of Channel 15 */
+#define DMA_MISR_MIS15                      DMA_MISR_MIS14_Msk                      /*!< Masked Interrupt State of Non-Secure Channel 15 */
 
 /*******************  Bit definition for DMA_CLBAR register  ****************/
 #define DMA_CLBAR_LBA_Pos                   (16U)
@@ -9722,7 +9726,7 @@ typedef struct
 #define FMC_SDCMR_MODE             FMC_SDCMR_MODE_Msk                          /*!< Command mode */
 #define FMC_SDCMR_MODE_0           (0x1UL << FMC_SDCMR_MODE_Pos)               /*!< 0x00000001 */
 #define FMC_SDCMR_MODE_1           (0x2UL << FMC_SDCMR_MODE_Pos)               /*!< 0x00000002 */
-#define FMC_SDCMR_MODE_2           (0x4UL << FMC_SDCMR_MODE_Pos)               /*!< 0x00000004 */
+#define FMC_SDCMR_MODE_2           (0x3UL << FMC_SDCMR_MODE_Pos)               /*!< 0x00000004 */
 #define FMC_SDCMR_CTB2_Pos         (3U)
 #define FMC_SDCMR_CTB2_Msk         (0x1UL << FMC_SDCMR_CTB2_Pos)               /*!< 0x00000008 */
 #define FMC_SDCMR_CTB2             FMC_SDCMR_CTB2_Msk                          /*!< Command target bank 2 */
@@ -12101,15 +12105,6 @@ typedef struct
 #define I3C_BCR_BCR2_Pos                    (2U)
 #define I3C_BCR_BCR2_Msk                    (0x1UL << I3C_BCR_BCR2_Pos)             /*!< 0x00000004 */
 #define I3C_BCR_BCR2                        I3C_BCR_BCR2_Msk                        /*!< IBI Payload additional Mandatory Data Byte */
-#define I3C_BCR_BCR3_Pos                    (3U)
-#define I3C_BCR_BCR3_Msk                    (0x1UL << I3C_BCR_BCR3_Pos)             /*!< 0x00000008 */
-#define I3C_BCR_BCR3                        I3C_BCR_BCR3_Msk                        /*!< Offline capable */
-#define I3C_BCR_BCR4_Pos                    (4U)
-#define I3C_BCR_BCR4_Msk                    (0x1UL << I3C_BCR_BCR4_Pos)             /*!< 0x00000010 */
-#define I3C_BCR_BCR4                        I3C_BCR_BCR4_Msk                        /*!< Virtual target support */
-#define I3C_BCR_BCR5_Pos                    (5U)
-#define I3C_BCR_BCR5_Msk                    (0x1UL << I3C_BCR_BCR5_Pos)             /*!< 0x00000020 */
-#define I3C_BCR_BCR5                        I3C_BCR_BCR5_Msk                        /*!< Advanced capabilities */
 #define I3C_BCR_BCR6_Pos                    (6U)
 #define I3C_BCR_BCR6_Msk                    (0x1UL << I3C_BCR_BCR6_Pos)             /*!< 0x00000040 */
 #define I3C_BCR_BCR6                        I3C_BCR_BCR6_Msk                        /*!< Device Role shared during Dynamic Address Assignment */
@@ -22631,7 +22626,9 @@ typedef struct
 #define IS_DCMIPP_ALL_INSTANCE(INSTANCE) ((INSTANCE) == DCMIPP)
 
 /******************************* DLYB Instances *******************************/
-#define IS_DLYB_ALL_INSTANCE(INSTANCE) (((INSTANCE) == DLYB_SDMMC1)   || \
+#define IS_DLYB_ALL_INSTANCE(INSTANCE) (((INSTANCE) == DLYB_XSPI1) || \
+                                        ((INSTANCE) == DLYB_XSPI2) || \
+                                        ((INSTANCE) == DLYB_SDMMC1)   || \
                                         ((INSTANCE) == DLYB_SDMMC2))
 
 /******************************** DMA Instances *******************************/
@@ -22710,10 +22707,6 @@ typedef struct
                                                  ((INSTANCE) == HPDMA1_Channel13) || \
                                                  ((INSTANCE) == HPDMA1_Channel14) || \
                                                  ((INSTANCE) == HPDMA1_Channel15))
-
-#define IS_DMA_PFREQ_INSTANCE(INSTANCE) (((INSTANCE) == GPDMA1_Channel0)   || \
-                                         ((INSTANCE) == GPDMA1_Channel15)  || \
-                                         ((INSTANCE) == HPDMA1_Channel15))
 
 /******************************* DMA2D Instances *******************************/
 #define IS_DMA2D_ALL_INSTANCE(INSTANCE) ((INSTANCE) == DMA2D)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2023, RT-Thread Development Team
+ * Copyright (c) 2006-2025, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -7,20 +7,19 @@
  * Date           Author       Notes
  * 2018-11-7      SummerGift   first version
  */
-
 #include "drv_common.h"
 #include <board.h>
 
 #ifdef RT_USING_PIN
-#include <drv_gpio.h>
+    #include <drv_gpio.h>
 #endif
 
 #ifdef RT_USING_SERIAL
-#ifdef RT_USING_SERIAL_V2
-#include <drv_usart_v2.h>
-#else
-#include <drv_usart.h>
-#endif /* RT_USING_SERIAL */
+    #ifdef RT_USING_SERIAL_V2
+        #include <drv_usart_v2.h>
+    #else
+        #include <drv_usart.h>
+    #endif /* RT_USING_SERIAL */
 #endif /* RT_USING_SERIAL_V2 */
 
 #define DBG_TAG "drv_common"
@@ -53,7 +52,6 @@ void rt_hw_systick_init(void)
     if (_systick_ms == 0)
         _systick_ms = 1;
 }
-
 /**
  * This is the timer interrupt service routine.
  *
@@ -118,15 +116,14 @@ HAL_StatusTypeDef HAL_InitTick(uint32_t TickPriority)
 }
 
 /**
- * @brief  This function is executed in case of error occurrence.
- * @param  None
- * @retval None
- */
-void _Error_Handler(char *s, int num)
+  * @brief  This function is executed in case of error occurrence.
+  * @param  None
+  * @retval None
+  */
+void _Error_Handler(void)
 {
     /* USER CODE BEGIN Error_Handler */
     /* User can add his own implementation to report the HAL error return state */
-    LOG_E("Error_Handler at file:%s num:%d", s, num);
     while (1)
     {
     }
@@ -173,16 +170,6 @@ void rt_hw_us_delay(rt_uint32_t us)
  */
 rt_weak void rt_hw_board_init(void)
 {
-#ifdef BSP_SCB_ENABLE_I_CACHE
-    /* Enable I-Cache---------------------------------------------------------*/
-    SCB_EnableICache();
-#endif
-
-#ifdef BSP_SCB_ENABLE_D_CACHE
-    /* Enable D-Cache---------------------------------------------------------*/
-    SCB_EnableDCache();
-#endif
-
     /* HAL_Init() function is called at the beginning of the program */
     HAL_Init();
 
@@ -215,5 +202,15 @@ rt_weak void rt_hw_board_init(void)
 #ifdef RT_USING_COMPONENTS_INIT
     /* Board underlying hardware initialization */
     rt_components_board_init();
+#endif
+
+#ifdef BSP_SCB_ENABLE_I_CACHE
+    /* Enable I-Cache---------------------------------------------------------*/
+    SCB_EnableICache();
+#endif
+
+#ifdef BSP_SCB_ENABLE_D_CACHE
+    /* Enable D-Cache---------------------------------------------------------*/
+    SCB_EnableDCache();
 #endif
 }

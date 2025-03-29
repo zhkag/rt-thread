@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2023, RT-Thread Development Team
+ * Copyright (c) 2006-2025, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -8,13 +8,12 @@
  * 2017-10-30     ZYH            the first version
  * 2019-12-19     tyustli           port to stm32 series
  */
-
 #include "drv_usbh.h"
 #include "board.h"
+#include<rtthread.h>
+#include<rtdevice.h>
 
-#define LOG_TAG       "drv.usb.host"
-#define DBG_LVL       DBG_INFO
-#include <drv_log.h>
+#ifdef BSP_USING_USBH
 
 static HCD_HandleTypeDef stm32_hhcd_fs;
 static struct rt_completion urb_completion;
@@ -33,7 +32,7 @@ void HAL_HCD_Connect_Callback(HCD_HandleTypeDef *hhcd)
     if (!connect_status)
     {
         connect_status = RT_TRUE;
-        LOG_D("usb connected");
+        RT_DEBUG_LOG(RT_DEBUG_USB, ("usb connected\n"));
         rt_usbh_root_hub_connect_handler(hcd, OTG_FS_PORT, RT_FALSE);
     }
 }
@@ -44,7 +43,7 @@ void HAL_HCD_Disconnect_Callback(HCD_HandleTypeDef *hhcd)
     if (connect_status)
     {
         connect_status = RT_FALSE;
-        LOG_D("usb disconnnect");
+        RT_DEBUG_LOG(RT_DEBUG_USB, ("usb disconnnect\n"));
         rt_usbh_root_hub_disconnect_handler(hcd, OTG_FS_PORT);
     }
 }
@@ -56,7 +55,7 @@ void HAL_HCD_HC_NotifyURBChange_Callback(HCD_HandleTypeDef *hhcd, uint8_t chnum,
 
 static rt_err_t drv_reset_port(rt_uint8_t port)
 {
-    LOG_D("reset port");
+    RT_DEBUG_LOG(RT_DEBUG_USB, ("reset port\n"));
     HAL_HCD_ResetPort(&stm32_hhcd_fs);
     return RT_EOK;
 }
@@ -84,7 +83,7 @@ static int drv_pipe_xfer(upipe_t pipe, rt_uint8_t token, void *buffer, int nbyte
         rt_thread_mdelay(1);
         if (HAL_HCD_HC_GetState(&stm32_hhcd_fs, pipe->pipe_index) == HC_NAK)
         {
-            LOG_D("nak");
+            RT_DEBUG_LOG(RT_DEBUG_USB, ("nak\n"));
             if (pipe->ep.bmAttributes == USB_EP_ATTR_INT)
             {
                 rt_thread_delay((pipe->ep.bInterval * RT_TICK_PER_SECOND / 1000) > 0 ? (pipe->ep.bInterval * RT_TICK_PER_SECOND / 1000) : 1);
@@ -101,7 +100,7 @@ static int drv_pipe_xfer(upipe_t pipe, rt_uint8_t token, void *buffer, int nbyte
         }
         else if (HAL_HCD_HC_GetState(&stm32_hhcd_fs, pipe->pipe_index) == HC_STALL)
         {
-            LOG_D("stall");
+            RT_DEBUG_LOG(RT_DEBUG_USB, ("stall\n"));
             pipe->status = UPIPE_STATUS_STALL;
             if (pipe->callback != RT_NULL)
             {
@@ -111,7 +110,7 @@ static int drv_pipe_xfer(upipe_t pipe, rt_uint8_t token, void *buffer, int nbyte
         }
         else if (HAL_HCD_HC_GetState(&stm32_hhcd_fs, pipe->pipe_index) == URB_ERROR)
         {
-            LOG_D("error");
+            RT_DEBUG_LOG(RT_DEBUG_USB, ("error\n"));
             pipe->status = UPIPE_STATUS_ERROR;
             if (pipe->callback != RT_NULL)
             {
@@ -121,7 +120,7 @@ static int drv_pipe_xfer(upipe_t pipe, rt_uint8_t token, void *buffer, int nbyte
         }
         else if(URB_DONE == HAL_HCD_HC_GetURBState(&stm32_hhcd_fs, pipe->pipe_index))
         {
-            LOG_D("ok");
+            RT_DEBUG_LOG(RT_DEBUG_USB, ("ok\n"));
             pipe->status = UPIPE_STATUS_OK;
             if (pipe->callback != RT_NULL)
             {
@@ -202,8 +201,6 @@ static struct uhcd_ops _uhcd_ops =
 
 static rt_err_t stm32_hcd_init(rt_device_t device)
 {
-    HAL_StatusTypeDef state;
-
     HCD_HandleTypeDef *hhcd = (HCD_HandleTypeDef *)device->user_data;
     hhcd->Instance = USB_OTG_FS;
     hhcd->Init.Host_channels = 8;
@@ -211,11 +208,7 @@ static rt_err_t stm32_hcd_init(rt_device_t device)
     hhcd->Init.dma_enable = DISABLE;
     hhcd->Init.phy_itface = HCD_PHY_EMBEDDED;
     hhcd->Init.Sof_enable = DISABLE;
-    state = HAL_HCD_Init(hhcd);
-    if (state != HAL_OK)
-    {
-        return -RT_ERROR;
-    }
+    RT_ASSERT(HAL_HCD_Init(hhcd) == HAL_OK);
     HAL_HCD_Start(hhcd);
 #ifdef USBH_USING_CONTROLLABLE_POWER
     rt_pin_mode(USBH_POWER_PIN, PIN_MODE_OUTPUT);
@@ -252,8 +245,10 @@ int stm_usbh_register(void)
         return -RT_ERROR;
     }
 
-    rt_usb_host_init("usbh");
+    rt_usb_host_init();
 
     return RT_EOK;
 }
 INIT_DEVICE_EXPORT(stm_usbh_register);
+
+#endif

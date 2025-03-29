@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2023, RT-Thread Development Team
+ * Copyright (c) 2006-2025, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -515,7 +515,7 @@ static void uart_isr(struct rt_serial_device *serial)
             __HAL_UART_CLEAR_PEFLAG(&uart->handle);
         }
 #if !defined(SOC_SERIES_STM32L4) && !defined(SOC_SERIES_STM32WL) && !defined(SOC_SERIES_STM32F7) && !defined(SOC_SERIES_STM32F0) \
-    && !defined(SOC_SERIES_STM32L0) && !defined(SOC_SERIES_STM32G0) && !defined(SOC_SERIES_STM32H7) \
+    && !defined(SOC_SERIES_STM32L0) && !defined(SOC_SERIES_STM32G0) && !defined(SOC_SERIES_STM32H7) && !defined(SOC_SERIES_STM32H7RS) \
     && !defined(SOC_SERIES_STM32G4) && !defined(SOC_SERIES_STM32MP1) && !defined(SOC_SERIES_STM32WB)
         if (__HAL_UART_GET_FLAG(&(uart->handle), UART_FLAG_LBD) != RESET)
         {
@@ -1130,7 +1130,7 @@ static void stm32_dma_config(struct rt_serial_device *serial, rt_ubase_t flag)
         SET_BIT(RCC->AHBENR, dma_config->dma_rcc);
         tmpreg = READ_BIT(RCC->AHBENR, dma_config->dma_rcc);
 #elif defined(SOC_SERIES_STM32F2) || defined(SOC_SERIES_STM32F4) || defined(SOC_SERIES_STM32F7) || defined(SOC_SERIES_STM32L4) || defined(SOC_SERIES_STM32WL) \
-    || defined(SOC_SERIES_STM32G4)|| defined(SOC_SERIES_STM32H7) || defined(SOC_SERIES_STM32WB)
+    || defined(SOC_SERIES_STM32G4)|| defined(SOC_SERIES_STM32H7) || defined(SOC_SERIES_STM32H7RS) || defined(SOC_SERIES_STM32WB)
         /* enable DMA clock && Delay after an RCC peripheral clock enabling*/
         SET_BIT(RCC->AHB1ENR, dma_config->dma_rcc);
         tmpreg = READ_BIT(RCC->AHB1ENR, dma_config->dma_rcc);
@@ -1168,7 +1168,7 @@ static void stm32_dma_config(struct rt_serial_device *serial, rt_ubase_t flag)
     || defined(SOC_SERIES_STM32H7) || defined(SOC_SERIES_STM32MP1)
     DMA_Handle->Instance                 = dma_config->Instance;
     DMA_Handle->Init.Request             = dma_config->request;
-#endif
+#elif !defined(SOC_SERIES_STM32H7RS)
     DMA_Handle->Init.PeriphInc           = DMA_PINC_DISABLE;
     DMA_Handle->Init.MemInc              = DMA_MINC_ENABLE;
     DMA_Handle->Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
@@ -1186,6 +1186,35 @@ static void stm32_dma_config(struct rt_serial_device *serial, rt_ubase_t flag)
     }
 
     DMA_Handle->Init.Priority            = DMA_PRIORITY_MEDIUM;
+#endif
+
+#if defined(SOC_SERIES_STM32H7RS)
+    DMA_Handle->Instance                 = dma_config->Instance;
+    DMA_Handle->Init.Request             = dma_config->request;
+    DMA_Handle->Init.BlkHWRequest        = DMA_BREQ_SINGLE_BURST;
+
+    DMA_Handle->Init.SrcDataWidth        = DMA_SRC_DATAWIDTH_BYTE;
+    DMA_Handle->Init.DestDataWidth       = DMA_DEST_DATAWIDTH_BYTE;
+    DMA_Handle->Init.Priority            = DMA_LOW_PRIORITY_LOW_WEIGHT;
+    DMA_Handle->Init.SrcBurstLength      = 1;
+    DMA_Handle->Init.DestBurstLength     = 1;
+    DMA_Handle->Init.TransferAllocatedPort = DMA_SRC_ALLOCATED_PORT0|DMA_DEST_ALLOCATED_PORT0;
+    DMA_Handle->Init.TransferEventMode   = DMA_TCEM_BLOCK_TRANSFER;
+    if (RT_DEVICE_FLAG_DMA_RX == flag)
+    {
+        DMA_Handle->Init.SrcInc              = DMA_SINC_FIXED;
+        DMA_Handle->Init.DestInc             = DMA_DINC_INCREMENTED;
+        DMA_Handle->Init.Direction           = DMA_PERIPH_TO_MEMORY;
+        DMA_Handle->Init.Mode                = DMA_NORMAL;
+    }
+    else if (RT_DEVICE_FLAG_DMA_TX == flag)
+    {
+        DMA_Handle->Init.SrcInc              = DMA_SINC_INCREMENTED;
+        DMA_Handle->Init.DestInc             = DMA_DINC_FIXED;
+        DMA_Handle->Init.Direction           = DMA_MEMORY_TO_PERIPH;
+    }
+#endif /* SOC_SERIES_STM32F1 */
+
 #if defined(SOC_SERIES_STM32F2) || defined(SOC_SERIES_STM32F4) || defined(SOC_SERIES_STM32F7) || defined(SOC_SERIES_STM32H7) || defined(SOC_SERIES_STM32MP1)
     DMA_Handle->Init.FIFOMode            = DMA_FIFOMODE_DISABLE;
 #endif
@@ -1315,7 +1344,7 @@ int rt_hw_usart_init(void)
     rt_size_t obj_num = sizeof(uart_obj) / sizeof(struct stm32_uart);
 
     stm32_uart_get_config();
-    for (rt_uint32_t i = 0; i < obj_num; i++)
+    for (int i = 0; i < obj_num; i++)
     {
         /* init UART object */
         uart_obj[i].config = &uart_config[i];

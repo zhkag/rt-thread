@@ -1,50 +1,24 @@
 /*
- * Copyright (c) 2006-2024 RT-Thread Development Team
+ * Copyright (c) 2006-2025, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
  * Change Logs:
  * Date           Author       Notes
  * 2019-05-06     Zero-Free    first version
- * 2024-07-04     wdfk-prog    lptimer is supported
  */
+
+#ifdef RT_USING_PM
 
 #include <board.h>
 #include <drv_lptim.h>
 #include <rtdevice.h>
 
-/*#define DRV_DEBUG*/
-#define LOG_TAG             "drv.pm"
-#include <drv_log.h>
-
-#ifdef RT_USING_PM
-
-#ifndef BSP_USING_PM_TIMER
-/*
-! Using LPTIM timer, the maximum sleep time is 65535, less than 1 min. Use RTC alarm timers for longer periods.
-! For example: packages can be used :https://packages.rt-thread.org/detail.html?package=multi_rtimer
-*/
-#ifdef BSP_USING_LPTIM1
-#define BSP_USING_PM_TIMER "lptim1"
-#elif BSP_USING_LPTIM2
-#define BSP_USING_PM_TIMER "lptim2"
-#elif BSP_USING_LPTIM3
-#define BSP_USING_PM_TIMER "lptim3"
-#else
-#error "Please define BSP_USING_PM_TIMER"
-#endif
-
-static rt_device_t timer = RT_NULL;
-
-/* Re-configure the system clock */
-rt_weak void SystemClock_ReConfig(uint8_t run_mode)
+static void uart_console_reconfig(void)
 {
-    /*todo add your code here*/
-}
+    struct serial_configure config = RT_SERIAL_CONFIG_DEFAULT;
 
-rt_weak void stm32_pm_device_run(struct rt_pm *pm, uint8_t mode)
-{
-    /*todo add your code here*/
+    rt_device_control(rt_console_get_device(), RT_DEVICE_CTRL_CONFIG, &config);
 }
 
 /**
@@ -60,6 +34,7 @@ static void sleep(struct rt_pm *pm, uint8_t mode)
         break;
 
     case PM_SLEEP_MODE_IDLE:
+        // __WFI();
         break;
 
     case PM_SLEEP_MODE_LIGHT:
@@ -76,12 +51,10 @@ static void sleep(struct rt_pm *pm, uint8_t mode)
         break;
 
     case PM_SLEEP_MODE_DEEP:
-#if defined(SOC_SERIES_STM32L4)
-        /* Enter STOP 2 mode  */
-        HAL_PWREx_EnterSTOP2Mode(PWR_STOPENTRY_WFI);
+        /* Enter STOP mode  */
+        HAL_PWR_EnterSTOPMode(PWR_MAINREGULATOR_ON,PWR_STOPENTRY_WFI);
         /* Re-configure the system clock */
         SystemClock_ReConfig(pm->run_mode);
-#endif /* defined(SOC_SERIES_STM32L4) */
         break;
 
     case PM_SLEEP_MODE_STANDBY:
@@ -89,16 +62,71 @@ static void sleep(struct rt_pm *pm, uint8_t mode)
         HAL_PWR_EnterSTANDBYMode();
         break;
 
-    case PM_SLEEP_MODE_SHUTDOWN:
-#if defined(SOC_SERIES_STM32L4)
-        /* Enter SHUTDOWNN mode */
-        HAL_PWREx_EnterSHUTDOWNMode();
-#endif /* defined(SOC_SERIES_STM32L4) */
-        break;
+//    case PM_SLEEP_MODE_SHUTDOWN:
+//        /* Enter SHUTDOWNN mode */
+//        HAL_PWREx_EnterSHUTDOWNMode();
+//        break;
 
+    default:
+        RT_ASSERT(0);
+        break;
+    }
+}
+
+static uint8_t run_speed[PM_RUN_MODE_MAX][2] =
+{
+    {80, 0},
+    {80, 1},
+    {24, 2},
+    {2,  3},
+};
+
+static void run(struct rt_pm *pm, uint8_t mode)
+{
+    static uint8_t last_mode;
+    static char *run_str[] = PM_RUN_MODE_NAMES;
+
+    if (mode == last_mode)
+        return;
+    last_mode = mode;
+
+    switch (mode)
+    {
+    case PM_RUN_MODE_HIGH_SPEED:
+        HAL_RCC_DeInit();
+//        SystemClock_480M();
+        /* Configure the main internal regulator output voltage (Range1 by default)*/
+        HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1);
+        break;
+    case PM_RUN_MODE_NORMAL_SPEED:
+        HAL_RCC_DeInit();
+//        SystemClock_240M();
+        /* Configure the main internal regulator output voltage (Range1 by default)*/
+        HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1);
+        break;
+    case PM_RUN_MODE_MEDIUM_SPEED:
+        HAL_RCC_DeInit();
+//        SystemClock_120M();
+        /* Configure the main internal regulator output voltage */
+        HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1);
+        break;
+    case PM_RUN_MODE_LOW_SPEED:
+        HAL_RCC_DeInit();
+//        SystemClock_60M();
+        HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1);
+        /* Enter LP RUN mode */
+        break;
     default:
         break;
     }
+
+    uart_console_reconfig();
+    /* Re-Configure the Systick time */
+    HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq() / RT_TICK_PER_SECOND);
+    /* Re-Configure the Systick */
+    HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
+
+    rt_kprintf("switch to %s mode, frequency = %d MHz\n", run_str[mode], run_speed[mode][0]);
 }
 
 /**
@@ -108,19 +136,9 @@ static void sleep(struct rt_pm *pm, uint8_t mode)
  *
  * @return the PM tick
  */
-static rt_tick_t stm32_pm_tick_from_os_tick(rt_tick_t tick)
+static rt_tick_t stm32h7_pm_tick_from_os_tick(rt_tick_t tick)
 {
-    rt_uint32_t freq = 0;
-    rt_err_t ret = rt_device_control(timer, DRV_HW_LPTIMER_CTRL_GET_FREQ, &freq);
-    if(ret != RT_EOK)
-    {
-        LOG_E("Get PM timer %s frequency failed %d", timer->parent.name, ret);
-        return 0;
-    }
-    else
-    {
-        LOG_D("Get PM timer %s frequency %d", timer->parent.name, freq);
-    }
+    rt_uint32_t freq = stm32h7_lptim_get_countfreq();
 
     return (freq * tick / RT_TICK_PER_SECOND);
 }
@@ -132,25 +150,18 @@ static rt_tick_t stm32_pm_tick_from_os_tick(rt_tick_t tick)
  *
  * @return the OS tick
  */
-static rt_tick_t stm32_os_tick_from_pm_tick(rt_uint32_t tick)
+static rt_tick_t stm32h7_os_tick_from_pm_tick(rt_uint32_t tick)
 {
     static rt_uint32_t os_tick_remain = 0;
-    rt_tick_t os_tick = 0;
-    rt_uint32_t freq = 0;
+    rt_uint32_t ret, freq;
 
-    rt_err_t ret = rt_device_control(timer, DRV_HW_LPTIMER_CTRL_GET_FREQ, &freq);
-    if(ret != RT_EOK)
-    {
-        LOG_E("Get PM timer %s frequency failed %d", timer->parent.name, ret);
-        return 0;
-    }
-
-    os_tick = (tick * RT_TICK_PER_SECOND + os_tick_remain) / freq;
+    freq = stm32h7_lptim_get_countfreq();
+    ret = (tick * RT_TICK_PER_SECOND + os_tick_remain) / freq;
 
     os_tick_remain += (tick * RT_TICK_PER_SECOND);
     os_tick_remain %= freq;
 
-    return os_tick;
+    return ret;
 }
 
 /**
@@ -163,33 +174,18 @@ static void pm_timer_start(struct rt_pm *pm, rt_uint32_t timeout)
 {
     RT_ASSERT(pm != RT_NULL);
     RT_ASSERT(timeout > 0);
-    RT_ASSERT(timer != RT_NULL);
 
     if (timeout != RT_TICK_MAX)
     {
-        rt_uint32_t max_tick = 0;
-        rt_err_t ret = rt_device_control(timer, DRV_HW_LPTIMER_CTRL_GET_TICK_MAX, &max_tick);
-        if(ret != RT_EOK)
-        {
-            LOG_E("Get PM timer %s max tick failed %d", timer->parent.name, ret);
-            return;
-        }
-
         /* Convert OS Tick to pmtimer timeout value */
-        timeout = stm32_pm_tick_from_os_tick(timeout);
-
-        if (timeout > max_tick)
+        timeout = stm32h7_pm_tick_from_os_tick(timeout);
+        if (timeout > stm32h7_lptim_get_tick_max())
         {
-            timeout = max_tick;
+            timeout = stm32h7_lptim_get_tick_max();
         }
 
         /* Enter PM_TIMER_MODE */
-        ret = rt_device_control(timer, DRV_HW_LPTIMER_CTRL_START, &timeout);
-        if(ret != RT_EOK)
-        {
-            LOG_E("Get PM timer %s max tick failed %d", timer->parent.name, ret);
-            return;
-        }
+        stm32h7_lptim_start(timeout);
     }
 }
 
@@ -203,7 +199,7 @@ static void pm_timer_stop(struct rt_pm *pm)
     RT_ASSERT(pm != RT_NULL);
 
     /* Reset pmtimer status */
-    rt_device_control(timer, HWTIMER_CTRL_STOP, RT_NULL);
+    stm32h7_lptim_stop();
 }
 
 /**
@@ -219,42 +215,29 @@ static rt_tick_t pm_timer_get_tick(struct rt_pm *pm)
 
     RT_ASSERT(pm != RT_NULL);
 
-    rt_err_t ret = rt_device_control(timer, DRV_HW_LPTIMER_CTRL_GET_COUNT, &timer_tick);
+    timer_tick = stm32h7_lptim_get_current_tick();
 
-    if(ret != RT_EOK)
-    {
-        LOG_E("Get PM timer %s count failed %d", timer->parent.name, ret);
-        return 0;
-    }
-    else
-    {
-        return stm32_os_tick_from_pm_tick(timer_tick);
-    }
+    return stm32h7_os_tick_from_pm_tick(timer_tick);
 }
-
-static const struct rt_pm_ops _ops =
-{
-    sleep,
-    stm32_pm_device_run,
-    pm_timer_start,
-    pm_timer_stop,
-    pm_timer_get_tick
-};
 
 /**
  * This function initialize the power manager
  */
 int drv_pm_hw_init(void)
 {
+    static const struct rt_pm_ops _ops =
+    {
+        sleep,
+        run,
+        pm_timer_start,
+        pm_timer_stop,
+        pm_timer_get_tick
+    };
+
     rt_uint8_t timer_mask = 0;
 
     /* Enable Power Clock */
-#if !defined(SOC_SERIES_STM32H7) && !defined(SOC_SERIES_STM32WL) && !defined(SOC_SERIES_STM32WB)
-    __HAL_RCC_PWR_CLK_ENABLE();
-#ifdef SOC_SERIES_STM32F1
-    __HAL_RCC_BKP_CLK_ENABLE();
-#endif
-#endif
+//    __HAL_RCC_PWR_CLK_ENABLE();
 
     /* initialize timer mask */
     timer_mask = 1UL << PM_SLEEP_MODE_DEEP;
@@ -262,18 +245,9 @@ int drv_pm_hw_init(void)
     /* initialize system pm module */
     rt_system_pm_init(&_ops, timer_mask, RT_NULL);
 
-    timer = rt_device_find(BSP_USING_PM_TIMER);
-
-    if(timer == RT_NULL)
-    {
-        LOG_E("Can't find PM timer device");
-        return -RT_ERROR;
-    }
-    else
-    {
-        return rt_device_init(timer);
-    }
+    return 0;
 }
 
-INIT_CORE_EXPORT(drv_pm_hw_init);
-#endif /* RT_USING_PM */
+INIT_BOARD_EXPORT(drv_pm_hw_init);
+
+#endif

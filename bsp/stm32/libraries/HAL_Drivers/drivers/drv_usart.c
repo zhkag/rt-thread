@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2024, RT-Thread Development Team
+ * Copyright (c) 2006-2025, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -33,6 +33,9 @@
 #ifdef RT_SERIAL_USING_DMA
 static void stm32_dma_config(struct rt_serial_device *serial, rt_ubase_t flag);
 #endif
+
+/* Number of while blocking timeouts for the stm32_putc */
+#define TX_BLOCK_TIMEOUT    0x0FFFFFFF
 
 enum
 {
@@ -230,7 +233,8 @@ static rt_err_t stm32_configure(struct rt_serial_device *serial, struct serial_c
         return -RT_ERROR;
     }
     uart->DR_mask = stm32_uart_get_mask(uart->handle.Init.WordLength, uart->handle.Init.Parity);
-    uart->tx_block_timeout = BSP_STM32_UART_V1_TX_TIMEOUT;
+    uart->tx_block_timeout = TX_BLOCK_TIMEOUT;
+
     return RT_EOK;
 }
 
