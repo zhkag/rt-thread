@@ -216,14 +216,6 @@
 /* CYW43012 WiFi */
 
 /* end of CYW43012 WiFi */
-
-/* BL808 WiFi */
-
-/* end of BL808 WiFi */
-
-/* CYW43439 WiFi */
-
-/* end of CYW43439 WiFi */
 /* end of Wi-Fi */
 
 /* IoT Cloud */
@@ -282,21 +274,6 @@
 
 /* peripheral libraries and drivers */
 
-/* HAL & SDK Drivers */
-
-/* STM32 HAL & SDK Drivers */
-
-/* end of STM32 HAL & SDK Drivers */
-
-/* Infineon HAL Packages */
-
-/* end of Infineon HAL Packages */
-
-/* Kendryte SDK */
-
-/* end of Kendryte SDK */
-/* end of HAL & SDK Drivers */
-
 /* sensors drivers */
 
 /* end of sensors drivers */
@@ -304,6 +281,10 @@
 /* touch drivers */
 
 /* end of touch drivers */
+
+/* Kendryte SDK */
+
+/* end of Kendryte SDK */
 /* end of peripheral libraries and drivers */
 
 /* AI packages */
